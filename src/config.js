@@ -1,0 +1,21 @@
+export const CONFIG = {
+  WIDTH: 120,
+  HEIGHT: 180,
+  UPDATE_INTERVAL: 1000 / 30,
+
+  // game rules
+  DEATH_LINE_Y: 26,
+
+  // sand physics
+  FRICTION: 0.35,
+  GRAVITY: 0.15,
+  MAX_VELOCITY: 1,
+  SLEEP_THRESHOLD: 8,
+
+  // falling fruit
+  FRUIT_FALL_STEP_MS: 28,
+  FRUIT_IMPACT_DURATION_MS: 90,
+  FRUIT_BREAK_DURATION_MS: 300,
+
+  POUR_RADIUS: 3
+};
