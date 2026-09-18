@@ -1,11 +1,12 @@
 {
-  "name": "sand-engine-demo",
+  "name": "caisha-xiaoxiaole-preview",
   "version": "0.1.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "node tests/core.mjs && node tests/stress.mjs"
+    "preview": "vite preview"
   },
   "dependencies": {
     "three": "latest",
