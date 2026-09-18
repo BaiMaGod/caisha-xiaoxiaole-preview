@@ -1,0 +1,14 @@
+{
+  "name": "sand-engine-demo",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "node tests/core.mjs && node tests/stress.mjs"
+  },
+  "dependencies": {
+    "three": "latest",
+    "vite": "latest"
+  }
+}
