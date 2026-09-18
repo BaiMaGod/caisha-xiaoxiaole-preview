@@ -8,11 +8,12 @@ export class SandRenderer {
     this.canvas = document.createElement('canvas');
     this.canvas.width = grid.width;
     this.canvas.height = grid.height;
-    this.ctx = this.canvas.getContext('2d');
+    this.ctx = this.canvas.getContext('2d', { alpha: true });
 
     this.texture = new THREE.CanvasTexture(this.canvas);
-    this.texture.magFilter = THREE.NearestFilter;
-    this.texture.minFilter = THREE.NearestFilter;
+    this.texture.magFilter = THREE.LinearFilter;
+    this.texture.minFilter = THREE.LinearFilter;
+    this.texture.generateMipmaps = false;
   }
 
   update(fruit = null) {
@@ -39,9 +40,9 @@ export class SandRenderer {
     const y = CONFIG.DEATH_LINE_Y + 0.5;
 
     this.ctx.save();
-    this.ctx.setLineDash([2, 2]);
-    this.ctx.lineWidth = 0.65;
-    this.ctx.strokeStyle = 'rgba(255, 93, 93, 0.95)';
+    this.ctx.setLineDash([5, 4]);
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeStyle = 'rgba(255, 105, 105, 0.68)';
     this.ctx.beginPath();
     this.ctx.moveTo(0, y);
     this.ctx.lineTo(this.grid.width, y);
@@ -58,8 +59,8 @@ export class SandRenderer {
 
     if (fruit.state === 'IMPACT') {
       const pulse = Math.sin(fruit.getImpactProgress() * Math.PI);
-      scaleX = 1 + pulse * 0.08;
-      scaleY = 1 - pulse * 0.16;
+      scaleX = 1 + pulse * 0.07;
+      scaleY = 1 - pulse * 0.13;
     }
 
     const breakProgress = fruit.getBreakProgress();
@@ -77,8 +78,8 @@ export class SandRenderer {
       if (fruit.state === 'BREAKING') {
         const hash = ((i * 2654435761) >>> 0) % 1000;
         const direction = hash % 2 === 0 ? -1 : 1;
-        x += direction * breakProgress * ((hash % 5) / 10);
-        y += breakProgress * ((hash % 7) / 20);
+        x += direction * breakProgress * ((hash % 5) / 8);
+        y += breakProgress * ((hash % 7) / 14);
       }
 
       if (
@@ -102,22 +103,21 @@ export class SandRenderer {
     const iy = Math.floor(y);
     const hash =
       ((ix * 73856093) ^ (iy * 19349663) ^ (type * 83492791)) >>> 0;
-    const offset = (hash % 17) - 8;
-    const boost = activeFruit ? 12 + Math.round(breakProgress * 8) : 0;
+    const offset = (hash % 13) - 6;
+    const boost = activeFruit ? 10 + Math.round(breakProgress * 7) : 0;
 
     const r = Math.max(0, Math.min(255, rgb[0] + offset + boost));
     const g = Math.max(0, Math.min(255, rgb[1] + offset + boost));
     const b = Math.max(0, Math.min(255, rgb[2] + offset + boost));
 
     this.ctx.fillStyle = `rgb(${r},${g},${b})`;
-    this.ctx.beginPath();
-    this.ctx.arc(
-      x + 0.5,
-      y + 0.5,
-      activeFruit ? 0.49 : 0.45,
-      0,
-      Math.PI * 2
-    );
-    this.ctx.fill();
+
+    if (activeFruit) {
+      this.ctx.fillRect(x + 0.01, y + 0.01, 0.98, 0.98);
+    } else {
+      // Slight air gap between settled grains preserves a fine-sand texture
+      // after the 180x320 logical canvas is scaled to the phone viewport.
+      this.ctx.fillRect(x + 0.08, y + 0.08, 0.84, 0.84);
+    }
   }
 }
