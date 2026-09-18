@@ -1,10 +1,11 @@
 export const CONFIG = {
-  WIDTH: 120,
-  HEIGHT: 180,
+  // 9:16 logical board. At ~405px mobile width, one grain is ~2.25px.
+  WIDTH: 180,
+  HEIGHT: 320,
   UPDATE_INTERVAL: 1000 / 30,
 
   // game rules
-  DEATH_LINE_Y: 26,
+  DEATH_LINE_Y: 48,
 
   // sand physics
   FRICTION: 0.35,
@@ -13,7 +14,7 @@ export const CONFIG = {
   SLEEP_THRESHOLD: 8,
 
   // falling fruit
-  FRUIT_FALL_STEP_MS: 28,
+  FRUIT_FALL_STEP_MS: 16,
   FRUIT_IMPACT_DURATION_MS: 90,
   FRUIT_BREAK_DURATION_MS: 300,
 
