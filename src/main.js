@@ -10,16 +10,34 @@ import { FruitManager } from './fruit/FruitManager.js';
 import { FruitController } from './fruit/FruitController.js';
 import { CONFIG } from './config.js';
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color('#fff7e8');
+const gameShell = document.getElementById('game-shell');
+const gameRoot = document.getElementById('game-root');
 
-const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 10);
+if (!gameShell || !gameRoot) {
+  throw new Error('Missing mobile game container');
+}
+
+const boardAspect = CONFIG.WIDTH / CONFIG.HEIGHT;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#fff8ea');
+
+const camera = new THREE.OrthographicCamera(
+  -boardAspect,
+  boardAspect,
+  1,
+  -1,
+  0.1,
+  10
+);
 camera.position.z = 1;
 
-const renderer = new THREE.WebGLRenderer({ antialias: false });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+const renderer = new THREE.WebGLRenderer({
+  antialias: false,
+  alpha: false
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+gameRoot.appendChild(renderer.domElement);
 
 const grid = new SandGrid();
 const simulation = new SandSimulation(grid);
@@ -31,7 +49,7 @@ new FruitController(renderer.domElement, fruitManager, grid);
 
 const clearSystem = new ConnectivityClear(grid, simulation);
 const rules = new GameRules(grid);
-const hud = new GameHUD();
+const hud = new GameHUD(gameShell);
 
 clearSystem.onClear = ({ score, combo }) => {
   hud.setScore(score);
@@ -44,7 +62,7 @@ const material = new THREE.MeshBasicMaterial({
 });
 
 const mesh = new THREE.Mesh(
-  new THREE.PlaneGeometry(2, 2),
+  new THREE.PlaneGeometry(boardAspect * 2, 2),
   material
 );
 scene.add(mesh);
@@ -109,8 +127,6 @@ function loop(time) {
 
     lastFruitState = fruitState;
 
-    // Sand written during fruit breaking can touch the line before
-    // the next simulation tick, so check every frame.
     if (rules.checkDeathLine()) {
       triggerGameOver();
     }
@@ -158,10 +174,32 @@ function loop(time) {
 }
 
 function resize() {
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  const rect = gameRoot.getBoundingClientRect();
+  const width = Math.max(1, Math.round(rect.width));
+  const height = Math.max(1, Math.round(rect.height));
+  const viewAspect = width / height;
+
+  renderer.setSize(width, height, false);
+
+  if (viewAspect >= boardAspect) {
+    camera.left = -viewAspect;
+    camera.right = viewAspect;
+    camera.top = 1;
+    camera.bottom = -1;
+  } else {
+    const halfHeight = boardAspect / viewAspect;
+    camera.left = -boardAspect;
+    camera.right = boardAspect;
+    camera.top = halfHeight;
+    camera.bottom = -halfHeight;
+  }
+
+  camera.updateProjectionMatrix();
 }
 
-window.addEventListener('resize', resize);
+const resizeObserver = new ResizeObserver(resize);
+resizeObserver.observe(gameRoot);
+resize();
 
 sandRenderer.update(fruitManager.current);
 loop(performance.now());
