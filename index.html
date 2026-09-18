@@ -2,31 +2,124 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#fff7e8" />
-    <title>彩沙消消乐 - Sand Engine Prototype</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#efe9df" />
+    <title>彩沙消消乐</title>
     <style>
-      html, body {
+      :root {
+        font-family: Inter, ui-rounded, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        color: #5c4939;
+        background: #efe9df;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
         margin: 0;
         width: 100%;
+        min-width: 100%;
         height: 100%;
+        min-height: 100%;
         overflow: hidden;
-        background: #fff7e8;
-        touch-action: none;
+        background:
+          radial-gradient(circle at 50% 20%, #faf6ef 0, #f3eee6 42%, #e8e1d7 100%);
       }
 
       body {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        overscroll-behavior: none;
       }
 
-      canvas {
+      .page-shell {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+      }
+
+      .game-shell {
+        position: relative;
+        width: min(calc(100vw - 36px), 405px);
+        aspect-ratio: 9 / 16;
+        max-height: calc(100vh - 36px);
+        overflow: hidden;
+        border: 1px solid rgba(116, 89, 62, 0.12);
+        border-radius: 28px;
+        background: #fff8ea;
+        box-shadow:
+          0 24px 70px rgba(78, 59, 42, 0.16),
+          0 4px 18px rgba(78, 59, 42, 0.08);
+        touch-action: none;
+        user-select: none;
+      }
+
+      #game-root {
+        position: absolute;
+        inset: 0;
+      }
+
+      #game-root canvas {
         display: block;
         width: 100%;
         height: 100%;
+        touch-action: none;
+      }
+
+      .game-tip {
+        position: absolute;
+        z-index: 6;
+        left: 50%;
+        bottom: 14px;
+        transform: translateX(-50%);
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+        color: rgba(92, 73, 57, 0.72);
+        font-size: 11px;
+        font-weight: 650;
+        letter-spacing: 0.02em;
+        pointer-events: none;
+        backdrop-filter: blur(6px);
+        white-space: nowrap;
+      }
+
+      @media (max-width: 520px) {
+        .page-shell {
+          padding: 10px;
+        }
+
+        .game-shell {
+          width: min(calc(100vw - 20px), 405px);
+          max-height: calc(100vh - 20px);
+          border-radius: 22px;
+        }
+      }
+
+      @media (max-height: 700px) {
+        .game-shell {
+          height: calc(100vh - 24px);
+          width: auto;
+          max-width: calc(100vw - 24px);
+        }
       }
     </style>
   </head>
   <body>
+    <main class="page-shell">
+      <section class="game-shell" id="game-shell" aria-label="彩沙消消乐游戏区域">
+        <div id="game-root"></div>
+        <div class="game-tip">左右拖动 · 松手下落</div>
+      </section>
+    </main>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
