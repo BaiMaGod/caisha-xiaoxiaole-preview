@@ -2,8 +2,7 @@ import { COLOR_MAP } from './colors.js';
 
 const GLOW_MS = 220;
 const FLY_MS = 460;
-const STAR_FORM_MS = 260;
-const STAR_MIN_HOLD_MS = 550;
+const STAR_FORM_PER_STAR_MS = 360;
 const STAR_FADE_MS = 320;
 
 function clamp(value, min, max) {
@@ -16,10 +15,8 @@ function easeInOutCubic(t) {
     : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-function easeOutBack(t) {
-  const c1 = 1.70158;
-  const c3 = c1 + 1;
-  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
 }
 
 function colorToCss(type, alpha = 1) {
@@ -39,6 +36,68 @@ export function getStarCount(cleared) {
   if (cleared >= 2000) return 3;
   if (cleared >= 1000) return 2;
   return 1;
+}
+
+export function getStarFormationDuration(starCount) {
+  return Math.max(0, starCount) * STAR_FORM_PER_STAR_MS;
+}
+
+export function getSequentialStarProgresses(elapsedMs, starCount) {
+  const progresses = [];
+
+  for (let i = 0; i < starCount; i++) {
+    progresses.push(
+      clamp(
+        (elapsedMs - i * STAR_FORM_PER_STAR_MS) / STAR_FORM_PER_STAR_MS,
+        0,
+        1
+      )
+    );
+  }
+
+  return progresses;
+}
+
+function buildStarGrains(radius, rotation, seed) {
+  const vertices = [];
+
+  for (let i = 0; i < 10; i++) {
+    const angle = -Math.PI / 2 + rotation + (i * Math.PI) / 5;
+    const r = i % 2 === 0 ? radius : radius * 0.44;
+
+    vertices.push({
+      x: Math.cos(angle) * r,
+      y: Math.sin(angle) * r
+    });
+  }
+
+  const grains = [];
+  let grainIndex = 0;
+
+  for (let edge = 0; edge < vertices.length; edge++) {
+    const a = vertices[edge];
+    const b = vertices[(edge + 1) % vertices.length];
+    const grainsPerEdge = 7;
+
+    for (let i = 0; i < grainsPerEdge; i++) {
+      const t = i / grainsPerEdge;
+      const hash =
+        ((seed + (grainIndex + 1) * 2654435761) >>> 0);
+
+      grains.push({
+        x: a.x + (b.x - a.x) * t,
+        y: a.y + (b.y - a.y) * t,
+        delay: (hash % 22) / 100,
+        cloudX: ((hash >>> 5) % 19) - 9,
+        cloudY: ((hash >>> 11) % 19) - 9,
+        radius: 1.05 + ((hash >>> 17) % 45) / 100
+      });
+
+      grainIndex++;
+    }
+  }
+
+  return grains;
 }
 
 export class ClearEffectManager {
@@ -93,16 +152,9 @@ export class ClearEffectManager {
     this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
   }
 
-  play(payload, audioDonePromise = null) {
+  play(payload, startRewardAudio = null) {
     const effect = this.buildEffect(payload);
-    effect.audioDone = !audioDonePromise;
-
-    if (audioDonePromise) {
-      Promise.resolve(audioDonePromise).finally(() => {
-        effect.audioDone = true;
-        this.scheduleFrame();
-      });
-    }
+    effect.startRewardAudio = startRewardAudio;
 
     this.queue.push(effect);
 
@@ -152,11 +204,14 @@ export class ClearEffectManager {
 
     for (let i = 0; i < starCount; i++) {
       const seed = ((i + 1) * 2246822519 + cleared * 3266489917) >>> 0;
+      const size = 12 + (seed % 3);
+      const rotation = ((seed % 24) - 12) * (Math.PI / 180);
 
       stars.push({
-        size: 11 + (seed % 4),
-        rotation: ((seed % 34) - 17) * (Math.PI / 180),
-        color: groups[i % groups.length]?.color ?? 3
+        size,
+        rotation,
+        color: groups[i % groups.length]?.color ?? 3,
+        grains: buildStarGrains(size, rotation, seed)
       });
     }
 
@@ -168,7 +223,9 @@ export class ClearEffectManager {
       stars,
       startedAt: 0,
       fadeStartedAt: null,
-      audioDone: false
+      audioStarted: false,
+      audioDone: false,
+      startRewardAudio: null
     };
   }
 
@@ -183,6 +240,35 @@ export class ClearEffectManager {
     this.current.startedAt = performance.now();
   }
 
+  startAudioAfterStarsReady() {
+    if (!this.current || this.current.audioStarted) return;
+
+    this.current.audioStarted = true;
+
+    let rewardResult;
+
+    try {
+      rewardResult = this.current.startRewardAudio?.();
+    } catch {
+      rewardResult = null;
+    }
+
+    if (!rewardResult || typeof rewardResult.then !== 'function') {
+      this.current.audioDone = true;
+      return;
+    }
+
+    const effect = this.current;
+
+    Promise.resolve(rewardResult).finally(() => {
+      effect.audioDone = true;
+
+      if (this.current === effect) {
+        this.scheduleFrame();
+      }
+    });
+  }
+
   frame(time) {
     this.raf = 0;
 
@@ -193,6 +279,9 @@ export class ClearEffectManager {
 
     const elapsed = time - this.current.startedAt;
     const starStart = GLOW_MS + FLY_MS;
+    const starFormationDuration = getStarFormationDuration(
+      this.current.stars.length
+    );
 
     this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
 
@@ -203,12 +292,13 @@ export class ClearEffectManager {
     } else {
       const starElapsed = elapsed - starStart;
 
-      if (starElapsed < STAR_FORM_MS) {
-        this.drawStars(starElapsed / STAR_FORM_MS, 1);
+      if (starElapsed < starFormationDuration) {
+        this.drawSequentialStarFormation(starElapsed, 1);
       } else {
-        const minimumHoldDone = starElapsed >= STAR_FORM_MS + STAR_MIN_HOLD_MS;
+        this.drawSequentialStarFormation(starFormationDuration, 1);
+        this.startAudioAfterStarsReady();
 
-        if (minimumHoldDone && this.current.audioDone) {
+        if (this.current.audioDone) {
           if (this.current.fadeStartedAt === null) {
             this.current.fadeStartedAt = time;
           }
@@ -219,14 +309,16 @@ export class ClearEffectManager {
             1
           );
 
-          this.drawStars(1, 1 - fadeProgress);
+          this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
+          this.drawSequentialStarFormation(
+            starFormationDuration,
+            1 - fadeProgress
+          );
 
           if (fadeProgress >= 1) {
             this.current = null;
             this.startNext();
           }
-        } else {
-          this.drawStars(1, 1);
         }
       }
     }
@@ -302,69 +394,72 @@ export class ClearEffectManager {
     this.ctx.restore();
   }
 
-  drawStars(progress, alpha) {
+  drawSequentialStarFormation(elapsedMs, alpha) {
     const centerX = this.cssWidth / 2;
     const centerY = this.cssHeight * 0.46;
     const count = this.current.stars.length;
-    const spacing = 42;
-    const pop = easeOutBack(clamp(progress, 0, 1));
+    const spacing = 44;
     const startX = centerX - ((count - 1) * spacing) / 2;
+    const progresses = getSequentialStarProgresses(elapsedMs, count);
 
     this.ctx.save();
     this.ctx.globalAlpha = clamp(alpha, 0, 1);
 
     for (let i = 0; i < count; i++) {
+      const progress = progresses[i];
+      if (progress <= 0) continue;
+
       const star = this.current.stars[i];
       const targetX = startX + i * spacing;
-      const x = centerX + (targetX - centerX) * pop;
-      const y = centerY;
 
-      this.drawSandStar(
-        x,
-        y,
-        star.size * pop,
-        star.rotation * pop,
-        star.color
+      this.drawFormingSandStar(
+        star,
+        centerX,
+        centerY,
+        targetX,
+        centerY,
+        progress
       );
     }
 
     this.ctx.restore();
   }
 
-  drawSandStar(x, y, radius, rotation, color) {
-    if (radius <= 0) return;
-
-    const points = [];
-
-    for (let i = 0; i < 10; i++) {
-      const angle = -Math.PI / 2 + rotation + (i * Math.PI) / 5;
-      const r = i % 2 === 0 ? radius : radius * 0.44;
-
-      points.push({
-        x: x + Math.cos(angle) * r,
-        y: y + Math.sin(angle) * r
-      });
-    }
-
+  drawFormingSandStar(star, originX, originY, targetX, targetY, progress) {
     this.ctx.save();
-    this.ctx.fillStyle = colorToCss(color, 0.96);
-    this.ctx.shadowColor = colorToCss(color, 0.9);
+    this.ctx.fillStyle = colorToCss(star.color, 0.96);
+    this.ctx.shadowColor = colorToCss(star.color, 0.92);
     this.ctx.shadowBlur = 7;
+    this.ctx.globalCompositeOperation = 'lighter';
 
-    for (let edge = 0; edge < points.length; edge++) {
-      const a = points[edge];
-      const b = points[(edge + 1) % points.length];
-      const grainCount = 5;
+    for (const grain of star.grains) {
+      const grainProgress = clamp(
+        (progress - grain.delay) / Math.max(0.01, 1 - grain.delay),
+        0,
+        1
+      );
 
-      for (let i = 0; i < grainCount; i++) {
-        const t = i / grainCount;
-        const gx = a.x + (b.x - a.x) * t;
-        const gy = a.y + (b.y - a.y) * t;
+      if (grainProgress <= 0) continue;
 
-        this.ctx.beginPath();
-        this.ctx.arc(gx, gy, 1.25, 0, Math.PI * 2);
-        this.ctx.fill();
-      }
+      const t = easeOutCubic(grainProgress);
+      const cloudX = originX + grain.cloudX;
+      const cloudY = originY + grain.cloudY;
+      const endX = targetX + grain.x;
+      const endY = targetY + grain.y;
+      const arc = Math.sin(t * Math.PI) * 10;
+
+      const x = cloudX + (endX - cloudX) * t;
+      const y = cloudY + (endY - cloudY) * t - arc;
+
+      this.ctx.beginPath();
+      this.ctx.arc(
+        x,
+        y,
+        grain.radius * (0.75 + t * 0.25),
+        0,
+        Math.PI * 2
+      );
+      this.ctx.fill();
     }
 
     this.ctx.restore();
