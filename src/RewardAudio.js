@@ -9,29 +9,94 @@ export class RewardAudio {
   constructor(element) {
     this.context = null;
     this.unlocked = false;
+    this.voice = null;
+    this.speechWarmed = false;
 
     const unlock = () => this.unlock();
     element.addEventListener('pointerdown', unlock, { passive: true });
     element.addEventListener('touchstart', unlock, { passive: true });
+
+    this.loadVoice();
   }
 
   unlock() {
     if (!this.context) {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) return;
-
-      this.context = new AudioContextClass();
+      if (AudioContextClass) {
+        this.context = new AudioContextClass();
+      }
     }
 
-    this.context.resume?.();
+    this.context?.resume?.();
     this.unlocked = true;
+
+    // Warm the OS/browser TTS engine during the user's first gesture instead
+    // of waiting until the reward animation has already finished.
+    this.warmSpeech();
+  }
+
+  loadVoice() {
+    if (
+      !('speechSynthesis' in window) ||
+      typeof SpeechSynthesisUtterance === 'undefined'
+    ) {
+      return;
+    }
+
+    const synth = window.speechSynthesis;
+
+    const pickVoice = () => {
+      const voices = synth.getVoices?.() ?? [];
+
+      this.voice =
+        voices.find((voice) => /^en-US$/i.test(voice.lang)) ??
+        voices.find((voice) => /^en[-_]/i.test(voice.lang)) ??
+        voices[0] ??
+        null;
+    };
+
+    pickVoice();
+
+    if (typeof synth.addEventListener === 'function') {
+      synth.addEventListener('voiceschanged', pickVoice);
+    } else if ('onvoiceschanged' in synth) {
+      synth.onvoiceschanged = pickVoice;
+    }
+  }
+
+  warmSpeech() {
+    if (
+      this.speechWarmed ||
+      !('speechSynthesis' in window) ||
+      typeof SpeechSynthesisUtterance === 'undefined'
+    ) {
+      return;
+    }
+
+    const synth = window.speechSynthesis;
+    this.loadVoice();
+
+    const warmup = new SpeechSynthesisUtterance('.');
+    warmup.lang = 'en-US';
+    warmup.volume = 0;
+    warmup.rate = 10;
+
+    if (this.voice) {
+      warmup.voice = this.voice;
+    }
+
+    this.speechWarmed = true;
+    synth.speak(warmup);
   }
 
   play(rating, intensity = 1) {
-    return Promise.all([
-      this.playChime(rating, intensity),
-      this.speakRating(rating)
-    ]);
+    // Both are triggered synchronously in the same call made by the final
+    // star-formation frame. The chime guarantees immediate audible feedback;
+    // warmed TTS follows without the old cancel/restart delay.
+    const chimeDone = this.playChime(rating, intensity);
+    const speechDone = this.speakRating(rating);
+
+    return Promise.all([chimeDone, speechDone]);
   }
 
   stop() {
@@ -91,8 +156,7 @@ export class RewardAudio {
     }
 
     const synth = window.speechSynthesis;
-    synth.cancel();
-    synth.resume?.();
+    this.loadVoice();
 
     const phrase =
       rating === 'UNBELIEVABLE'
@@ -115,14 +179,21 @@ export class RewardAudio {
         rating === 'PERFECT' || rating === 'UNBELIEVABLE'
           ? 1.25
           : 1.12;
-      utterance.volume = 0.86;
+      utterance.volume = 0.9;
       utterance.onend = finish;
       utterance.onerror = finish;
 
+      if (this.voice) {
+        utterance.voice = this.voice;
+      }
+
+      // Important: do not call cancel() here. Canceling immediately before
+      // speak() makes some Chrome/Edge builds reinitialize TTS and introduces
+      // the multi-second delay seen after the stars have already formed.
       synth.speak(utterance);
 
-      // Do not resolve on a short timer: some browsers queue speech and only
-      // start it later. Keep the stars visible until speech really finishes.
+      // Safety only for broken engines that never dispatch onend/onerror.
+      // This does not delay speech start and only affects when stars may fade.
       const watchdog = () => {
         if (settled) return;
 
@@ -131,10 +202,10 @@ export class RewardAudio {
           return;
         }
 
-        setTimeout(watchdog, 500);
+        setTimeout(watchdog, 250);
       };
 
-      setTimeout(watchdog, 3000);
+      setTimeout(watchdog, 4000);
     });
   }
 }
