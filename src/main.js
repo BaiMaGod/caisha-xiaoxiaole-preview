@@ -154,17 +154,27 @@ function loop(time) {
       }
 
       if (!gameOver && time - lastSimulation >= CONFIG.UPDATE_INTERVAL) {
-        simulation.update();
+        simulation.update(() => {
+          // Resolve rules after every physics substep. With multiple substeps
+          // in one tick, waiting until the very end can let a few grains
+          // detach from a spanning component before connectivity is checked.
+          if (rules.checkDeathLine()) {
+            triggerGameOver();
+            return false;
+          }
 
-        // Top-line death is intentionally resolved before clearing:
-        // touching the death line is an immediate loss.
-        if (rules.checkDeathLine()) {
-          triggerGameOver();
-        }
+          if (!gameOver && canResolveConnectivity(fruitState)) {
+            const cleared = clearSystem.resolve();
 
-        if (!gameOver && canResolveConnectivity(fruitState)) {
-          clearSystem.resolve();
-        }
+            // The clear effect freezes the board. Stop the remaining
+            // substeps immediately so no grains can move after the clear.
+            if (cleared > 0) {
+              return false;
+            }
+          }
+
+          return !gameOver;
+        });
 
         lastSimulation = time;
       }
