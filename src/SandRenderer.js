@@ -1,5 +1,9 @@
 import * as THREE from 'three';
-import { COLOR_MAP } from './colors.js';
+import {
+  getParticleRgb,
+  SETTLED_PARTICLE_INSET,
+  SETTLED_PARTICLE_SIZE
+} from './colors.js';
 import { CONFIG } from './config.js';
 
 export class SandRenderer {
@@ -96,28 +100,23 @@ export class SandRenderer {
   }
 
   drawParticle(x, y, type, activeFruit, breakProgress = 0) {
-    const rgb = COLOR_MAP[type];
+    const boost = activeFruit ? 10 + Math.round(breakProgress * 7) : 0;
+    const rgb = getParticleRgb(x, y, type, boost);
     if (!rgb) return;
 
-    const ix = Math.floor(x);
-    const iy = Math.floor(y);
-    const hash =
-      ((ix * 73856093) ^ (iy * 19349663) ^ (type * 83492791)) >>> 0;
-    const offset = (hash % 13) - 6;
-    const boost = activeFruit ? 10 + Math.round(breakProgress * 7) : 0;
-
-    const r = Math.max(0, Math.min(255, rgb[0] + offset + boost));
-    const g = Math.max(0, Math.min(255, rgb[1] + offset + boost));
-    const b = Math.max(0, Math.min(255, rgb[2] + offset + boost));
-
-    this.ctx.fillStyle = `rgb(${r},${g},${b})`;
+    this.ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
 
     if (activeFruit) {
       this.ctx.fillRect(x + 0.01, y + 0.01, 0.98, 0.98);
     } else {
       // Slight air gap between settled grains preserves a fine-sand texture
       // after the 180x320 logical canvas is scaled to the phone viewport.
-      this.ctx.fillRect(x + 0.08, y + 0.08, 0.84, 0.84);
+      this.ctx.fillRect(
+        x + SETTLED_PARTICLE_INSET,
+        y + SETTLED_PARTICLE_INSET,
+        SETTLED_PARTICLE_SIZE,
+        SETTLED_PARTICLE_SIZE
+      );
     }
   }
 }
