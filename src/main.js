@@ -64,12 +64,12 @@ clearSystem.onClear = (payload) => {
   hud.setScore(score);
   hud.showCombo(combo);
 
-  const rewardDone = rewardAudio.play(
-    rating,
-    Math.min(4, cleared / 1000 + combo * 0.25)
+  clearEffects.play(payload, () =>
+    rewardAudio.play(
+      rating,
+      Math.min(4, cleared / 1000 + combo * 0.25)
+    )
   );
-
-  clearEffects.play(payload, rewardDone);
 };
 
 const material = new THREE.MeshBasicMaterial({
