@@ -32,10 +32,9 @@ export class FruitController {
       this.updatePointer(event);
       this.dragging = false;
 
-      if (this.fastDropActive) {
-        this.fruitManager.stopFastDrop();
-        this.fastDropActive = false;
-      }
+      // Fast drop is latched to the current fruit. Releasing the finger only
+      // ends gesture tracking; the fruit keeps falling at 2x speed until impact.
+      this.fastDropActive = false;
 
       const released = this.fruitManager.releaseCurrent();
 
