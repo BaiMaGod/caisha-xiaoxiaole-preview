@@ -156,27 +156,35 @@ function loop(time) {
       }
 
       if (!gameOver && time - lastSimulation >= CONFIG.UPDATE_INTERVAL) {
-        simulation.update(() => {
-          // Resolve rules after every physics substep. With multiple substeps
-          // in one tick, waiting until the very end can let a few grains
-          // detach from a spanning component before connectivity is checked.
-          if (rules.checkDeathLine()) {
-            triggerGameOver();
-            return false;
-          }
+        let clearedBeforePhysics = 0;
 
-          if (!gameOver && canResolveConnectivity(fruitState)) {
-            const cleared = clearSystem.resolve();
+        // Check the grid before the first physics substep. Otherwise a bridge
+        // that already exists at the end of the previous frame can shed a few
+        // grains in substep 1 before BFS gets a chance to see the full component.
+        if (canResolveConnectivity(fruitState)) {
+          clearedBeforePhysics = clearSystem.resolve();
+        }
 
-            // The clear effect freezes the board. Stop the remaining
-            // substeps immediately so no grains can move after the clear.
-            if (cleared > 0) {
+        if (clearedBeforePhysics === 0 && !gameOver) {
+          simulation.update(() => {
+            // Keep checking after every substep too, so newly formed bridges
+            // clear immediately and later substeps cannot tear them apart.
+            if (rules.checkDeathLine()) {
+              triggerGameOver();
               return false;
             }
-          }
 
-          return !gameOver;
-        });
+            if (!gameOver && canResolveConnectivity(fruitState)) {
+              const cleared = clearSystem.resolve();
+
+              if (cleared > 0) {
+                return false;
+              }
+            }
+
+            return !gameOver;
+          });
+        }
 
         lastSimulation = time;
       }
