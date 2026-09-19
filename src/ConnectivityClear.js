@@ -25,11 +25,7 @@ export class ConnectivityClear {
         const component = this.collectComponent(0, y, color);
         if (!component.reachesRight) continue;
 
-        const cells = this.includeAdjacentVisualFragments(
-          component.cells,
-          color
-        );
-
+        const cells = component.cells.slice();
         const cleared = this.clearComponent(cells);
 
         if (cleared > 0) {
@@ -99,41 +95,6 @@ export class ConnectivityClear {
     }
 
     return { cells, reachesRight };
-  }
-
-  includeAdjacentVisualFragments(componentCells, color) {
-    const included = new Set(componentCells);
-
-    // The renderer scales sub-cell grains with linear filtering, so a tiny
-    // one-cell logical crack can still look visually continuous. Absorb only
-    // same-color grains immediately around the spanning component, without
-    // clearing unrelated same-color piles elsewhere on the board.
-    for (const index of componentCells) {
-      const x = index % this.grid.width;
-      const y = Math.floor(index / this.grid.width);
-
-      for (let dy = -2; dy <= 2; dy++) {
-        for (let dx = -2; dx <= 2; dx++) {
-          if (Math.max(Math.abs(dx), Math.abs(dy)) > 2) continue;
-
-          const nx = x + dx;
-          const ny = y + dy;
-
-          if (
-            nx < 0 ||
-            ny < 0 ||
-            nx >= this.grid.width ||
-            ny >= this.grid.height
-          ) continue;
-
-          if (this.grid.get(nx, ny) !== color) continue;
-
-          included.add(this.grid.index(nx, ny));
-        }
-      }
-    }
-
-    return [...included];
   }
 
   clearComponent(cells) {
