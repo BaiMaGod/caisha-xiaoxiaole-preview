@@ -72,8 +72,6 @@ scene.add(mesh);
 let lastSimulation = 0;
 let lastFrame = performance.now();
 
-let stableTicks = 0;
-let checkedAtRest = false;
 let lastFruitState = fruitManager.current?.state ?? null;
 let gameOver = false;
 
@@ -94,8 +92,6 @@ function restartGame() {
   hud.reset();
 
   gameOver = false;
-  stableTicks = 0;
-  checkedAtRest = false;
   lastFruitState = fruitManager.current?.state ?? null;
 
   const now = performance.now();
@@ -106,6 +102,13 @@ function restartGame() {
 }
 
 hud.setRestartHandler(restartGame);
+
+function canResolveConnectivity(fruitState) {
+  // During IMPACT/BREAKING the fruit is still writing grains into SandGrid.
+  // Once that write is finished, connectivity should be checked every physics
+  // tick instead of waiting for the whole board to become completely still.
+  return fruitState !== 'IMPACT' && fruitState !== 'BREAKING';
+}
 
 function loop(time) {
   requestAnimationFrame(loop);
@@ -118,13 +121,8 @@ function loop(time) {
 
     const fruitState = fruitManager.current?.state ?? null;
 
-    if (fruitState !== lastFruitState) {
-      stableTicks = 0;
-      checkedAtRest = false;
-
-      if (fruitState === 'FALLING') {
-        clearSystem.resetCombo();
-      }
+    if (fruitState !== lastFruitState && fruitState === 'FALLING') {
+      clearSystem.resetCombo();
     }
 
     lastFruitState = fruitState;
@@ -136,34 +134,14 @@ function loop(time) {
     if (!gameOver && time - lastSimulation >= CONFIG.UPDATE_INTERVAL) {
       simulation.update();
 
+      // Top-line death is intentionally resolved before clearing:
+      // touching the death line is an immediate loss.
       if (rules.checkDeathLine()) {
         triggerGameOver();
       }
 
-      if (!gameOver) {
-        if (simulation.movedCount === 0) {
-          stableTicks++;
-        } else {
-          stableTicks = 0;
-          checkedAtRest = false;
-        }
-
-        if (
-          stableTicks >= 4 &&
-          !checkedAtRest &&
-          fruitState !== 'FALLING' &&
-          fruitState !== 'IMPACT' &&
-          fruitState !== 'BREAKING'
-        ) {
-          const cleared = clearSystem.resolve();
-
-          if (cleared > 0) {
-            stableTicks = 0;
-            checkedAtRest = false;
-          } else {
-            checkedAtRest = true;
-          }
-        }
+      if (!gameOver && canResolveConnectivity(fruitState)) {
+        clearSystem.resolve();
       }
 
       lastSimulation = time;
