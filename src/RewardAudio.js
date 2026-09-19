@@ -1,8 +1,32 @@
-const RATING_NOTES = {
-  GOOD: [523.25, 659.25],
-  GREAT: [523.25, 659.25, 783.99],
-  PERFECT: [587.33, 739.99, 880.0, 1174.66],
-  UNBELIEVABLE: [659.25, 783.99, 987.77, 1318.51, 1567.98]
+const RATING_STYLES = {
+  GOOD: {
+    notes: [659.25, 783.99, 987.77],
+    gaps: [0, 0.075, 0.155],
+    voiceRate: 1.08,
+    detune: 120,
+    sparkle: 1567.98
+  },
+  GREAT: {
+    notes: [659.25, 830.61, 987.77, 1318.51],
+    gaps: [0, 0.065, 0.135, 0.215],
+    voiceRate: 1.1,
+    detune: 165,
+    sparkle: 1760
+  },
+  PERFECT: {
+    notes: [698.46, 880, 1046.5, 1318.51, 1567.98],
+    gaps: [0, 0.06, 0.125, 0.195, 0.275],
+    voiceRate: 1.12,
+    detune: 205,
+    sparkle: 2093
+  },
+  UNBELIEVABLE: {
+    notes: [783.99, 987.77, 1174.66, 1567.98, 1975.53, 2349.32],
+    gaps: [0, 0.055, 0.115, 0.18, 0.255, 0.345],
+    voiceRate: 1.14,
+    detune: 250,
+    sparkle: 2637.02
+  }
 };
 
 const VOICE_CLIPS = {
@@ -16,12 +40,17 @@ export function getRewardVoicePath(rating) {
   return VOICE_CLIPS[rating] ?? VOICE_CLIPS.GOOD;
 }
 
+export function getRewardSoundStyle(rating) {
+  return RATING_STYLES[rating] ?? RATING_STYLES.GOOD;
+}
+
 export class RewardAudio {
   constructor(element) {
     this.context = null;
     this.voiceBuffers = new Map();
     this.voiceLoadPromise = null;
     this.activeVoiceSources = new Set();
+    this.activeOscillators = new Set();
 
     this.ensureContext();
     this.preloadVoices();
@@ -83,12 +112,10 @@ export class RewardAudio {
 
     context.resume?.();
 
-    // Both start from the same reward frame. The chime is immediate, while
-    // the local voice clip is already decoded in memory in normal gameplay.
-    const chimeDone = this.playChime(rating, intensity);
-    const voiceDone = this.playVoice(rating);
+    const cuteFxDone = this.playCuteArcadeFx(rating, intensity);
+    const voiceDone = this.playCuteVoice(rating);
 
-    return Promise.all([chimeDone, voiceDone]);
+    return Promise.all([cuteFxDone, voiceDone]);
   }
 
   stop() {
@@ -100,15 +127,26 @@ export class RewardAudio {
       }
     }
 
+    for (const oscillator of this.activeOscillators) {
+      try {
+        oscillator.stop();
+      } catch {
+        // Already stopped.
+      }
+    }
+
     this.activeVoiceSources.clear();
+    this.activeOscillators.clear();
   }
 
-  playVoice(rating) {
+  playCuteVoice(rating) {
     const context = this.ensureContext();
 
     if (!context) {
       return Promise.resolve();
     }
+
+    const style = getRewardSoundStyle(rating);
 
     const startBuffer = () => {
       const buffer =
@@ -121,13 +159,25 @@ export class RewardAudio {
 
       return new Promise((resolve) => {
         const source = context.createBufferSource();
-        const gain = context.createGain();
+        const voiceGain = context.createGain();
+        const filter = context.createBiquadFilter();
 
         source.buffer = buffer;
-        gain.gain.value = 1;
+        source.playbackRate.value = style.voiceRate;
 
-        source.connect(gain);
-        gain.connect(context.destination);
+        if ('detune' in source) {
+          source.detune.value = style.detune;
+        }
+
+        filter.type = 'highshelf';
+        filter.frequency.value = 2500;
+        filter.gain.value = 2.5;
+
+        voiceGain.gain.value = 0.72;
+
+        source.connect(filter);
+        filter.connect(voiceGain);
+        voiceGain.connect(context.destination);
 
         this.activeVoiceSources.add(source);
 
@@ -136,7 +186,7 @@ export class RewardAudio {
           resolve();
         };
 
-        // No scheduled offset and no TTS engine: voice begins immediately.
+        // Still starts on the exact frame that the final star completes.
         source.start(0);
       });
     };
@@ -148,41 +198,110 @@ export class RewardAudio {
     return Promise.resolve(this.preloadVoices()).then(startBuffer);
   }
 
-  playChime(rating, intensity) {
+  playCuteArcadeFx(rating, intensity) {
     const context = this.ensureContext();
 
     if (!context) {
       return Promise.resolve();
     }
 
-    const notes = RATING_NOTES[rating] ?? RATING_NOTES.GOOD;
+    const style = getRewardSoundStyle(rating);
     const now = context.currentTime;
-    const gainScale = Math.min(1, 0.58 + intensity * 0.1);
+    const scale = Math.min(1.15, 0.78 + intensity * 0.08);
 
-    notes.forEach((frequency, index) => {
-      const start = now + index * 0.065;
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
+    // Soft "pop" at the exact reward moment.
+    this.scheduleTone({
+      start: now,
+      frequency: 330,
+      endFrequency: 520,
+      duration: 0.11,
+      peak: 0.12 * scale,
+      type: 'sine'
+    });
 
-      oscillator.type = index % 2 === 0 ? 'sine' : 'triangle';
-      oscillator.frequency.setValueAtTime(frequency, start);
+    // Rising, bouncy notes make the reward feel playful instead of formal.
+    style.notes.forEach((frequency, index) => {
+      this.scheduleTone({
+        start: now + style.gaps[index],
+        frequency,
+        endFrequency: frequency * 1.045,
+        duration: 0.19,
+        peak: (0.085 + index * 0.008) * scale,
+        type: index % 2 === 0 ? 'sine' : 'triangle'
+      });
+    });
 
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.18 * gainScale, start + 0.012);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
+    const sparkleStart =
+      now + style.gaps[style.gaps.length - 1] + 0.085;
 
-      oscillator.connect(gain);
-      gain.connect(context.destination);
+    this.scheduleTone({
+      start: sparkleStart,
+      frequency: style.sparkle,
+      endFrequency: style.sparkle * 1.18,
+      duration: 0.16,
+      peak: 0.075 * scale,
+      type: 'sine'
+    });
 
-      oscillator.start(start);
-      oscillator.stop(start + 0.23);
+    this.scheduleTone({
+      start: sparkleStart + 0.045,
+      frequency: style.sparkle * 1.5,
+      endFrequency: style.sparkle * 1.62,
+      duration: 0.12,
+      peak: 0.045 * scale,
+      type: 'sine'
     });
 
     const durationMs =
-      Math.ceil(((notes.length - 1) * 0.065 + 0.23) * 1000) + 30;
+      Math.ceil(
+        (style.gaps[style.gaps.length - 1] + 0.32) * 1000
+      );
 
     return new Promise((resolve) => {
       setTimeout(resolve, durationMs);
     });
+  }
+
+  scheduleTone({
+    start,
+    frequency,
+    endFrequency,
+    duration,
+    peak,
+    type
+  }) {
+    const context = this.ensureContext();
+    if (!context) return;
+
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, start);
+    oscillator.frequency.exponentialRampToValueAtTime(
+      Math.max(20, endFrequency),
+      start + duration
+    );
+
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(
+      Math.max(0.0002, peak),
+      start + 0.012
+    );
+    gain.gain.exponentialRampToValueAtTime(
+      0.0001,
+      start + duration
+    );
+
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+
+    this.activeOscillators.add(oscillator);
+    oscillator.onended = () => {
+      this.activeOscillators.delete(oscillator);
+    };
+
+    oscillator.start(start);
+    oscillator.stop(start + duration + 0.01);
   }
 }
