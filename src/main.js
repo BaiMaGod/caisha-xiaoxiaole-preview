@@ -8,6 +8,7 @@ import { GameHUD } from './GameHUD.js';
 import { GameRules } from './GameRules.js';
 import { ClearEffectManager, getClearRating } from './ClearEffectManager.js';
 import { RewardAudio } from './RewardAudio.js';
+import { SettlementGate } from './SettlementGate.js';
 import { FruitManager } from './fruit/FruitManager.js';
 import { FruitController } from './fruit/FruitController.js';
 import { CONFIG } from './config.js';
@@ -54,6 +55,7 @@ const rules = new GameRules(grid);
 const hud = new GameHUD(gameShell);
 const clearEffects = new ClearEffectManager(gameShell, grid);
 const rewardAudio = new RewardAudio(gameShell);
+const settlementGate = new SettlementGate(3);
 
 new FruitController(renderer.domElement, fruitManager, grid, {
   onRelease: () => hud.notifyDropReleased()
@@ -108,6 +110,7 @@ function restartGame() {
   hud.reset();
   clearEffects.clear();
   rewardAudio.stop();
+  settlementGate.reset();
 
   gameOver = false;
   lastFruitState = fruitManager.current?.state ?? null;
@@ -141,12 +144,18 @@ function loop(time) {
       // play one after another instead of visually overlapping.
       lastSimulation = time;
     } else {
+      const previousFruitState = lastFruitState;
+
       fruitManager.update(deltaMs);
 
       const fruitState = fruitManager.current?.state ?? null;
 
-      if (fruitState !== lastFruitState && fruitState === 'FALLING') {
+      if (fruitState !== previousFruitState && fruitState === 'FALLING') {
         clearSystem.resetCombo();
+      }
+
+      if (previousFruitState === 'BREAKING' && fruitState === null) {
+        settlementGate.begin();
       }
 
       lastFruitState = fruitState;
@@ -156,25 +165,25 @@ function loop(time) {
       }
 
       if (!gameOver && time - lastSimulation >= CONFIG.UPDATE_INTERVAL) {
+        const settling = settlementGate.isBlocking();
         let clearedBeforePhysics = 0;
 
-        // Check the grid before the first physics substep. Otherwise a bridge
-        // that already exists at the end of the previous frame can shed a few
-        // grains in substep 1 before BFS gets a chance to see the full component.
-        if (canResolveConnectivity(fruitState)) {
+        if (!settling && canResolveConnectivity(fruitState)) {
           clearedBeforePhysics = clearSystem.resolve();
         }
 
         if (clearedBeforePhysics === 0 && !gameOver) {
           simulation.update(() => {
-            // Keep checking after every substep too, so newly formed bridges
-            // clear immediately and later substeps cannot tear them apart.
             if (rules.checkDeathLine()) {
               triggerGameOver();
               return false;
             }
 
-            if (!gameOver && canResolveConnectivity(fruitState)) {
+            if (
+              !gameOver &&
+              !settlementGate.isBlocking() &&
+              canResolveConnectivity(fruitState)
+            ) {
               const cleared = clearSystem.resolve();
 
               if (cleared > 0) {
@@ -184,6 +193,20 @@ function loop(time) {
 
             return !gameOver;
           });
+
+          // A freshly sandified fruit must finish falling before it can trigger
+          // a clear. Three consecutive motionless physics ticks are required.
+          if (settlementGate.isBlocking()) {
+            const justSettled = settlementGate.observe(simulation.movedCount);
+
+            if (
+              justSettled &&
+              !gameOver &&
+              canResolveConnectivity(fruitState)
+            ) {
+              clearSystem.resolve();
+            }
+          }
         }
 
         lastSimulation = time;
