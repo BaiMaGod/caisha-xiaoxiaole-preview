@@ -58,7 +58,26 @@ export function getSequentialStarProgresses(elapsedMs, starCount) {
   return progresses;
 }
 
-function buildStarGrains(radius, rotation, seed) {
+function pointInPolygon(x, y, vertices) {
+  let inside = false;
+
+  for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+    const xi = vertices[i].x;
+    const yi = vertices[i].y;
+    const xj = vertices[j].x;
+    const yj = vertices[j].y;
+
+    const intersects =
+      ((yi > y) !== (yj > y)) &&
+      (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi);
+
+    if (intersects) inside = !inside;
+  }
+
+  return inside;
+}
+
+export function buildStarGrains(radius, rotation, seed) {
   const vertices = [];
 
   for (let i = 0; i < 10; i++) {
@@ -72,25 +91,24 @@ function buildStarGrains(radius, rotation, seed) {
   }
 
   const grains = [];
+  const spacing = 1.75;
   let grainIndex = 0;
 
-  for (let edge = 0; edge < vertices.length; edge++) {
-    const a = vertices[edge];
-    const b = vertices[(edge + 1) % vertices.length];
-    const grainsPerEdge = 7;
+  for (let y = -radius; y <= radius; y += spacing) {
+    for (let x = -radius; x <= radius; x += spacing) {
+      if (!pointInPolygon(x, y, vertices)) continue;
 
-    for (let i = 0; i < grainsPerEdge; i++) {
-      const t = i / grainsPerEdge;
-      const hash =
-        ((seed + (grainIndex + 1) * 2654435761) >>> 0);
+      const hash = ((seed + (grainIndex + 1) * 2654435761) >>> 0);
+      const jitterX = (((hash >>> 3) % 101) / 100 - 0.5) * 0.8;
+      const jitterY = (((hash >>> 10) % 101) / 100 - 0.5) * 0.8;
 
       grains.push({
-        x: a.x + (b.x - a.x) * t,
-        y: a.y + (b.y - a.y) * t,
-        delay: (hash % 22) / 100,
-        cloudX: ((hash >>> 5) % 19) - 9,
-        cloudY: ((hash >>> 11) % 19) - 9,
-        radius: 1.05 + ((hash >>> 17) % 45) / 100
+        x: x + jitterX,
+        y: y + jitterY,
+        delay: (hash % 28) / 100,
+        cloudX: ((hash >>> 5) % 25) - 12,
+        cloudY: ((hash >>> 11) % 25) - 12,
+        radius: 0.78 + ((hash >>> 17) % 48) / 100
       });
 
       grainIndex++;
