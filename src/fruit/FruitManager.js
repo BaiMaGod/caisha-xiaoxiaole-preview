@@ -152,6 +152,33 @@ export class FruitManager {
     return wasControllable && this.current.state === 'FALLING';
   }
 
+  startFastDrop() {
+    if (!this.enabled || !this.current) {
+      return { active: false, released: false };
+    }
+
+    const wasControllable = this.current.state === 'CONTROL';
+
+    if (wasControllable) {
+      this.current.release();
+    }
+
+    if (this.current.state !== 'FALLING') {
+      return { active: false, released: false };
+    }
+
+    this.current.setFastDrop(true);
+
+    return {
+      active: true,
+      released: wasControllable
+    };
+  }
+
+  stopFastDrop() {
+    this.current?.setFastDrop(false);
+  }
+
   setEnabled(enabled) {
     this.enabled = enabled;
   }
