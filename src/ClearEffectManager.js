@@ -17,6 +17,13 @@ export const CLEAR_EFFECT_TOTAL_MS =
 const SCORE_BOUNCE_MS = 105;
 export const CLEAR_RANDOM_AHEAD_COLUMNS = 4;
 
+// Normal settled sand intentionally has tiny gaps for texture. During the
+// random jump-clear phase those gaps read as a checkerboard once neighboring
+// grains disappear, so remaining grains use a gapless, slightly overlapped
+// footprint while keeping the exact same per-grain RGB.
+export const CLEAR_JUMP_PARTICLE_INSET = -0.03;
+export const CLEAR_JUMP_PARTICLE_SIZE = 1.06;
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -420,6 +427,27 @@ export class ClearEffectManager {
     );
   }
 
+  drawJumpParticle(particle) {
+    const cellW = this.cssWidth / this.grid.width;
+    const cellH = this.cssHeight / this.grid.height;
+    const rgb = getParticleRgb(
+      particle.gridX,
+      particle.gridY,
+      particle.color,
+      0
+    );
+
+    if (!rgb) return;
+
+    this.ctx.fillStyle = rgbToCss(rgb, 1);
+    this.ctx.fillRect(
+      (particle.gridX + CLEAR_JUMP_PARTICLE_INSET) * cellW,
+      (particle.gridY + CLEAR_JUMP_PARTICLE_INSET) * cellH,
+      CLEAR_JUMP_PARTICLE_SIZE * cellW,
+      CLEAR_JUMP_PARTICLE_SIZE * cellH
+    );
+  }
+
   drawHighlightFlash(progress) {
     const cellW = this.cssWidth / this.grid.width;
     const cellH = this.cssHeight / this.grid.height;
@@ -482,11 +510,10 @@ export class ClearEffectManager {
         continue;
       }
 
-      // Particles stay 100% opaque and keep their exact settled-sand look
-      // until their deterministic random threshold is crossed. Then they
-      // disappear in one step, giving the clear a granular "sand breaking"
-      // texture instead of a translucent layer fade.
-      this.drawSettledParticle(particle, 1);
+      // Keep the exact per-grain RGB, but remove the normal settled-sand
+      // spacing during the jump-clear phase. Otherwise the 0.16-cell gaps
+      // become visible as a regular grid when neighboring grains disappear.
+      this.drawJumpParticle(particle);
     }
 
     this.ctx.restore();
