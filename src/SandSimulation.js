@@ -20,39 +20,62 @@ export class SandSimulation {
 
   update() {
     this.movedCount = 0;
-    this.flip = !this.flip;
+
+    const substeps = Math.max(1, CONFIG.SAND_SUBSTEPS || 1);
+
+    for (let i = 0; i < substeps; i++) {
+      if (!this.stepOnce()) break;
+    }
+  }
+
+  stepOnce() {
+    const leftToRight = Math.random() < 0.5;
+    this.flip = leftToRight;
 
     if (this.fullUpdate) {
-      this.updateArea(0, this.grid.width - 1, 0, this.grid.height - 2);
+      this.updateArea(
+        0,
+        this.grid.width - 1,
+        0,
+        this.grid.height - 2,
+        leftToRight
+      );
       this.fullUpdate = false;
     } else if (!this.currentRegion.isEmpty()) {
       this.updateArea(
         this.currentRegion.minX,
         this.currentRegion.maxX,
         this.currentRegion.minY,
-        this.currentRegion.maxY
+        this.currentRegion.maxY,
+        leftToRight
       );
     } else {
-      return;
+      return false;
     }
 
     const finishedRegion = this.currentRegion;
     this.currentRegion = this.nextRegion;
     this.nextRegion = finishedRegion;
     this.nextRegion.clear();
+
+    return true;
   }
 
-  updateArea(minX, maxX, minY, maxY) {
+  updateArea(minX, maxX, minY, maxY, leftToRight) {
     minX = Math.max(0, minX);
     maxX = Math.min(this.grid.width - 1, maxX);
     minY = Math.max(0, minY);
     maxY = Math.min(this.grid.height - 2, maxY);
 
     for (let y = maxY; y >= minY; y--) {
-      if (this.flip) {
-        for (let x = minX; x <= maxX; x++) this.updateCell(x, y);
+      if (leftToRight) {
+        for (let x = minX; x <= maxX; x++) {
+          this.updateCell(x, y);
+        }
       } else {
-        for (let x = maxX; x >= minX; x--) this.updateCell(x, y);
+        for (let x = maxX; x >= minX; x--) {
+          this.updateCell(x, y);
+        }
       }
     }
   }
@@ -74,11 +97,15 @@ export class SandSimulation {
       return;
     }
 
-    const directions = this.flip ? [-1, 1] : [1, -1];
+    if (Math.random() <= CONFIG.FRICTION) {
+      this.sleepFrames[index] = Math.min(255, this.sleepFrames[index] + 1);
+      return;
+    }
+
+    const directions = Math.random() < 0.5 ? [-1, 1] : [1, -1];
 
     for (const dir of directions) {
       if (!this.grid.empty(x + dir, y + 1)) continue;
-      if (Math.random() <= CONFIG.FRICTION) continue;
 
       this.move(x, y, x + dir, y + 1);
       return;
