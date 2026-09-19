@@ -5,207 +5,184 @@ const RATING_NOTES = {
   UNBELIEVABLE: [659.25, 783.99, 987.77, 1318.51, 1567.98]
 };
 
+const VOICE_CLIPS = {
+  GOOD: 'audio/reward-good.mp3',
+  GREAT: 'audio/reward-great.mp3',
+  PERFECT: 'audio/reward-perfect.mp3',
+  UNBELIEVABLE: 'audio/reward-unbelievable.mp3'
+};
+
+export function getRewardVoicePath(rating) {
+  return VOICE_CLIPS[rating] ?? VOICE_CLIPS.GOOD;
+}
+
 export class RewardAudio {
   constructor(element) {
     this.context = null;
-    this.unlocked = false;
-    this.voice = null;
-    this.speechWarmed = false;
+    this.voiceBuffers = new Map();
+    this.voiceLoadPromise = null;
+    this.activeVoiceSources = new Set();
+
+    this.ensureContext();
+    this.preloadVoices();
 
     const unlock = () => this.unlock();
     element.addEventListener('pointerdown', unlock, { passive: true });
     element.addEventListener('touchstart', unlock, { passive: true });
+  }
 
-    this.loadVoice();
+  ensureContext() {
+    if (this.context) return this.context;
+
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return null;
+
+    this.context = new AudioContextClass();
+    return this.context;
   }
 
   unlock() {
-    if (!this.context) {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (AudioContextClass) {
-        this.context = new AudioContextClass();
-      }
-    }
-
-    this.context?.resume?.();
-    this.unlocked = true;
-
-    // Warm the OS/browser TTS engine during the user's first gesture instead
-    // of waiting until the reward animation has already finished.
-    this.warmSpeech();
+    const context = this.ensureContext();
+    context?.resume?.();
+    this.preloadVoices();
   }
 
-  loadVoice() {
-    if (
-      !('speechSynthesis' in window) ||
-      typeof SpeechSynthesisUtterance === 'undefined'
-    ) {
-      return;
+  preloadVoices() {
+    const context = this.ensureContext();
+
+    if (!context || this.voiceLoadPromise) {
+      return this.voiceLoadPromise;
     }
 
-    const synth = window.speechSynthesis;
+    this.voiceLoadPromise = Promise.all(
+      Object.entries(VOICE_CLIPS).map(async ([rating, relativePath]) => {
+        const url = `${import.meta.env.BASE_URL}${relativePath}`;
+        const response = await fetch(url);
 
-    const pickVoice = () => {
-      const voices = synth.getVoices?.() ?? [];
+        if (!response.ok) {
+          throw new Error(`Failed to load reward voice: ${url}`);
+        }
 
-      this.voice =
-        voices.find((voice) => /^en-US$/i.test(voice.lang)) ??
-        voices.find((voice) => /^en[-_]/i.test(voice.lang)) ??
-        voices[0] ??
-        null;
-    };
+        const bytes = await response.arrayBuffer();
+        const buffer = await context.decodeAudioData(bytes.slice(0));
+        this.voiceBuffers.set(rating, buffer);
+      })
+    ).catch((error) => {
+      console.warn('Reward voice preload failed', error);
+    });
 
-    pickVoice();
-
-    if (typeof synth.addEventListener === 'function') {
-      synth.addEventListener('voiceschanged', pickVoice);
-    } else if ('onvoiceschanged' in synth) {
-      synth.onvoiceschanged = pickVoice;
-    }
-  }
-
-  warmSpeech() {
-    if (
-      this.speechWarmed ||
-      !('speechSynthesis' in window) ||
-      typeof SpeechSynthesisUtterance === 'undefined'
-    ) {
-      return;
-    }
-
-    const synth = window.speechSynthesis;
-    this.loadVoice();
-
-    const warmup = new SpeechSynthesisUtterance('.');
-    warmup.lang = 'en-US';
-    warmup.volume = 0;
-    warmup.rate = 10;
-
-    if (this.voice) {
-      warmup.voice = this.voice;
-    }
-
-    this.speechWarmed = true;
-    synth.speak(warmup);
+    return this.voiceLoadPromise;
   }
 
   play(rating, intensity = 1) {
-    // Both are triggered synchronously in the same call made by the final
-    // star-formation frame. The chime guarantees immediate audible feedback;
-    // warmed TTS follows without the old cancel/restart delay.
-    const chimeDone = this.playChime(rating, intensity);
-    const speechDone = this.speakRating(rating);
+    const context = this.ensureContext();
 
-    return Promise.all([chimeDone, speechDone]);
-  }
-
-  stop() {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-  }
-
-  playChime(rating, intensity) {
-    if (!this.context) {
-      this.unlock();
-    }
-
-    if (!this.context) {
+    if (!context) {
       return Promise.resolve();
     }
 
-    this.context.resume?.();
+    context.resume?.();
+
+    // Both start from the same reward frame. The chime is immediate, while
+    // the local voice clip is already decoded in memory in normal gameplay.
+    const chimeDone = this.playChime(rating, intensity);
+    const voiceDone = this.playVoice(rating);
+
+    return Promise.all([chimeDone, voiceDone]);
+  }
+
+  stop() {
+    for (const source of this.activeVoiceSources) {
+      try {
+        source.stop();
+      } catch {
+        // Already stopped.
+      }
+    }
+
+    this.activeVoiceSources.clear();
+  }
+
+  playVoice(rating) {
+    const context = this.ensureContext();
+
+    if (!context) {
+      return Promise.resolve();
+    }
+
+    const startBuffer = () => {
+      const buffer =
+        this.voiceBuffers.get(rating) ??
+        this.voiceBuffers.get('GOOD');
+
+      if (!buffer) {
+        return Promise.resolve();
+      }
+
+      return new Promise((resolve) => {
+        const source = context.createBufferSource();
+        const gain = context.createGain();
+
+        source.buffer = buffer;
+        gain.gain.value = 1;
+
+        source.connect(gain);
+        gain.connect(context.destination);
+
+        this.activeVoiceSources.add(source);
+
+        source.onended = () => {
+          this.activeVoiceSources.delete(source);
+          resolve();
+        };
+
+        // No scheduled offset and no TTS engine: voice begins immediately.
+        source.start(0);
+      });
+    };
+
+    if (this.voiceBuffers.has(rating)) {
+      return startBuffer();
+    }
+
+    return Promise.resolve(this.preloadVoices()).then(startBuffer);
+  }
+
+  playChime(rating, intensity) {
+    const context = this.ensureContext();
+
+    if (!context) {
+      return Promise.resolve();
+    }
 
     const notes = RATING_NOTES[rating] ?? RATING_NOTES.GOOD;
-    const now = this.context.currentTime;
-    const gainScale = Math.min(1, 0.42 + intensity * 0.08);
+    const now = context.currentTime;
+    const gainScale = Math.min(1, 0.58 + intensity * 0.1);
 
     notes.forEach((frequency, index) => {
-      const start = now + index * 0.075;
-      const oscillator = this.context.createOscillator();
-      const gain = this.context.createGain();
+      const start = now + index * 0.065;
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
 
       oscillator.type = index % 2 === 0 ? 'sine' : 'triangle';
       oscillator.frequency.setValueAtTime(frequency, start);
 
       gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.12 * gainScale, start + 0.018);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.23);
+      gain.gain.exponentialRampToValueAtTime(0.18 * gainScale, start + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
 
       oscillator.connect(gain);
-      gain.connect(this.context.destination);
+      gain.connect(context.destination);
 
       oscillator.start(start);
-      oscillator.stop(start + 0.24);
+      oscillator.stop(start + 0.23);
     });
 
     const durationMs =
-      Math.ceil(((notes.length - 1) * 0.075 + 0.24) * 1000) + 40;
+      Math.ceil(((notes.length - 1) * 0.065 + 0.23) * 1000) + 30;
 
     return new Promise((resolve) => {
       setTimeout(resolve, durationMs);
-    });
-  }
-
-  speakRating(rating) {
-    if (
-      !('speechSynthesis' in window) ||
-      typeof SpeechSynthesisUtterance === 'undefined'
-    ) {
-      return Promise.resolve();
-    }
-
-    const synth = window.speechSynthesis;
-    this.loadVoice();
-
-    const phrase =
-      rating === 'UNBELIEVABLE'
-        ? 'Unbelievable!'
-        : rating.charAt(0) + rating.slice(1).toLowerCase() + '!';
-
-    return new Promise((resolve) => {
-      const utterance = new SpeechSynthesisUtterance(phrase);
-      let settled = false;
-
-      const finish = () => {
-        if (settled) return;
-        settled = true;
-        resolve();
-      };
-
-      utterance.lang = 'en-US';
-      utterance.rate = rating === 'UNBELIEVABLE' ? 1.05 : 1.12;
-      utterance.pitch =
-        rating === 'PERFECT' || rating === 'UNBELIEVABLE'
-          ? 1.25
-          : 1.12;
-      utterance.volume = 0.9;
-      utterance.onend = finish;
-      utterance.onerror = finish;
-
-      if (this.voice) {
-        utterance.voice = this.voice;
-      }
-
-      // Important: do not call cancel() here. Canceling immediately before
-      // speak() makes some Chrome/Edge builds reinitialize TTS and introduces
-      // the multi-second delay seen after the stars have already formed.
-      synth.speak(utterance);
-
-      // Safety only for broken engines that never dispatch onend/onerror.
-      // This does not delay speech start and only affects when stars may fade.
-      const watchdog = () => {
-        if (settled) return;
-
-        if (!synth.speaking && !synth.pending) {
-          finish();
-          return;
-        }
-
-        setTimeout(watchdog, 250);
-      };
-
-      setTimeout(watchdog, 4000);
     });
   }
 }
