@@ -46,8 +46,10 @@ const simulation = new SandSimulation(grid);
 const sandRenderer = new SandRenderer(grid);
 const stats = new SandStats(simulation);
 
-const fruitManager = new FruitManager(grid, simulation);
 const clearSystem = new ConnectivityClear(grid, simulation);
+const fruitManager = new FruitManager(grid, simulation, {
+  getScore: () => clearSystem.score
+});
 const rules = new GameRules(grid);
 const hud = new GameHUD(gameShell);
 const clearEffects = new ClearEffectManager(gameShell, grid);
