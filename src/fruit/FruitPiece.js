@@ -129,16 +129,43 @@ export class FruitPiece {
   }
 
   buildDissolveOrder() {
-    const centerX = (this.template.width - 1) / 2;
+    const occupied = new Set(
+      this.template.cells.map((cell) => `${cell.x},${cell.y}`)
+    );
+
+    const neighbors = [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1]
+    ];
 
     return this.template.cells
       .map((cell, index) => {
-        const edgeDistance = Math.abs(cell.x - centerX);
-        const hash = ((cell.x * 73856093) ^ (cell.y * 19349663)) >>> 0;
-        const jitter = (hash % 100) / 100;
+        const hash =
+          ((cell.x * 73856093) ^
+            (cell.y * 19349663) ^
+            ((index + 1) * 83492791)) >>> 0;
 
-        // Bottom grains crumble first; outer grains get a small priority.
-        const score = cell.y * 100 + edgeDistance * 4 + jitter;
+        const noise = (hash % 10000) / 10000;
+
+        let exposedSides = 0;
+
+        for (const [dx, dy] of neighbors) {
+          if (!occupied.has(`${cell.x + dx},${cell.y + dy}`)) {
+            exposedSides++;
+          }
+        }
+
+        const edgeBias = exposedSides / 4;
+        const bottomBias = cell.y / Math.max(1, this.template.height - 1);
+
+        // Randomized crumble is intentionally dominant so the fruit breaks
+        // across many rows at once instead of peeling away in horizontal layers.
+        const score =
+          noise * 0.72 +
+          edgeBias * 0.20 +
+          bottomBias * 0.08;
 
         return { index, score };
       })
