@@ -14,14 +14,8 @@ export const CLEAR_FADE_START_MS =
 export const CLEAR_EFFECT_TOTAL_MS =
   CLEAR_FADE_START_MS + CLEAR_FADE_MS;
 
-const PARTICLE_FADE_MS = 190;
 const SCORE_BOUNCE_MS = 105;
-
-// During fade, settled-grain gaps become visually amplified by alpha blending.
-// Slightly overlap neighboring cells so the disappearing mass stays continuous
-// instead of revealing a checker/grid pattern.
-export const CLEAR_FADE_PARTICLE_INSET = -0.05;
-export const CLEAR_FADE_PARTICLE_SIZE = 1.1;
+export const CLEAR_RANDOM_AHEAD_COLUMNS = 4;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -38,42 +32,93 @@ export function getClearRating(cleared) {
   return 'GOOD';
 }
 
-export function getClearScoreCount(elapsedMs, cleared) {
-  if (cleared <= 0 || elapsedMs < CLEAR_FADE_START_MS) {
-    return 0;
-  }
+export function getParticleClearRandom(
+  gridX,
+  gridY,
+  color,
+  effectSeed = 0
+) {
+  let hash =
+    ((gridX + 1) * 73856093) ^
+    ((gridY + 1) * 19349663) ^
+    ((color + 1) * 83492791) ^
+    ((effectSeed + 1) * 2654435761);
 
-  const progress = clamp(
+  hash >>>= 0;
+  hash ^= hash >>> 16;
+  hash = Math.imul(hash, 2246822519) >>> 0;
+  hash ^= hash >>> 13;
+  hash = Math.imul(hash, 3266489917) >>> 0;
+  hash ^= hash >>> 16;
+
+  return (hash >>> 0) / 4294967296;
+}
+
+export function getClearWaveProgress(elapsedMs) {
+  return clamp(
     (elapsedMs - CLEAR_FADE_START_MS) / CLEAR_FADE_MS,
     0,
     1
   );
+}
 
-  if (progress <= 0) return 1;
+export function getClearWaveFrontX(elapsedMs, bounds) {
+  if (elapsedMs < CLEAR_FADE_START_MS) {
+    return bounds.minX - 1;
+  }
 
-  return Math.min(
-    cleared,
-    Math.max(1, Math.ceil(cleared * progress))
+  const progress = getClearWaveProgress(elapsedMs);
+
+  return (
+    bounds.minX +
+    (bounds.maxX - bounds.minX) * progress
   );
 }
 
-export function getSweepParticleAlpha(elapsedMs, normalizedX) {
-  if (elapsedMs < CLEAR_FADE_START_MS) {
-    return 1;
+export function getJumpClearProbability(distanceAheadColumns) {
+  if (distanceAheadColumns <= 0) return 1;
+
+  const band = Math.ceil(distanceAheadColumns);
+
+  if (band > CLEAR_RANDOM_AHEAD_COLUMNS) {
+    return 0;
   }
 
-  const x = clamp(normalizedX, 0, 1);
-  const fadeStart =
-    CLEAR_FADE_START_MS +
-    x * Math.max(0, CLEAR_FADE_MS - PARTICLE_FADE_MS);
+  return 0.5 ** band;
+}
 
-  const fadeProgress = clamp(
-    (elapsedMs - fadeStart) / PARTICLE_FADE_MS,
-    0,
-    1
-  );
+export function isParticleJumpCleared(
+  elapsedMs,
+  particle,
+  bounds
+) {
+  if (elapsedMs < CLEAR_FADE_START_MS) return false;
+  if (elapsedMs >= CLEAR_EFFECT_TOTAL_MS) return true;
 
-  return 1 - fadeProgress;
+  const frontX = getClearWaveFrontX(elapsedMs, bounds);
+  const distanceAhead = particle.gridX - frontX;
+  const probability = getJumpClearProbability(distanceAhead);
+
+  return particle.clearRandom < probability;
+}
+
+export function getClearedParticleCount(
+  elapsedMs,
+  particles,
+  bounds
+) {
+  if (elapsedMs < CLEAR_FADE_START_MS) return 0;
+  if (elapsedMs >= CLEAR_EFFECT_TOTAL_MS) return particles.length;
+
+  let count = 0;
+
+  for (const particle of particles) {
+    if (isParticleJumpCleared(elapsedMs, particle, bounds)) {
+      count += 1;
+    }
+  }
+
+  return count;
 }
 
 export function getScoreBounce(elapsedMs) {
@@ -171,6 +216,7 @@ export class ClearEffectManager {
     this.current = null;
     this.raf = 0;
     this.scoreLingerTimer = 0;
+    this.effectSerial = 0;
 
     this.canvas = document.createElement('canvas');
     this.canvas.style.position = 'absolute';
@@ -247,6 +293,7 @@ export class ClearEffectManager {
 
   buildEffect({ groups, cleared, combo }) {
     const particles = [];
+    const effectSeed = ++this.effectSerial;
 
     for (const group of groups) {
       for (const index of group.cells) {
@@ -256,11 +303,13 @@ export class ClearEffectManager {
         particles.push({
           gridX: x,
           gridY: y,
-          normalizedX:
-            this.grid.width <= 1
-              ? 0
-              : x / (this.grid.width - 1),
-          color: group.color
+          color: group.color,
+          clearRandom: getParticleClearRandom(
+            x,
+            y,
+            group.color,
+            effectSeed
+          )
         });
       }
     }
@@ -336,7 +385,7 @@ export class ClearEffectManager {
     } else if (elapsed < CLEAR_FADE_START_MS) {
       this.drawOriginalParticles();
     } else {
-      this.drawLeftToRightFade(elapsed);
+      this.drawLeftToRightJumpClear(elapsed);
       this.drawClearScore(elapsed);
     }
 
@@ -416,52 +465,38 @@ export class ClearEffectManager {
     this.ctx.restore();
   }
 
-  drawLeftToRightFade(elapsed) {
-    const cellW = this.cssWidth / this.grid.width;
-    const cellH = this.cssHeight / this.grid.height;
-
+  drawLeftToRightJumpClear(elapsed) {
     this.ctx.save();
     this.ctx.globalCompositeOperation = 'source-over';
     this.ctx.shadowColor = 'transparent';
     this.ctx.shadowBlur = 0;
-    this.ctx.imageSmoothingEnabled = false;
 
     for (const particle of this.current.particles) {
-      const alpha = getSweepParticleAlpha(
-        elapsed,
-        particle.normalizedX
-      );
+      if (
+        isParticleJumpCleared(
+          elapsed,
+          particle,
+          this.current.bounds
+        )
+      ) {
+        continue;
+      }
 
-      if (alpha <= 0) continue;
-
-      const rgb = getParticleRgb(
-        particle.gridX,
-        particle.gridY,
-        particle.color,
-        0
-      );
-
-      if (!rgb) continue;
-
-      // Keep every grain's exact original RGB, but remove the normal 0.16-cell
-      // visual gap while fading. A tiny overlap prevents subpixel seams from
-      // turning into a visible grid on scaled/mobile canvases.
-      this.ctx.fillStyle = rgbToCss(rgb, alpha);
-      this.ctx.fillRect(
-        (particle.gridX + CLEAR_FADE_PARTICLE_INSET) * cellW,
-        (particle.gridY + CLEAR_FADE_PARTICLE_INSET) * cellH,
-        CLEAR_FADE_PARTICLE_SIZE * cellW,
-        CLEAR_FADE_PARTICLE_SIZE * cellH
-      );
+      // Particles stay 100% opaque and keep their exact settled-sand look
+      // until their deterministic random threshold is crossed. Then they
+      // disappear in one step, giving the clear a granular "sand breaking"
+      // texture instead of a translucent layer fade.
+      this.drawSettledParticle(particle, 1);
     }
 
     this.ctx.restore();
   }
 
   drawClearScore(elapsed) {
-    const value = getClearScoreCount(
+    const value = getClearedParticleCount(
       elapsed,
-      this.current.cleared
+      this.current.particles,
+      this.current.bounds
     );
 
     if (value <= 0) return;
