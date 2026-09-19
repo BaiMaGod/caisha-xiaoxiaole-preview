@@ -17,6 +17,12 @@ export const CLEAR_EFFECT_TOTAL_MS =
 const PARTICLE_FADE_MS = 190;
 const SCORE_BOUNCE_MS = 105;
 
+// During fade, settled-grain gaps become visually amplified by alpha blending.
+// Slightly overlap neighboring cells so the disappearing mass stays continuous
+// instead of revealing a checker/grid pattern.
+export const CLEAR_FADE_PARTICLE_INSET = -0.05;
+export const CLEAR_FADE_PARTICLE_SIZE = 1.1;
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -192,6 +198,7 @@ export class ClearEffectManager {
     this.canvas.width = Math.round(this.cssWidth * dpr);
     this.canvas.height = Math.round(this.cssHeight * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.ctx.imageSmoothingEnabled = false;
   }
 
   isBusy() {
@@ -410,10 +417,14 @@ export class ClearEffectManager {
   }
 
   drawLeftToRightFade(elapsed) {
+    const cellW = this.cssWidth / this.grid.width;
+    const cellH = this.cssHeight / this.grid.height;
+
     this.ctx.save();
     this.ctx.globalCompositeOperation = 'source-over';
     this.ctx.shadowColor = 'transparent';
     this.ctx.shadowBlur = 0;
+    this.ctx.imageSmoothingEnabled = false;
 
     for (const particle of this.current.particles) {
       const alpha = getSweepParticleAlpha(
@@ -423,9 +434,25 @@ export class ClearEffectManager {
 
       if (alpha <= 0) continue;
 
-      // Same RGB, same 0.84 settled-grain size, same 0.08 inset as the
-      // normal SandRenderer. Only opacity changes during disappearance.
-      this.drawSettledParticle(particle, alpha);
+      const rgb = getParticleRgb(
+        particle.gridX,
+        particle.gridY,
+        particle.color,
+        0
+      );
+
+      if (!rgb) continue;
+
+      // Keep every grain's exact original RGB, but remove the normal 0.16-cell
+      // visual gap while fading. A tiny overlap prevents subpixel seams from
+      // turning into a visible grid on scaled/mobile canvases.
+      this.ctx.fillStyle = rgbToCss(rgb, alpha);
+      this.ctx.fillRect(
+        (particle.gridX + CLEAR_FADE_PARTICLE_INSET) * cellW,
+        (particle.gridY + CLEAR_FADE_PARTICLE_INSET) * cellH,
+        CLEAR_FADE_PARTICLE_SIZE * cellW,
+        CLEAR_FADE_PARTICLE_SIZE * cellH
+      );
     }
 
     this.ctx.restore();
