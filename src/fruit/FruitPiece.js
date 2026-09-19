@@ -119,6 +119,7 @@ export class FruitPiece {
 
   startImpact() {
     this.state = 'IMPACT';
+    this.fastDrop = false;
     this.impactTimer = 0;
 
     this.simulation.activateRect(
