@@ -17,6 +17,7 @@ export const CONFIG = {
   // falling fruit
   // 8ms per logical row is 50% faster than the previous 12ms setting.
   FRUIT_FALL_STEP_MS: 8,
+  FRUIT_FAST_DROP_MULTIPLIER: 2,
   FRUIT_IMPACT_DURATION_MS: 90,
   FRUIT_BREAK_DURATION_MS: 300,
 
