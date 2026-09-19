@@ -3,13 +3,37 @@ import { FruitPiece } from './FruitPiece.js';
 import { APPLE_TEMPLATE } from './templates/apple.js';
 import { BANANA_TEMPLATE } from './templates/banana.js';
 
-const COLOR_COUNT = 7;
 const EXISTING_COLOR_BIAS = 0.78;
 
+const BASE_COLORS = [1, 3, 4, 6, 7];
+const CYAN_COLOR = 5;
+const ORANGE_COLOR = 2;
+
+export function getUnlockedColors(score) {
+  if (score >= 50000) {
+    return [...BASE_COLORS, CYAN_COLOR, ORANGE_COLOR];
+  }
+
+  if (score >= 20000) {
+    return [...BASE_COLORS, CYAN_COLOR];
+  }
+
+  return [...BASE_COLORS];
+}
+
 export class FruitManager {
-  constructor(grid, simulation) {
+  constructor(
+    grid,
+    simulation,
+    {
+      getScore = () => 0,
+      random = Math.random
+    } = {}
+  ) {
     this.grid = grid;
     this.simulation = simulation;
+    this.getScore = getScore;
+    this.random = random;
 
     this.templates = [
       new FruitTemplate(APPLE_TEMPLATE),
@@ -28,7 +52,7 @@ export class FruitManager {
     if (!this.enabled) return;
 
     const template =
-      this.templates[Math.floor(Math.random() * this.templates.length)];
+      this.templates[Math.floor(this.random() * this.templates.length)];
 
     this.current = new FruitPiece({
       template,
@@ -39,39 +63,58 @@ export class FruitManager {
   }
 
   pickNextColor() {
-    const counts = new Array(COLOR_COUNT).fill(0);
+    const unlockedColors = getUnlockedColors(this.getScore());
+    const unlockedSet = new Set(unlockedColors);
+    const counts = new Map();
     let occupied = 0;
 
+    for (const color of unlockedColors) {
+      counts.set(color, 0);
+    }
+
     for (const value of this.grid.cells) {
-      if (value < 1 || value > COLOR_COUNT) continue;
-      counts[value - 1]++;
+      if (!unlockedSet.has(value)) continue;
+
+      counts.set(value, counts.get(value) + 1);
       occupied++;
     }
 
-    if (occupied === 0 || Math.random() >= EXISTING_COLOR_BIAS) {
-      return 1 + Math.floor(Math.random() * COLOR_COUNT);
+    if (occupied === 0 || this.random() >= EXISTING_COLOR_BIAS) {
+      return unlockedColors[
+        Math.floor(this.random() * unlockedColors.length)
+      ];
     }
 
-    // Existing colors are preferred, but sqrt weighting prevents the
-    // biggest pile from monopolizing every future fruit.
-    const weights = counts.map((count) => (count > 0 ? Math.sqrt(count) : 0));
-    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+    const weighted = [];
+    let totalWeight = 0;
+
+    for (const color of unlockedColors) {
+      const count = counts.get(color);
+
+      if (count <= 0) continue;
+
+      const weight = Math.sqrt(count);
+      weighted.push({ color, weight });
+      totalWeight += weight;
+    }
 
     if (totalWeight <= 0) {
-      return 1 + Math.floor(Math.random() * COLOR_COUNT);
+      return unlockedColors[
+        Math.floor(this.random() * unlockedColors.length)
+      ];
     }
 
-    let roll = Math.random() * totalWeight;
+    let roll = this.random() * totalWeight;
 
-    for (let i = 0; i < weights.length; i++) {
-      roll -= weights[i];
+    for (const item of weighted) {
+      roll -= item.weight;
 
       if (roll <= 0) {
-        return i + 1;
+        return item.color;
       }
     }
 
-    return counts.findIndex((count) => count > 0) + 1;
+    return weighted[weighted.length - 1].color;
   }
 
   update(deltaMs) {
