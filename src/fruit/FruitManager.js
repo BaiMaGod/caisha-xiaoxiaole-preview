@@ -3,6 +3,9 @@ import { FruitPiece } from './FruitPiece.js';
 import { APPLE_TEMPLATE } from './templates/apple.js';
 import { BANANA_TEMPLATE } from './templates/banana.js';
 
+const COLOR_COUNT = 7;
+const EXISTING_COLOR_BIAS = 0.78;
+
 export class FruitManager {
   constructor(grid, simulation) {
     this.grid = grid;
@@ -29,10 +32,46 @@ export class FruitManager {
 
     this.current = new FruitPiece({
       template,
-      color: 1 + Math.floor(Math.random() * 7),
+      color: this.pickNextColor(),
       grid: this.grid,
       simulation: this.simulation
     });
+  }
+
+  pickNextColor() {
+    const counts = new Array(COLOR_COUNT).fill(0);
+    let occupied = 0;
+
+    for (const value of this.grid.cells) {
+      if (value < 1 || value > COLOR_COUNT) continue;
+      counts[value - 1]++;
+      occupied++;
+    }
+
+    if (occupied === 0 || Math.random() >= EXISTING_COLOR_BIAS) {
+      return 1 + Math.floor(Math.random() * COLOR_COUNT);
+    }
+
+    // Existing colors are preferred, but sqrt weighting prevents the
+    // biggest pile from monopolizing every future fruit.
+    const weights = counts.map((count) => (count > 0 ? Math.sqrt(count) : 0));
+    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+
+    if (totalWeight <= 0) {
+      return 1 + Math.floor(Math.random() * COLOR_COUNT);
+    }
+
+    let roll = Math.random() * totalWeight;
+
+    for (let i = 0; i < weights.length; i++) {
+      roll -= weights[i];
+
+      if (roll <= 0) {
+        return i + 1;
+      }
+    }
+
+    return counts.findIndex((count) => count > 0) + 1;
   }
 
   update(deltaMs) {
@@ -63,8 +102,11 @@ export class FruitManager {
   }
 
   releaseCurrent() {
-    if (!this.enabled) return;
-    this.current?.release();
+    if (!this.enabled || !this.current) return false;
+
+    const wasControllable = this.current.state === 'CONTROL';
+    this.current.release();
+    return wasControllable && this.current.state === 'FALLING';
   }
 
   setEnabled(enabled) {
