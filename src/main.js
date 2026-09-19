@@ -140,8 +140,8 @@ function loop(time) {
 
   if (!gameOver) {
     if (clearEffects.isBusy()) {
-      // Hold the board still during the one-second flash + left-to-right
-      // clear sweep so the disappearing component stays visually readable.
+      // Hold the board still while the component flashes, returns to its
+      // original color, then fades left-to-right over 1.5 seconds.
       lastSimulation = time;
     } else {
       const previousFruitState = lastFruitState;
