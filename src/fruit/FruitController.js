@@ -1,8 +1,9 @@
 export class FruitController {
-  constructor(element, fruitManager, grid) {
+  constructor(element, fruitManager, grid, { onRelease = null } = {}) {
     this.element = element;
     this.fruitManager = fruitManager;
     this.grid = grid;
+    this.onRelease = onRelease;
     this.dragging = false;
 
     element.addEventListener('pointerdown', (event) => {
@@ -18,9 +19,15 @@ export class FruitController {
 
     const release = (event) => {
       if (!this.dragging) return;
+
       this.updatePointer(event);
       this.dragging = false;
-      this.fruitManager.releaseCurrent();
+
+      const released = this.fruitManager.releaseCurrent();
+
+      if (released) {
+        this.onRelease?.();
+      }
     };
 
     element.addEventListener('pointerup', release);
@@ -29,7 +36,10 @@ export class FruitController {
 
   updatePointer(event) {
     const rect = this.element.getBoundingClientRect();
-    const normalizedX = (event.clientX - rect.left) / rect.width;
+    const normalizedX = Math.max(
+      0,
+      Math.min(1, (event.clientX - rect.left) / rect.width)
+    );
     const gridX = normalizedX * this.grid.width;
     this.fruitManager.setPointerX(gridX);
   }
