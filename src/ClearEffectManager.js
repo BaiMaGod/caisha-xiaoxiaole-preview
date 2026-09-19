@@ -1,22 +1,13 @@
 import { COLOR_MAP } from './colors.js';
 
-const GLOW_MS = 220;
-const FLY_MS = 460;
-const STAR_FORM_PER_STAR_MS = 360;
-const STAR_FADE_MS = 320;
+export const CLEAR_EFFECT_TOTAL_MS = 1000;
+export const CLEAR_FLASH_MS = 160;
+
+const CLEAR_SWEEP_MS = CLEAR_EFFECT_TOTAL_MS - CLEAR_FLASH_MS;
+const PARTICLE_FADE_MS = 140;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
-}
-
-function easeInOutCubic(t) {
-  return t < 0.5
-    ? 4 * t * t * t
-    : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
-function easeOutCubic(t) {
-  return 1 - Math.pow(1 - t, 3);
 }
 
 function colorToCss(type, alpha = 1) {
@@ -31,91 +22,42 @@ export function getClearRating(cleared) {
   return 'GOOD';
 }
 
-export function getStarCount(cleared) {
-  if (cleared >= 3000) return 4;
-  if (cleared >= 2000) return 3;
-  if (cleared >= 1000) return 2;
-  return 1;
-}
-
-export function getStarFormationDuration(starCount) {
-  return Math.max(0, starCount) * STAR_FORM_PER_STAR_MS;
-}
-
-export function getSequentialStarProgresses(elapsedMs, starCount) {
-  const progresses = [];
-
-  for (let i = 0; i < starCount; i++) {
-    progresses.push(
-      clamp(
-        (elapsedMs - i * STAR_FORM_PER_STAR_MS) / STAR_FORM_PER_STAR_MS,
-        0,
-        1
-      )
-    );
+export function getClearScoreCount(elapsedMs, cleared) {
+  if (cleared <= 0 || elapsedMs < CLEAR_FLASH_MS) {
+    return 0;
   }
 
-  return progresses;
+  const progress = clamp(
+    (elapsedMs - CLEAR_FLASH_MS) / CLEAR_SWEEP_MS,
+    0,
+    1
+  );
+
+  if (progress <= 0) return 1;
+
+  return Math.min(
+    cleared,
+    Math.max(1, Math.ceil(cleared * progress))
+  );
 }
 
-function pointInPolygon(x, y, vertices) {
-  let inside = false;
-
-  for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
-    const xi = vertices[i].x;
-    const yi = vertices[i].y;
-    const xj = vertices[j].x;
-    const yj = vertices[j].y;
-
-    const intersects =
-      ((yi > y) !== (yj > y)) &&
-      (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi);
-
-    if (intersects) inside = !inside;
+export function getSweepParticleAlpha(elapsedMs, normalizedX) {
+  if (elapsedMs < CLEAR_FLASH_MS) {
+    return 1;
   }
 
-  return inside;
-}
+  const x = clamp(normalizedX, 0, 1);
+  const fadeStart =
+    CLEAR_FLASH_MS +
+    x * Math.max(0, CLEAR_SWEEP_MS - PARTICLE_FADE_MS);
 
-export function buildStarGrains(radius, rotation, seed) {
-  const vertices = [];
+  const fadeProgress = clamp(
+    (elapsedMs - fadeStart) / PARTICLE_FADE_MS,
+    0,
+    1
+  );
 
-  for (let i = 0; i < 10; i++) {
-    const angle = -Math.PI / 2 + rotation + (i * Math.PI) / 5;
-    const r = i % 2 === 0 ? radius : radius * 0.44;
-
-    vertices.push({
-      x: Math.cos(angle) * r,
-      y: Math.sin(angle) * r
-    });
-  }
-
-  const grains = [];
-  const spacing = 1.75;
-  let grainIndex = 0;
-
-  for (let y = -radius; y <= radius; y += spacing) {
-    for (let x = -radius; x <= radius; x += spacing) {
-      if (!pointInPolygon(x, y, vertices)) continue;
-
-      const hash = ((seed + (grainIndex + 1) * 2654435761) >>> 0);
-      const jitterX = (((hash >>> 3) % 101) / 100 - 0.5) * 0.8;
-      const jitterY = (((hash >>> 10) % 101) / 100 - 0.5) * 0.8;
-
-      grains.push({
-        x: x + jitterX,
-        y: y + jitterY,
-        delay: (hash % 28) / 100,
-        cloudX: ((hash >>> 5) % 25) - 12,
-        cloudY: ((hash >>> 11) % 25) - 12,
-        radius: 0.78 + ((hash >>> 17) % 48) / 100
-      });
-
-      grainIndex++;
-    }
-  }
-
-  return grains;
+  return 1 - fadeProgress;
 }
 
 export class ClearEffectManager {
@@ -125,6 +67,7 @@ export class ClearEffectManager {
     this.queue = [];
     this.current = null;
     this.raf = 0;
+    this.scoreLingerTimer = 0;
 
     this.canvas = document.createElement('canvas');
     this.canvas.style.position = 'absolute';
@@ -167,10 +110,20 @@ export class ClearEffectManager {
       this.raf = 0;
     }
 
+    if (this.scoreLingerTimer) {
+      clearTimeout(this.scoreLingerTimer);
+      this.scoreLingerTimer = 0;
+    }
+
     this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
   }
 
   play(payload, startRewardAudio = null) {
+    if (this.scoreLingerTimer) {
+      clearTimeout(this.scoreLingerTimer);
+      this.scoreLingerTimer = 0;
+    }
+
     const effect = this.buildEffect(payload);
     effect.startRewardAudio = startRewardAudio;
 
@@ -189,60 +142,31 @@ export class ClearEffectManager {
   }
 
   buildEffect({ groups, cleared, combo }) {
-    const sourceParticles = [];
-    const maxFlyParticles = clamp(Math.round(Math.sqrt(cleared) * 5.5), 36, 150);
-    const flat = [];
+    const particles = [];
 
     for (const group of groups) {
       for (const index of group.cells) {
-        flat.push({ index, color: group.color });
+        const x = index % this.grid.width;
+        const y = Math.floor(index / this.grid.width);
+
+        particles.push({
+          gridX: x,
+          gridY: y,
+          normalizedX:
+            this.grid.width <= 1
+              ? 0
+              : x / (this.grid.width - 1),
+          color: group.color
+        });
       }
-    }
-
-    const stride = Math.max(1, Math.floor(flat.length / maxFlyParticles));
-
-    for (let i = 0; i < flat.length; i += stride) {
-      const item = flat[i];
-      const x = item.index % this.grid.width;
-      const y = Math.floor(item.index / this.grid.width);
-      const seed = ((item.index * 2654435761) >>> 0);
-
-      sourceParticles.push({
-        gridX: x + 0.5,
-        gridY: y + 0.5,
-        color: item.color,
-        seed
-      });
-
-      if (sourceParticles.length >= maxFlyParticles) break;
-    }
-
-    const starCount = getStarCount(cleared);
-    const stars = [];
-
-    for (let i = 0; i < starCount; i++) {
-      const seed = ((i + 1) * 2246822519 + cleared * 3266489917) >>> 0;
-      const size = 12 + (seed % 3);
-      const rotation = ((seed % 24) - 12) * (Math.PI / 180);
-
-      stars.push({
-        size,
-        rotation,
-        color: groups[i % groups.length]?.color ?? 3,
-        grains: buildStarGrains(size, rotation, seed)
-      });
     }
 
     return {
       groups,
       cleared,
       combo,
-      sourceParticles,
-      stars,
+      particles,
       startedAt: 0,
-      fadeStartedAt: null,
-      audioStarted: false,
-      audioDone: false,
       startRewardAudio: null
     };
   }
@@ -258,33 +182,39 @@ export class ClearEffectManager {
     this.current.startedAt = performance.now();
   }
 
-  startAudioAfterStarsReady() {
-    if (!this.current || this.current.audioStarted) return;
+  finishCurrent() {
+    if (!this.current) return;
 
-    this.current.audioStarted = true;
+    const finished = this.current;
 
-    let rewardResult;
-
+    // Audio begins only after the final sand grain has faded and the counter
+    // has reached the exact number of cleared particles.
     try {
-      rewardResult = this.current.startRewardAudio?.();
+      finished.startRewardAudio?.();
     } catch {
-      rewardResult = null;
+      // Reward audio must never block finishing the visual clear.
     }
 
-    if (!rewardResult || typeof rewardResult.then !== 'function') {
-      this.current.audioDone = true;
+    this.current = null;
+
+    if (this.queue.length > 0) {
+      this.startNext();
       return;
     }
 
-    const effect = this.current;
+    // Keep the final +score visible briefly while the reward voice starts.
+    // Physics can already resume because the effect is no longer busy.
+    if (this.scoreLingerTimer) {
+      clearTimeout(this.scoreLingerTimer);
+    }
 
-    Promise.resolve(rewardResult).finally(() => {
-      effect.audioDone = true;
+    this.scoreLingerTimer = setTimeout(() => {
+      this.scoreLingerTimer = 0;
 
-      if (this.current === effect) {
-        this.scheduleFrame();
+      if (!this.current && this.queue.length === 0) {
+        this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
       }
-    });
+    }, 320);
   }
 
   frame(time) {
@@ -295,190 +225,133 @@ export class ClearEffectManager {
       return;
     }
 
-    const elapsed = time - this.current.startedAt;
-    const starStart = GLOW_MS + FLY_MS;
-    const starFormationDuration = getStarFormationDuration(
-      this.current.stars.length
-    );
+    const elapsed = Math.max(0, time - this.current.startedAt);
 
     this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
 
-    if (elapsed < GLOW_MS) {
-      this.drawGlow(elapsed / GLOW_MS);
-    } else if (elapsed < starStart) {
-      this.drawFlight((elapsed - GLOW_MS) / FLY_MS);
+    if (elapsed < CLEAR_FLASH_MS) {
+      this.drawHighlightFlash(elapsed / CLEAR_FLASH_MS);
     } else {
-      const starElapsed = elapsed - starStart;
+      this.drawLeftToRightFade(elapsed);
+      this.drawClearScore(elapsed);
+    }
 
-      if (starElapsed < starFormationDuration) {
-        this.drawSequentialStarFormation(starElapsed, 1);
-      } else {
-        this.drawSequentialStarFormation(starFormationDuration, 1);
-        this.startAudioAfterStarsReady();
-
-        if (this.current.audioDone) {
-          if (this.current.fadeStartedAt === null) {
-            this.current.fadeStartedAt = time;
-          }
-
-          const fadeProgress = clamp(
-            (time - this.current.fadeStartedAt) / STAR_FADE_MS,
-            0,
-            1
-          );
-
-          this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
-          this.drawSequentialStarFormation(
-            starFormationDuration,
-            1 - fadeProgress
-          );
-
-          if (fadeProgress >= 1) {
-            this.current = null;
-            this.startNext();
-          }
-        }
-      }
+    if (elapsed >= CLEAR_EFFECT_TOTAL_MS) {
+      // Draw the exact final +score once before handing off to the voice cue.
+      this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
+      this.drawClearScore(CLEAR_EFFECT_TOTAL_MS);
+      this.finishCurrent();
+      return;
     }
 
     this.scheduleFrame();
   }
 
-  gridToScreen(gridX, gridY) {
-    return {
-      x: (gridX / this.grid.width) * this.cssWidth,
-      y: (gridY / this.grid.height) * this.cssHeight
-    };
+  drawHighlightFlash(progress) {
+    const cellW = this.cssWidth / this.grid.width;
+    const cellH = this.cssHeight / this.grid.height;
+    const pulse = 0.68 + Math.sin(progress * Math.PI) * 0.32;
+
+    this.ctx.save();
+    this.ctx.globalCompositeOperation = 'lighter';
+
+    for (const particle of this.current.particles) {
+      this.ctx.fillStyle = colorToCss(
+        particle.color,
+        0.72 + pulse * 0.28
+      );
+      this.ctx.shadowColor = colorToCss(particle.color, 1);
+      this.ctx.shadowBlur = 7 + pulse * 10;
+
+      this.ctx.fillRect(
+        particle.gridX * cellW,
+        particle.gridY * cellH,
+        Math.max(1.5, cellW * 1.35),
+        Math.max(1.5, cellH * 1.35)
+      );
+    }
+
+    this.ctx.restore();
   }
 
-  drawGlow(progress) {
-    const pulse = 0.72 + Math.sin(progress * Math.PI * 4) * 0.2;
+  drawLeftToRightFade(elapsed) {
     const cellW = this.cssWidth / this.grid.width;
     const cellH = this.cssHeight / this.grid.height;
 
     this.ctx.save();
-    this.ctx.globalCompositeOperation = 'lighter';
 
-    for (const group of this.current.groups) {
-      this.ctx.fillStyle = colorToCss(group.color, 0.58 * pulse);
-      this.ctx.shadowColor = colorToCss(group.color, 0.96);
-      this.ctx.shadowBlur = 6 + progress * 10;
+    for (const particle of this.current.particles) {
+      const alpha = getSweepParticleAlpha(
+        elapsed,
+        particle.normalizedX
+      );
 
-      const stride = Math.max(1, Math.floor(group.cells.length / 2400));
+      if (alpha <= 0) continue;
 
-      for (let i = 0; i < group.cells.length; i += stride) {
-        const index = group.cells[i];
-        const x = index % this.grid.width;
-        const y = Math.floor(index / this.grid.width);
+      this.ctx.fillStyle = colorToCss(
+        particle.color,
+        0.96 * alpha
+      );
 
-        this.ctx.fillRect(
-          x * cellW,
-          y * cellH,
-          Math.max(1.5, cellW * 1.35),
-          Math.max(1.5, cellH * 1.35)
+      // Add a soft glow only near the disappearing wave front.
+      if (alpha < 0.82) {
+        this.ctx.shadowColor = colorToCss(
+          particle.color,
+          0.75 * alpha
         );
+        this.ctx.shadowBlur = 4 + (1 - alpha) * 7;
+      } else {
+        this.ctx.shadowBlur = 0;
       }
-    }
 
-    this.ctx.restore();
-  }
-
-  drawFlight(progress) {
-    const t = easeInOutCubic(progress);
-    const centerX = this.cssWidth / 2;
-    const centerY = this.cssHeight * 0.46;
-
-    this.ctx.save();
-    this.ctx.globalCompositeOperation = 'lighter';
-
-    for (const particle of this.current.sourceParticles) {
-      const start = this.gridToScreen(particle.gridX, particle.gridY);
-      const jitterX = ((particle.seed % 31) - 15) * (1 - t) * 0.7;
-      const jitterY = (((particle.seed >>> 5) % 31) - 15) * (1 - t) * 0.55;
-      const bend = Math.sin(t * Math.PI) * (((particle.seed >>> 10) % 2) ? 18 : -18);
-
-      const x = start.x + (centerX - start.x) * t + jitterX + bend;
-      const y = start.y + (centerY - start.y) * t + jitterY - Math.sin(t * Math.PI) * 24;
-      const radius = 1.4 + t * 1.5;
-
-      this.ctx.beginPath();
-      this.ctx.fillStyle = colorToCss(particle.color, 0.92);
-      this.ctx.shadowColor = colorToCss(particle.color, 0.95);
-      this.ctx.shadowBlur = 7;
-      this.ctx.arc(x, y, radius, 0, Math.PI * 2);
-      this.ctx.fill();
-    }
-
-    this.ctx.restore();
-  }
-
-  drawSequentialStarFormation(elapsedMs, alpha) {
-    const centerX = this.cssWidth / 2;
-    const centerY = this.cssHeight * 0.46;
-    const count = this.current.stars.length;
-    const spacing = 44;
-    const startX = centerX - ((count - 1) * spacing) / 2;
-    const progresses = getSequentialStarProgresses(elapsedMs, count);
-
-    this.ctx.save();
-    this.ctx.globalAlpha = clamp(alpha, 0, 1);
-
-    for (let i = 0; i < count; i++) {
-      const progress = progresses[i];
-      if (progress <= 0) continue;
-
-      const star = this.current.stars[i];
-      const targetX = startX + i * spacing;
-
-      this.drawFormingSandStar(
-        star,
-        centerX,
-        centerY,
-        targetX,
-        centerY,
-        progress
+      this.ctx.fillRect(
+        particle.gridX * cellW,
+        particle.gridY * cellH,
+        Math.max(1.25, cellW * (0.96 + alpha * 0.12)),
+        Math.max(1.25, cellH * (0.96 + alpha * 0.12))
       );
     }
 
     this.ctx.restore();
   }
 
-  drawFormingSandStar(star, originX, originY, targetX, targetY, progress) {
+  drawClearScore(elapsed) {
+    const value = getClearScoreCount(
+      elapsed,
+      this.current.cleared
+    );
+
+    if (value <= 0) return;
+
+    const sweepProgress = clamp(
+      (elapsed - CLEAR_FLASH_MS) / CLEAR_SWEEP_MS,
+      0,
+      1
+    );
+
+    const bounce =
+      Math.sin(Math.min(1, sweepProgress * 5) * Math.PI) * 5;
+
+    const x = this.cssWidth / 2;
+    const y = this.cssHeight * 0.22 - bounce;
+    const fontSize = clamp(this.cssWidth * 0.085, 28, 42);
+
     this.ctx.save();
-    this.ctx.fillStyle = colorToCss(star.color, 0.96);
-    this.ctx.shadowColor = colorToCss(star.color, 0.92);
-    this.ctx.shadowBlur = 7;
-    this.ctx.globalCompositeOperation = 'lighter';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.font =
+      `900 ${fontSize}px/1 system-ui, -apple-system, sans-serif`;
 
-    for (const grain of star.grains) {
-      const grainProgress = clamp(
-        (progress - grain.delay) / Math.max(0.01, 1 - grain.delay),
-        0,
-        1
-      );
+    this.ctx.lineWidth = Math.max(3, fontSize * 0.12);
+    this.ctx.strokeStyle = 'rgba(255,255,255,0.94)';
+    this.ctx.shadowColor = 'rgba(255, 133, 76, 0.32)';
+    this.ctx.shadowBlur = 12;
 
-      if (grainProgress <= 0) continue;
+    const label = `+${value}`;
 
-      const t = easeOutCubic(grainProgress);
-      const cloudX = originX + grain.cloudX;
-      const cloudY = originY + grain.cloudY;
-      const endX = targetX + grain.x;
-      const endY = targetY + grain.y;
-      const arc = Math.sin(t * Math.PI) * 10;
-
-      const x = cloudX + (endX - cloudX) * t;
-      const y = cloudY + (endY - cloudY) * t - arc;
-
-      this.ctx.beginPath();
-      this.ctx.arc(
-        x,
-        y,
-        grain.radius * (0.75 + t * 0.25),
-        0,
-        Math.PI * 2
-      );
-      this.ctx.fill();
-    }
+    this.ctx.strokeText(label, x, y);
+    this.ctx.fillStyle = '#ff7048';
+    this.ctx.fillText(label, x, y);
 
     this.ctx.restore();
   }
