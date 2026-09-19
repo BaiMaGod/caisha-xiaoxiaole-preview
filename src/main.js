@@ -141,7 +141,7 @@ function loop(time) {
   if (!gameOver) {
     if (clearEffects.isBusy()) {
       // Hold the board still while the component flashes, returns to its
-      // original color, then fades left-to-right over 1.5 seconds.
+      // original color, then breaks apart left-to-right in a random 1.5s wave.
       lastSimulation = time;
     } else {
       const previousFruitState = lastFruitState;
