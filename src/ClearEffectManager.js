@@ -1,4 +1,10 @@
-import { COLOR_MAP } from './colors.js';
+import {
+  COLOR_MAP,
+  getParticleRgb,
+  rgbToCss,
+  SETTLED_PARTICLE_INSET,
+  SETTLED_PARTICLE_SIZE
+} from './colors.js';
 
 export const CLEAR_FLASH_MS = 110;
 export const CLEAR_RESTORE_MS = 90;
@@ -15,9 +21,8 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function colorToCss(type, alpha = 1) {
-  const rgb = COLOR_MAP[type] ?? [255, 255, 255];
-  return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+function baseColorToCss(type, alpha = 1) {
+  return rgbToCss(COLOR_MAP[type] ?? [255, 255, 255], alpha);
 }
 
 export function getClearRating(cleared) {
@@ -82,6 +87,74 @@ export function getScoreBounce(elapsedMs) {
     scale: 1 + hop * 0.105,
     offsetY: -hop * 4.5
   };
+}
+
+export function getDominantClearColor(groups) {
+  if (!groups?.length) return 1;
+
+  let winner = groups[0];
+
+  for (const group of groups) {
+    if ((group.cells?.length ?? 0) > (winner.cells?.length ?? 0)) {
+      winner = group;
+    }
+  }
+
+  return winner.color;
+}
+
+export function getClearBounds(particles) {
+  if (!particles?.length) {
+    return {
+      minX: 0,
+      maxX: 0,
+      minY: 0,
+      maxY: 0
+    };
+  }
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+
+  for (const particle of particles) {
+    minX = Math.min(minX, particle.gridX);
+    maxX = Math.max(maxX, particle.gridX);
+    minY = Math.min(minY, particle.gridY);
+    maxY = Math.max(maxY, particle.gridY);
+  }
+
+  return { minX, maxX, minY, maxY };
+}
+
+export function getScoreAnchor({
+  bounds,
+  gridWidth,
+  gridHeight,
+  cssWidth,
+  cssHeight,
+  fontSize
+}) {
+  const cellW = cssWidth / gridWidth;
+  const cellH = cssHeight / gridHeight;
+  const pileCenterX = ((bounds.minX + bounds.maxX + 1) / 2) * cellW;
+  const pileTopY = bounds.minY * cellH;
+
+  const x = clamp(
+    pileCenterX,
+    fontSize * 1.15,
+    cssWidth - fontSize * 1.15
+  );
+
+  const desiredY = pileTopY - fontSize * 0.62 - 9;
+  const y = clamp(
+    desiredY,
+    fontSize * 0.8,
+    cssHeight - fontSize * 0.8
+  );
+
+  return { x, y };
 }
 
 export class ClearEffectManager {
@@ -190,6 +263,8 @@ export class ClearEffectManager {
       cleared,
       combo,
       particles,
+      bounds: getClearBounds(particles),
+      scoreColor: getDominantClearColor(groups),
       startedAt: 0,
       startRewardAudio: null
     };
@@ -252,8 +327,6 @@ export class ClearEffectManager {
     if (elapsed < CLEAR_FLASH_MS) {
       this.drawHighlightFlash(elapsed / CLEAR_FLASH_MS);
     } else if (elapsed < CLEAR_FADE_START_MS) {
-      // Important: return to the exact original sand color/size before
-      // starting the fade. No glow, tint, or scaling in this phase.
       this.drawOriginalParticles();
     } else {
       this.drawLeftToRightFade(elapsed);
@@ -270,6 +343,27 @@ export class ClearEffectManager {
     this.scheduleFrame();
   }
 
+  drawSettledParticle(particle, alpha = 1) {
+    const cellW = this.cssWidth / this.grid.width;
+    const cellH = this.cssHeight / this.grid.height;
+    const rgb = getParticleRgb(
+      particle.gridX,
+      particle.gridY,
+      particle.color,
+      0
+    );
+
+    if (!rgb) return;
+
+    this.ctx.fillStyle = rgbToCss(rgb, alpha);
+    this.ctx.fillRect(
+      (particle.gridX + SETTLED_PARTICLE_INSET) * cellW,
+      (particle.gridY + SETTLED_PARTICLE_INSET) * cellH,
+      SETTLED_PARTICLE_SIZE * cellW,
+      SETTLED_PARTICLE_SIZE * cellH
+    );
+  }
+
   drawHighlightFlash(progress) {
     const cellW = this.cssWidth / this.grid.width;
     const cellH = this.cssHeight / this.grid.height;
@@ -279,18 +373,22 @@ export class ClearEffectManager {
     this.ctx.globalCompositeOperation = 'lighter';
 
     for (const particle of this.current.particles) {
-      this.ctx.fillStyle = colorToCss(
+      const rgb = getParticleRgb(
+        particle.gridX,
+        particle.gridY,
         particle.color,
-        0.88 + pulse * 0.12
+        0
       );
-      this.ctx.shadowColor = colorToCss(particle.color, 0.95);
+
+      this.ctx.fillStyle = rgbToCss(rgb, 0.88 + pulse * 0.12);
+      this.ctx.shadowColor = baseColorToCss(particle.color, 0.95);
       this.ctx.shadowBlur = 6 + pulse * 11;
 
       this.ctx.fillRect(
-        particle.gridX * cellW,
-        particle.gridY * cellH,
-        cellW,
-        cellH
+        (particle.gridX + SETTLED_PARTICLE_INSET) * cellW,
+        (particle.gridY + SETTLED_PARTICLE_INSET) * cellH,
+        SETTLED_PARTICLE_SIZE * cellW,
+        SETTLED_PARTICLE_SIZE * cellH
       );
     }
 
@@ -298,32 +396,23 @@ export class ClearEffectManager {
   }
 
   drawOriginalParticles() {
-    const cellW = this.cssWidth / this.grid.width;
-    const cellH = this.cssHeight / this.grid.height;
-
     this.ctx.save();
     this.ctx.globalCompositeOperation = 'source-over';
+    this.ctx.shadowColor = 'transparent';
     this.ctx.shadowBlur = 0;
+    this.ctx.globalAlpha = 1;
 
     for (const particle of this.current.particles) {
-      this.ctx.fillStyle = colorToCss(particle.color, 1);
-      this.ctx.fillRect(
-        particle.gridX * cellW,
-        particle.gridY * cellH,
-        cellW,
-        cellH
-      );
+      this.drawSettledParticle(particle, 1);
     }
 
     this.ctx.restore();
   }
 
   drawLeftToRightFade(elapsed) {
-    const cellW = this.cssWidth / this.grid.width;
-    const cellH = this.cssHeight / this.grid.height;
-
     this.ctx.save();
     this.ctx.globalCompositeOperation = 'source-over';
+    this.ctx.shadowColor = 'transparent';
     this.ctx.shadowBlur = 0;
 
     for (const particle of this.current.particles) {
@@ -334,15 +423,9 @@ export class ClearEffectManager {
 
       if (alpha <= 0) continue;
 
-      // Preserve the exact original RGB during disappearance. Only alpha
-      // changes; there is no glow, hue shift, or particle resizing.
-      this.ctx.fillStyle = colorToCss(particle.color, alpha);
-      this.ctx.fillRect(
-        particle.gridX * cellW,
-        particle.gridY * cellH,
-        cellW,
-        cellH
-      );
+      // Same RGB, same 0.84 settled-grain size, same 0.08 inset as the
+      // normal SandRenderer. Only opacity changes during disappearance.
+      this.drawSettledParticle(particle, alpha);
     }
 
     this.ctx.restore();
@@ -357,11 +440,22 @@ export class ClearEffectManager {
     if (value <= 0) return;
 
     const { scale, offsetY } = getScoreBounce(elapsed);
-    const x = this.cssWidth / 2;
-    const y = this.cssHeight * 0.205 + offsetY;
-    const baseFontSize = clamp(this.cssWidth * 0.095, 32, 48);
+    const baseFontSize = clamp(this.cssWidth * 0.092, 30, 46);
     const fontSize = baseFontSize * scale;
+    const anchor = getScoreAnchor({
+      bounds: this.current.bounds,
+      gridWidth: this.grid.width,
+      gridHeight: this.grid.height,
+      cssWidth: this.cssWidth,
+      cssHeight: this.cssHeight,
+      fontSize
+    });
+    const x = anchor.x;
+    const y = anchor.y + offsetY;
     const label = `+${value}`;
+    const rgb =
+      COLOR_MAP[this.current.scoreColor] ??
+      COLOR_MAP[1];
 
     this.ctx.save();
     this.ctx.textAlign = 'center';
@@ -372,34 +466,17 @@ export class ClearEffectManager {
     this.ctx.lineJoin = 'round';
     this.ctx.lineWidth = Math.max(4, fontSize * 0.13);
     this.ctx.strokeStyle = 'rgba(255,255,255,0.98)';
-    this.ctx.shadowColor = 'rgba(187, 76, 43, 0.24)';
+    this.ctx.shadowColor = rgbToCss(rgb, 0.3);
     this.ctx.shadowBlur = 10;
     this.ctx.shadowOffsetY = 3;
     this.ctx.strokeText(label, x, y);
 
-    this.ctx.shadowColor = 'rgba(255, 112, 72, 0.28)';
-    this.ctx.shadowBlur = 8;
+    // Main fill is exactly the color family of the eliminated sand.
+    this.ctx.shadowColor = rgbToCss(rgb, 0.28);
+    this.ctx.shadowBlur = 7;
     this.ctx.shadowOffsetY = 2;
-
-    const gradient = this.ctx.createLinearGradient(
-      0,
-      y - fontSize * 0.55,
-      0,
-      y + fontSize * 0.55
-    );
-    gradient.addColorStop(0, '#ff9a5a');
-    gradient.addColorStop(0.48, '#ff7048');
-    gradient.addColorStop(1, '#f24f5f');
-
-    this.ctx.fillStyle = gradient;
+    this.ctx.fillStyle = rgbToCss(rgb, 1);
     this.ctx.fillText(label, x, y);
-
-    // Tiny highlight gives the number a soft candy-like finish.
-    this.ctx.globalAlpha = 0.32;
-    this.ctx.font =
-      `900 ${fontSize * 0.985}px "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif`;
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.fillText(label, x, y - fontSize * 0.035);
 
     this.ctx.restore();
   }
