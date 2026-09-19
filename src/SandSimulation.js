@@ -18,13 +18,17 @@ export class SandSimulation {
     this.fullUpdate = true;
   }
 
-  update() {
+  update(afterSubstep = null) {
     this.movedCount = 0;
 
     const substeps = Math.max(1, CONFIG.SAND_SUBSTEPS || 1);
 
     for (let i = 0; i < substeps; i++) {
       if (!this.stepOnce()) break;
+
+      if (afterSubstep?.(i) === false) {
+        break;
+      }
     }
   }
 
