@@ -35,7 +35,10 @@ export function getClearRating(cleared, combo = 1) {
 }
 
 export function getStarCount(cleared) {
-  return clamp(Math.round(cleared / 75), 3, 28);
+  if (cleared >= 1500) return 4;
+  if (cleared >= 900) return 3;
+  if (cleared >= 500) return 2;
+  return 1;
 }
 
 export class ClearEffectManager {
@@ -68,7 +71,6 @@ export class ClearEffectManager {
 
     this.cssWidth = Math.max(1, rect.width);
     this.cssHeight = Math.max(1, rect.height);
-    this.dpr = dpr;
 
     this.canvas.width = Math.round(this.cssWidth * dpr);
     this.canvas.height = Math.round(this.cssHeight * dpr);
@@ -142,11 +144,12 @@ export class ClearEffectManager {
     for (let i = 0; i < starCount; i++) {
       const seed = ((i + 1) * 2246822519 + cleared * 3266489917) >>> 0;
       const angle = (i / starCount) * Math.PI * 2 + (seed % 100) / 160;
-      const radius = 18 + (seed % 53);
+      const radius = 22 + (seed % 32);
+
       stars.push({
         angle,
         radius,
-        size: 5 + (seed % 7),
+        size: 9 + (seed % 6),
         rotation: ((seed % 628) / 100) - Math.PI,
         color: groups[i % groups.length]?.color ?? 3
       });
@@ -156,7 +159,6 @@ export class ClearEffectManager {
       groups,
       cleared,
       combo,
-      rating: getClearRating(cleared, combo),
       sourceParticles,
       stars,
       startedAt: 0
@@ -285,24 +287,6 @@ export class ClearEffectManager {
       const y = centerY + Math.sin(star.angle) * star.radius * 0.65 * pop;
       this.drawStar(x, y, star.size * pop, star.rotation + progress * 1.2, star.color);
     }
-
-    const textScale = easeOutBack(clamp(progress / 0.32, 0, 1));
-    const rating = this.current.rating;
-
-    this.ctx.translate(centerX, centerY - 72);
-    this.ctx.scale(textScale, textScale);
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
-    this.ctx.font = '900 25px system-ui, sans-serif';
-    this.ctx.lineWidth = 5;
-    this.ctx.strokeStyle = 'rgba(255,255,255,0.96)';
-    this.ctx.strokeText(rating, 0, 0);
-    this.ctx.fillStyle = rating === 'UNBELIEVABLE' ? '#ff7a59' : '#6f58d9';
-    this.ctx.fillText(rating, 0, 0);
-
-    this.ctx.font = '800 13px system-ui, sans-serif';
-    this.ctx.fillStyle = 'rgba(93,70,50,0.82)';
-    this.ctx.fillText(`+${this.current.cleared}`, 0, 25);
 
     this.ctx.restore();
   }
