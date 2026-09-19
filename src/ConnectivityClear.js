@@ -4,15 +4,14 @@ export class ConnectivityClear {
     this.simulation = simulation;
     this.score = 0;
     this.combo = 0;
-
     this.visited = new Uint8Array(grid.width * grid.height);
     this.queue = new Int32Array(grid.width * grid.height);
-
     this.onClear = null;
   }
 
   resolve() {
     let totalCleared = 0;
+    const groups = [];
 
     for (let color = 1; color <= 7; color++) {
       this.visited.fill(0);
@@ -24,21 +23,26 @@ export class ConnectivityClear {
         if (this.visited[startIndex]) continue;
 
         const component = this.collectComponent(0, y, color);
-
         if (!component.reachesRight) continue;
 
-        totalCleared += this.clearComponent(component.cells);
+        const cells = component.cells.slice();
+        const cleared = this.clearComponent(cells);
+
+        if (cleared > 0) {
+          totalCleared += cleared;
+          groups.push({ color, cells });
+        }
       }
     }
 
     if (totalCleared > 0) {
       this.score += totalCleared;
       this.combo += 1;
-
       this.onClear?.({
         cleared: totalCleared,
         score: this.score,
-        combo: this.combo
+        combo: this.combo,
+        groups
       });
     }
 
@@ -49,7 +53,6 @@ export class ConnectivityClear {
     let head = 0;
     let tail = 0;
     let reachesRight = false;
-
     const cells = [];
 
     const startIndex = this.grid.index(startX, startY);
@@ -68,10 +71,7 @@ export class ConnectivityClear {
       const y = Math.floor(index / this.grid.width);
 
       cells.push(index);
-
-      if (x === this.grid.width - 1) {
-        reachesRight = true;
-      }
+      if (x === this.grid.width - 1) reachesRight = true;
 
       for (const [dx, dy] of directions) {
         const nx = x + dx;
@@ -82,9 +82,7 @@ export class ConnectivityClear {
           ny < 0 ||
           nx >= this.grid.width ||
           ny >= this.grid.height
-        ) {
-          continue;
-        }
+        ) continue;
 
         if (this.grid.get(nx, ny) !== color) continue;
 
@@ -96,10 +94,7 @@ export class ConnectivityClear {
       }
     }
 
-    return {
-      cells,
-      reachesRight
-    };
+    return { cells, reachesRight };
   }
 
   clearComponent(cells) {
@@ -114,7 +109,6 @@ export class ConnectivityClear {
       const y = Math.floor(index / this.grid.width);
 
       this.grid.cells[index] = 0;
-
       minX = Math.min(minX, x);
       maxX = Math.max(maxX, x);
       maxY = Math.max(maxY, y);
