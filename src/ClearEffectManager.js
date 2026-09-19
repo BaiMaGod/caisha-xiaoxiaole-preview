@@ -1,10 +1,15 @@
 import { COLOR_MAP } from './colors.js';
 
-export const CLEAR_EFFECT_TOTAL_MS = 1000;
-export const CLEAR_FLASH_MS = 160;
+export const CLEAR_FLASH_MS = 110;
+export const CLEAR_RESTORE_MS = 90;
+export const CLEAR_FADE_MS = 1500;
+export const CLEAR_FADE_START_MS =
+  CLEAR_FLASH_MS + CLEAR_RESTORE_MS;
+export const CLEAR_EFFECT_TOTAL_MS =
+  CLEAR_FADE_START_MS + CLEAR_FADE_MS;
 
-const CLEAR_SWEEP_MS = CLEAR_EFFECT_TOTAL_MS - CLEAR_FLASH_MS;
-const PARTICLE_FADE_MS = 140;
+const PARTICLE_FADE_MS = 190;
+const SCORE_BOUNCE_MS = 105;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -23,12 +28,12 @@ export function getClearRating(cleared) {
 }
 
 export function getClearScoreCount(elapsedMs, cleared) {
-  if (cleared <= 0 || elapsedMs < CLEAR_FLASH_MS) {
+  if (cleared <= 0 || elapsedMs < CLEAR_FADE_START_MS) {
     return 0;
   }
 
   const progress = clamp(
-    (elapsedMs - CLEAR_FLASH_MS) / CLEAR_SWEEP_MS,
+    (elapsedMs - CLEAR_FADE_START_MS) / CLEAR_FADE_MS,
     0,
     1
   );
@@ -42,14 +47,14 @@ export function getClearScoreCount(elapsedMs, cleared) {
 }
 
 export function getSweepParticleAlpha(elapsedMs, normalizedX) {
-  if (elapsedMs < CLEAR_FLASH_MS) {
+  if (elapsedMs < CLEAR_FADE_START_MS) {
     return 1;
   }
 
   const x = clamp(normalizedX, 0, 1);
   const fadeStart =
-    CLEAR_FLASH_MS +
-    x * Math.max(0, CLEAR_SWEEP_MS - PARTICLE_FADE_MS);
+    CLEAR_FADE_START_MS +
+    x * Math.max(0, CLEAR_FADE_MS - PARTICLE_FADE_MS);
 
   const fadeProgress = clamp(
     (elapsedMs - fadeStart) / PARTICLE_FADE_MS,
@@ -58,6 +63,25 @@ export function getSweepParticleAlpha(elapsedMs, normalizedX) {
   );
 
   return 1 - fadeProgress;
+}
+
+export function getScoreBounce(elapsedMs) {
+  if (elapsedMs < CLEAR_FADE_START_MS) {
+    return { scale: 1, offsetY: 0 };
+  }
+
+  if (elapsedMs >= CLEAR_EFFECT_TOTAL_MS) {
+    return { scale: 1.08, offsetY: -2 };
+  }
+
+  const local = elapsedMs - CLEAR_FADE_START_MS;
+  const phase = (local % SCORE_BOUNCE_MS) / SCORE_BOUNCE_MS;
+  const hop = Math.sin(phase * Math.PI);
+
+  return {
+    scale: 1 + hop * 0.105,
+    offsetY: -hop * 4.5
+  };
 }
 
 export class ClearEffectManager {
@@ -187,8 +211,6 @@ export class ClearEffectManager {
 
     const finished = this.current;
 
-    // Audio begins only after the final sand grain has faded and the counter
-    // has reached the exact number of cleared particles.
     try {
       finished.startRewardAudio?.();
     } catch {
@@ -202,8 +224,6 @@ export class ClearEffectManager {
       return;
     }
 
-    // Keep the final +score visible briefly while the reward voice starts.
-    // Physics can already resume because the effect is no longer busy.
     if (this.scoreLingerTimer) {
       clearTimeout(this.scoreLingerTimer);
     }
@@ -214,7 +234,7 @@ export class ClearEffectManager {
       if (!this.current && this.queue.length === 0) {
         this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
       }
-    }, 320);
+    }, 360);
   }
 
   frame(time) {
@@ -231,13 +251,16 @@ export class ClearEffectManager {
 
     if (elapsed < CLEAR_FLASH_MS) {
       this.drawHighlightFlash(elapsed / CLEAR_FLASH_MS);
+    } else if (elapsed < CLEAR_FADE_START_MS) {
+      // Important: return to the exact original sand color/size before
+      // starting the fade. No glow, tint, or scaling in this phase.
+      this.drawOriginalParticles();
     } else {
       this.drawLeftToRightFade(elapsed);
       this.drawClearScore(elapsed);
     }
 
     if (elapsed >= CLEAR_EFFECT_TOTAL_MS) {
-      // Draw the exact final +score once before handing off to the voice cue.
       this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
       this.drawClearScore(CLEAR_EFFECT_TOTAL_MS);
       this.finishCurrent();
@@ -250,7 +273,7 @@ export class ClearEffectManager {
   drawHighlightFlash(progress) {
     const cellW = this.cssWidth / this.grid.width;
     const cellH = this.cssHeight / this.grid.height;
-    const pulse = 0.68 + Math.sin(progress * Math.PI) * 0.32;
+    const pulse = Math.sin(progress * Math.PI);
 
     this.ctx.save();
     this.ctx.globalCompositeOperation = 'lighter';
@@ -258,16 +281,37 @@ export class ClearEffectManager {
     for (const particle of this.current.particles) {
       this.ctx.fillStyle = colorToCss(
         particle.color,
-        0.72 + pulse * 0.28
+        0.88 + pulse * 0.12
       );
-      this.ctx.shadowColor = colorToCss(particle.color, 1);
-      this.ctx.shadowBlur = 7 + pulse * 10;
+      this.ctx.shadowColor = colorToCss(particle.color, 0.95);
+      this.ctx.shadowBlur = 6 + pulse * 11;
 
       this.ctx.fillRect(
         particle.gridX * cellW,
         particle.gridY * cellH,
-        Math.max(1.5, cellW * 1.35),
-        Math.max(1.5, cellH * 1.35)
+        cellW,
+        cellH
+      );
+    }
+
+    this.ctx.restore();
+  }
+
+  drawOriginalParticles() {
+    const cellW = this.cssWidth / this.grid.width;
+    const cellH = this.cssHeight / this.grid.height;
+
+    this.ctx.save();
+    this.ctx.globalCompositeOperation = 'source-over';
+    this.ctx.shadowBlur = 0;
+
+    for (const particle of this.current.particles) {
+      this.ctx.fillStyle = colorToCss(particle.color, 1);
+      this.ctx.fillRect(
+        particle.gridX * cellW,
+        particle.gridY * cellH,
+        cellW,
+        cellH
       );
     }
 
@@ -279,6 +323,8 @@ export class ClearEffectManager {
     const cellH = this.cssHeight / this.grid.height;
 
     this.ctx.save();
+    this.ctx.globalCompositeOperation = 'source-over';
+    this.ctx.shadowBlur = 0;
 
     for (const particle of this.current.particles) {
       const alpha = getSweepParticleAlpha(
@@ -288,27 +334,14 @@ export class ClearEffectManager {
 
       if (alpha <= 0) continue;
 
-      this.ctx.fillStyle = colorToCss(
-        particle.color,
-        0.96 * alpha
-      );
-
-      // Add a soft glow only near the disappearing wave front.
-      if (alpha < 0.82) {
-        this.ctx.shadowColor = colorToCss(
-          particle.color,
-          0.75 * alpha
-        );
-        this.ctx.shadowBlur = 4 + (1 - alpha) * 7;
-      } else {
-        this.ctx.shadowBlur = 0;
-      }
-
+      // Preserve the exact original RGB during disappearance. Only alpha
+      // changes; there is no glow, hue shift, or particle resizing.
+      this.ctx.fillStyle = colorToCss(particle.color, alpha);
       this.ctx.fillRect(
         particle.gridX * cellW,
         particle.gridY * cellH,
-        Math.max(1.25, cellW * (0.96 + alpha * 0.12)),
-        Math.max(1.25, cellH * (0.96 + alpha * 0.12))
+        cellW,
+        cellH
       );
     }
 
@@ -323,35 +356,50 @@ export class ClearEffectManager {
 
     if (value <= 0) return;
 
-    const sweepProgress = clamp(
-      (elapsed - CLEAR_FLASH_MS) / CLEAR_SWEEP_MS,
-      0,
-      1
-    );
-
-    const bounce =
-      Math.sin(Math.min(1, sweepProgress * 5) * Math.PI) * 5;
-
+    const { scale, offsetY } = getScoreBounce(elapsed);
     const x = this.cssWidth / 2;
-    const y = this.cssHeight * 0.22 - bounce;
-    const fontSize = clamp(this.cssWidth * 0.085, 28, 42);
+    const y = this.cssHeight * 0.205 + offsetY;
+    const baseFontSize = clamp(this.cssWidth * 0.095, 32, 48);
+    const fontSize = baseFontSize * scale;
+    const label = `+${value}`;
 
     this.ctx.save();
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
     this.ctx.font =
-      `900 ${fontSize}px/1 system-ui, -apple-system, sans-serif`;
+      `900 ${fontSize}px "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif`;
 
-    this.ctx.lineWidth = Math.max(3, fontSize * 0.12);
-    this.ctx.strokeStyle = 'rgba(255,255,255,0.94)';
-    this.ctx.shadowColor = 'rgba(255, 133, 76, 0.32)';
-    this.ctx.shadowBlur = 12;
-
-    const label = `+${value}`;
-
+    this.ctx.lineJoin = 'round';
+    this.ctx.lineWidth = Math.max(4, fontSize * 0.13);
+    this.ctx.strokeStyle = 'rgba(255,255,255,0.98)';
+    this.ctx.shadowColor = 'rgba(187, 76, 43, 0.24)';
+    this.ctx.shadowBlur = 10;
+    this.ctx.shadowOffsetY = 3;
     this.ctx.strokeText(label, x, y);
-    this.ctx.fillStyle = '#ff7048';
+
+    this.ctx.shadowColor = 'rgba(255, 112, 72, 0.28)';
+    this.ctx.shadowBlur = 8;
+    this.ctx.shadowOffsetY = 2;
+
+    const gradient = this.ctx.createLinearGradient(
+      0,
+      y - fontSize * 0.55,
+      0,
+      y + fontSize * 0.55
+    );
+    gradient.addColorStop(0, '#ff9a5a');
+    gradient.addColorStop(0.48, '#ff7048');
+    gradient.addColorStop(1, '#f24f5f');
+
+    this.ctx.fillStyle = gradient;
     this.ctx.fillText(label, x, y);
+
+    // Tiny highlight gives the number a soft candy-like finish.
+    this.ctx.globalAlpha = 0.32;
+    this.ctx.font =
+      `900 ${fontSize * 0.985}px "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif`;
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.fillText(label, x, y - fontSize * 0.035);
 
     this.ctx.restore();
   }
