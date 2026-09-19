@@ -1,9 +1,12 @@
+import { CONFIG } from './config.js';
+
 export class GameHUD {
   constructor(container = document.body) {
     this.score = 0;
     this.combo = 0;
     this.restartHandler = null;
     this.container = container;
+    this.dropHintCount = 0;
 
     this.root = document.createElement('div');
     this.root.style.position = 'absolute';
@@ -20,6 +23,26 @@ export class GameHUD {
     this.root.style.color = '#5d4632';
     this.root.style.pointerEvents = 'none';
     this.root.style.userSelect = 'none';
+
+    this.tip = document.createElement('div');
+    this.tip.textContent = '左右拖动 · 松手下落';
+    this.tip.style.position = 'absolute';
+    this.tip.style.left = '50%';
+    this.tip.style.top =
+      `calc(${((CONFIG.DEATH_LINE_Y + 6) / CONFIG.HEIGHT) * 100}% + 4px)`;
+    this.tip.style.transform = 'translateX(-50%)';
+    this.tip.style.zIndex = '12';
+    this.tip.style.padding = '6px 10px';
+    this.tip.style.borderRadius = '999px';
+    this.tip.style.background = 'rgba(255,255,255,0.84)';
+    this.tip.style.boxShadow = '0 4px 14px rgba(91,65,42,0.08)';
+    this.tip.style.backdropFilter = 'blur(7px)';
+    this.tip.style.color = 'rgba(92,73,57,0.76)';
+    this.tip.style.font = '700 11px/1 system-ui, sans-serif';
+    this.tip.style.whiteSpace = 'nowrap';
+    this.tip.style.pointerEvents = 'none';
+    this.tip.style.userSelect = 'none';
+    this.tip.style.transition = 'opacity 180ms ease, transform 180ms ease';
 
     this.overlay = document.createElement('div');
     this.overlay.style.position = 'absolute';
@@ -72,8 +95,30 @@ export class GameHUD {
     this.panel.append(this.title, this.finalScore, this.restartButton);
     this.overlay.appendChild(this.panel);
 
-    this.container.append(this.root, this.overlay);
+    this.container.append(this.root, this.tip, this.overlay);
     this.render();
+  }
+
+  notifyDropReleased() {
+    this.dropHintCount += 1;
+
+    if (this.dropHintCount >= 3) {
+      this.tip.style.opacity = '0';
+      this.tip.style.transform = 'translate(-50%, -4px)';
+
+      clearTimeout(this.tipHideTimer);
+      this.tipHideTimer = setTimeout(() => {
+        this.tip.style.display = 'none';
+      }, 190);
+    }
+  }
+
+  resetHint() {
+    clearTimeout(this.tipHideTimer);
+    this.dropHintCount = 0;
+    this.tip.style.display = 'block';
+    this.tip.style.opacity = '1';
+    this.tip.style.transform = 'translateX(-50%)';
   }
 
   setScore(score) {
@@ -114,6 +159,7 @@ export class GameHUD {
     this.score = 0;
     this.combo = 0;
     this.hideGameOver();
+    this.resetHint();
     this.render();
   }
 
