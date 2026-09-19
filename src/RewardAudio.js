@@ -5,6 +5,13 @@ const RATING_NOTES = {
   UNBELIEVABLE: [659.25, 783.99, 987.77, 1318.51, 1567.98]
 };
 
+const SPEECH_FALLBACK_MS = {
+  GOOD: 950,
+  GREAT: 1050,
+  PERFECT: 1250,
+  UNBELIEVABLE: 1850
+};
+
 export class RewardAudio {
   constructor(element) {
     this.context = null;
@@ -28,8 +35,10 @@ export class RewardAudio {
   }
 
   play(rating, intensity = 1) {
-    this.playChime(rating, intensity);
-    this.speakRating(rating);
+    return Promise.all([
+      this.playChime(rating, intensity),
+      this.speakRating(rating)
+    ]);
   }
 
   stop() {
@@ -43,7 +52,9 @@ export class RewardAudio {
       this.unlock();
     }
 
-    if (!this.context) return;
+    if (!this.context) {
+      return Promise.resolve();
+    }
 
     this.context.resume?.();
 
@@ -69,26 +80,52 @@ export class RewardAudio {
       oscillator.start(start);
       oscillator.stop(start + 0.24);
     });
+
+    const durationMs = Math.ceil(((notes.length - 1) * 0.075 + 0.24) * 1000) + 40;
+
+    return new Promise((resolve) => {
+      setTimeout(resolve, durationMs);
+    });
   }
 
   speakRating(rating) {
-    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
-      return;
+    if (
+      !('speechSynthesis' in window) ||
+      typeof SpeechSynthesisUtterance === 'undefined'
+    ) {
+      return Promise.resolve();
     }
 
     window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(
+    const phrase =
       rating === 'UNBELIEVABLE'
         ? 'Unbelievable!'
-        : rating.charAt(0) + rating.slice(1).toLowerCase() + '!'
-    );
+        : rating.charAt(0) + rating.slice(1).toLowerCase() + '!';
 
-    utterance.lang = 'en-US';
-    utterance.rate = rating === 'UNBELIEVABLE' ? 1.05 : 1.12;
-    utterance.pitch = rating === 'PERFECT' || rating === 'UNBELIEVABLE' ? 1.25 : 1.12;
-    utterance.volume = 0.86;
+    return new Promise((resolve) => {
+      const utterance = new SpeechSynthesisUtterance(phrase);
+      let settled = false;
 
-    window.speechSynthesis.speak(utterance);
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+
+      utterance.lang = 'en-US';
+      utterance.rate = rating === 'UNBELIEVABLE' ? 1.05 : 1.12;
+      utterance.pitch =
+        rating === 'PERFECT' || rating === 'UNBELIEVABLE'
+          ? 1.25
+          : 1.12;
+      utterance.volume = 0.86;
+      utterance.onend = finish;
+      utterance.onerror = finish;
+
+      window.speechSynthesis.speak(utterance);
+
+      setTimeout(finish, SPEECH_FALLBACK_MS[rating] ?? 1200);
+    });
   }
 }
