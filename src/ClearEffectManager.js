@@ -28,16 +28,16 @@ function colorToCss(type, alpha = 1) {
 export function getClearRating(cleared, combo = 1) {
   const value = cleared + Math.max(0, combo - 1) * 140;
 
-  if (value >= 1500) return 'UNBELIEVABLE';
-  if (value >= 900) return 'PERFECT';
-  if (value >= 500) return 'GREAT';
+  if (value >= 2000) return 'UNBELIEVABLE';
+  if (value >= 1500) return 'PERFECT';
+  if (value >= 1000) return 'GREAT';
   return 'GOOD';
 }
 
 export function getStarCount(cleared) {
-  if (cleared >= 1500) return 4;
-  if (cleared >= 900) return 3;
-  if (cleared >= 500) return 2;
+  if (cleared >= 2000) return 4;
+  if (cleared >= 1500) return 3;
+  if (cleared >= 1000) return 2;
   return 1;
 }
 
@@ -111,7 +111,6 @@ export class ClearEffectManager {
   buildEffect({ groups, cleared, combo }) {
     const sourceParticles = [];
     const maxFlyParticles = clamp(Math.round(Math.sqrt(cleared) * 5.5), 36, 150);
-
     const flat = [];
 
     for (const group of groups) {
