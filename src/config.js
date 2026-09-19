@@ -12,6 +12,7 @@ export const CONFIG = {
   GRAVITY: 0.15,
   MAX_VELOCITY: 1,
   SLEEP_THRESHOLD: 8,
+  SAND_SUBSTEPS: 3,
 
   // falling fruit
   FRUIT_FALL_STEP_MS: 16,
