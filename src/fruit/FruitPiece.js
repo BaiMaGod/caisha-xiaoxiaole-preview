@@ -13,6 +13,7 @@ export class FruitPiece {
 
     this.fallAccumulator = 0;
     this.fallStepMs = CONFIG.FRUIT_FALL_STEP_MS;
+    this.fastDrop = false;
 
     this.impactTimer = 0;
     this.breakTimer = 0;
@@ -37,6 +38,16 @@ export class FruitPiece {
     }
   }
 
+  setFastDrop(enabled) {
+    this.fastDrop = Boolean(enabled) && this.state === 'FALLING';
+  }
+
+  getEffectiveFallStepMs() {
+    if (!this.fastDrop) return this.fallStepMs;
+
+    return this.fallStepMs / Math.max(1, CONFIG.FRUIT_FAST_DROP_MULTIPLIER);
+  }
+
   update(deltaMs) {
     if (this.state === 'FALLING') {
       return this.updateFalling(deltaMs);
@@ -56,8 +67,10 @@ export class FruitPiece {
   updateFalling(deltaMs) {
     this.fallAccumulator += deltaMs;
 
-    while (this.fallAccumulator >= this.fallStepMs) {
-      this.fallAccumulator -= this.fallStepMs;
+    const effectiveFallStepMs = this.getEffectiveFallStepMs();
+
+    while (this.fallAccumulator >= effectiveFallStepMs) {
+      this.fallAccumulator -= effectiveFallStepMs;
 
       if (this.canMoveDown()) {
         this.y += 1;
