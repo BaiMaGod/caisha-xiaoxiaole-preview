@@ -59,12 +59,17 @@ new FruitController(renderer.domElement, fruitManager, grid, {
 
 clearSystem.onClear = (payload) => {
   const { cleared, score, combo } = payload;
-  const rating = getClearRating(cleared, combo);
+  const rating = getClearRating(cleared);
 
   hud.setScore(score);
   hud.showCombo(combo);
-  clearEffects.play(payload);
-  rewardAudio.play(rating, Math.min(4, cleared / 500 + combo * 0.25));
+
+  const rewardDone = rewardAudio.play(
+    rating,
+    Math.min(4, cleared / 1000 + combo * 0.25)
+  );
+
+  clearEffects.play(payload, rewardDone);
 };
 
 const material = new THREE.MeshBasicMaterial({
