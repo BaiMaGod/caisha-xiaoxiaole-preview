@@ -2,7 +2,9 @@ import { COLOR_MAP } from './colors.js';
 
 const GLOW_MS = 220;
 const FLY_MS = 460;
-const STAR_MS = 620;
+const STAR_FORM_MS = 260;
+const STAR_MIN_HOLD_MS = 550;
+const STAR_FADE_MS = 320;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -25,18 +27,16 @@ function colorToCss(type, alpha = 1) {
   return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
 }
 
-export function getClearRating(cleared, combo = 1) {
-  const value = cleared + Math.max(0, combo - 1) * 140;
-
-  if (value >= 2000) return 'UNBELIEVABLE';
-  if (value >= 1500) return 'PERFECT';
-  if (value >= 1000) return 'GREAT';
+export function getClearRating(cleared) {
+  if (cleared >= 3000) return 'UNBELIEVABLE';
+  if (cleared >= 2000) return 'PERFECT';
+  if (cleared >= 1000) return 'GREAT';
   return 'GOOD';
 }
 
 export function getStarCount(cleared) {
-  if (cleared >= 2000) return 4;
-  if (cleared >= 1500) return 3;
+  if (cleared >= 3000) return 4;
+  if (cleared >= 2000) return 3;
   if (cleared >= 1000) return 2;
   return 1;
 }
@@ -93,8 +93,18 @@ export class ClearEffectManager {
     this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
   }
 
-  play(payload) {
-    this.queue.push(this.buildEffect(payload));
+  play(payload, audioDonePromise = null) {
+    const effect = this.buildEffect(payload);
+    effect.audioDone = !audioDonePromise;
+
+    if (audioDonePromise) {
+      Promise.resolve(audioDonePromise).finally(() => {
+        effect.audioDone = true;
+        this.scheduleFrame();
+      });
+    }
+
+    this.queue.push(effect);
 
     if (!this.current) {
       this.startNext();
@@ -142,14 +152,10 @@ export class ClearEffectManager {
 
     for (let i = 0; i < starCount; i++) {
       const seed = ((i + 1) * 2246822519 + cleared * 3266489917) >>> 0;
-      const angle = (i / starCount) * Math.PI * 2 + (seed % 100) / 160;
-      const radius = 22 + (seed % 32);
 
       stars.push({
-        angle,
-        radius,
-        size: 9 + (seed % 6),
-        rotation: ((seed % 628) / 100) - Math.PI,
+        size: 11 + (seed % 4),
+        rotation: ((seed % 34) - 17) * (Math.PI / 180),
         color: groups[i % groups.length]?.color ?? 3
       });
     }
@@ -160,7 +166,9 @@ export class ClearEffectManager {
       combo,
       sourceParticles,
       stars,
-      startedAt: 0
+      startedAt: 0,
+      fadeStartedAt: null,
+      audioDone: false
     };
   }
 
@@ -184,21 +192,43 @@ export class ClearEffectManager {
     }
 
     const elapsed = time - this.current.startedAt;
-    const total = GLOW_MS + FLY_MS + STAR_MS;
+    const starStart = GLOW_MS + FLY_MS;
 
     this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
 
     if (elapsed < GLOW_MS) {
       this.drawGlow(elapsed / GLOW_MS);
-    } else if (elapsed < GLOW_MS + FLY_MS) {
+    } else if (elapsed < starStart) {
       this.drawFlight((elapsed - GLOW_MS) / FLY_MS);
     } else {
-      this.drawStars((elapsed - GLOW_MS - FLY_MS) / STAR_MS);
-    }
+      const starElapsed = elapsed - starStart;
 
-    if (elapsed >= total) {
-      this.current = null;
-      this.startNext();
+      if (starElapsed < STAR_FORM_MS) {
+        this.drawStars(starElapsed / STAR_FORM_MS, 1);
+      } else {
+        const minimumHoldDone = starElapsed >= STAR_FORM_MS + STAR_MIN_HOLD_MS;
+
+        if (minimumHoldDone && this.current.audioDone) {
+          if (this.current.fadeStartedAt === null) {
+            this.current.fadeStartedAt = time;
+          }
+
+          const fadeProgress = clamp(
+            (time - this.current.fadeStartedAt) / STAR_FADE_MS,
+            0,
+            1
+          );
+
+          this.drawStars(1, 1 - fadeProgress);
+
+          if (fadeProgress >= 1) {
+            this.current = null;
+            this.startNext();
+          }
+        } else {
+          this.drawStars(1, 1);
+        }
+      }
     }
 
     this.scheduleFrame();
@@ -272,47 +302,71 @@ export class ClearEffectManager {
     this.ctx.restore();
   }
 
-  drawStars(progress) {
+  drawStars(progress, alpha) {
     const centerX = this.cssWidth / 2;
     const centerY = this.cssHeight * 0.46;
-    const pop = easeOutBack(clamp(progress / 0.42, 0, 1));
-    const fade = progress > 0.72 ? 1 - (progress - 0.72) / 0.28 : 1;
+    const count = this.current.stars.length;
+    const spacing = 42;
+    const pop = easeOutBack(clamp(progress, 0, 1));
+    const startX = centerX - ((count - 1) * spacing) / 2;
 
     this.ctx.save();
-    this.ctx.globalAlpha = clamp(fade, 0, 1);
+    this.ctx.globalAlpha = clamp(alpha, 0, 1);
 
-    for (const star of this.current.stars) {
-      const x = centerX + Math.cos(star.angle) * star.radius * pop;
-      const y = centerY + Math.sin(star.angle) * star.radius * 0.65 * pop;
-      this.drawStar(x, y, star.size * pop, star.rotation + progress * 1.2, star.color);
+    for (let i = 0; i < count; i++) {
+      const star = this.current.stars[i];
+      const targetX = startX + i * spacing;
+      const x = centerX + (targetX - centerX) * pop;
+      const y = centerY;
+
+      this.drawSandStar(
+        x,
+        y,
+        star.size * pop,
+        star.rotation * pop,
+        star.color
+      );
     }
 
     this.ctx.restore();
   }
 
-  drawStar(x, y, radius, rotation, color) {
+  drawSandStar(x, y, radius, rotation, color) {
     if (radius <= 0) return;
 
-    this.ctx.save();
-    this.ctx.translate(x, y);
-    this.ctx.rotate(rotation);
-    this.ctx.beginPath();
+    const points = [];
 
     for (let i = 0; i < 10; i++) {
-      const angle = -Math.PI / 2 + (i * Math.PI) / 5;
+      const angle = -Math.PI / 2 + rotation + (i * Math.PI) / 5;
       const r = i % 2 === 0 ? radius : radius * 0.44;
-      const px = Math.cos(angle) * r;
-      const py = Math.sin(angle) * r;
 
-      if (i === 0) this.ctx.moveTo(px, py);
-      else this.ctx.lineTo(px, py);
+      points.push({
+        x: x + Math.cos(angle) * r,
+        y: y + Math.sin(angle) * r
+      });
     }
 
-    this.ctx.closePath();
+    this.ctx.save();
     this.ctx.fillStyle = colorToCss(color, 0.96);
     this.ctx.shadowColor = colorToCss(color, 0.9);
-    this.ctx.shadowBlur = 9;
-    this.ctx.fill();
+    this.ctx.shadowBlur = 7;
+
+    for (let edge = 0; edge < points.length; edge++) {
+      const a = points[edge];
+      const b = points[(edge + 1) % points.length];
+      const grainCount = 5;
+
+      for (let i = 0; i < grainCount; i++) {
+        const t = i / grainCount;
+        const gx = a.x + (b.x - a.x) * t;
+        const gy = a.y + (b.y - a.y) * t;
+
+        this.ctx.beginPath();
+        this.ctx.arc(gx, gy, 1.25, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+    }
+
     this.ctx.restore();
   }
 }
