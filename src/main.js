@@ -6,6 +6,8 @@ import { SandStats } from './SandStats.js';
 import { ConnectivityClear } from './ConnectivityClear.js';
 import { GameHUD } from './GameHUD.js';
 import { GameRules } from './GameRules.js';
+import { ClearEffectManager, getClearRating } from './ClearEffectManager.js';
+import { RewardAudio } from './RewardAudio.js';
 import { FruitManager } from './fruit/FruitManager.js';
 import { FruitController } from './fruit/FruitController.js';
 import { CONFIG } from './config.js';
@@ -48,14 +50,21 @@ const fruitManager = new FruitManager(grid, simulation);
 const clearSystem = new ConnectivityClear(grid, simulation);
 const rules = new GameRules(grid);
 const hud = new GameHUD(gameShell);
+const clearEffects = new ClearEffectManager(gameShell, grid);
+const rewardAudio = new RewardAudio(gameShell);
 
 new FruitController(renderer.domElement, fruitManager, grid, {
   onRelease: () => hud.notifyDropReleased()
 });
 
-clearSystem.onClear = ({ score, combo }) => {
+clearSystem.onClear = (payload) => {
+  const { cleared, score, combo } = payload;
+  const rating = getClearRating(cleared, combo);
+
   hud.setScore(score);
   hud.showCombo(combo);
+  clearEffects.play(payload);
+  rewardAudio.play(rating, Math.min(4, cleared / 500 + combo * 0.25));
 };
 
 const material = new THREE.MeshBasicMaterial({
@@ -90,6 +99,8 @@ function restartGame() {
   rules.reset();
   fruitManager.reset();
   hud.reset();
+  clearEffects.clear();
+  rewardAudio.stop();
 
   gameOver = false;
   lastFruitState = fruitManager.current?.state ?? null;
@@ -117,34 +128,41 @@ function loop(time) {
   lastFrame = time;
 
   if (!gameOver) {
-    fruitManager.update(deltaMs);
+    if (clearEffects.isBusy()) {
+      // Hold the board still while the cleared sand glows, flies inward and
+      // becomes stars. This keeps the reward readable and makes chain clears
+      // play one after another instead of visually overlapping.
+      lastSimulation = time;
+    } else {
+      fruitManager.update(deltaMs);
 
-    const fruitState = fruitManager.current?.state ?? null;
+      const fruitState = fruitManager.current?.state ?? null;
 
-    if (fruitState !== lastFruitState && fruitState === 'FALLING') {
-      clearSystem.resetCombo();
-    }
+      if (fruitState !== lastFruitState && fruitState === 'FALLING') {
+        clearSystem.resetCombo();
+      }
 
-    lastFruitState = fruitState;
+      lastFruitState = fruitState;
 
-    if (rules.checkDeathLine()) {
-      triggerGameOver();
-    }
-
-    if (!gameOver && time - lastSimulation >= CONFIG.UPDATE_INTERVAL) {
-      simulation.update();
-
-      // Top-line death is intentionally resolved before clearing:
-      // touching the death line is an immediate loss.
       if (rules.checkDeathLine()) {
         triggerGameOver();
       }
 
-      if (!gameOver && canResolveConnectivity(fruitState)) {
-        clearSystem.resolve();
-      }
+      if (!gameOver && time - lastSimulation >= CONFIG.UPDATE_INTERVAL) {
+        simulation.update();
 
-      lastSimulation = time;
+        // Top-line death is intentionally resolved before clearing:
+        // touching the death line is an immediate loss.
+        if (rules.checkDeathLine()) {
+          triggerGameOver();
+        }
+
+        if (!gameOver && canResolveConnectivity(fruitState)) {
+          clearSystem.resolve();
+        }
+
+        lastSimulation = time;
+      }
     }
   }
 
