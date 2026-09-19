@@ -5,13 +5,6 @@ const RATING_NOTES = {
   UNBELIEVABLE: [659.25, 783.99, 987.77, 1318.51, 1567.98]
 };
 
-const SPEECH_FALLBACK_MS = {
-  GOOD: 950,
-  GREAT: 1050,
-  PERFECT: 1250,
-  UNBELIEVABLE: 1850
-};
-
 export class RewardAudio {
   constructor(element) {
     this.context = null;
@@ -81,7 +74,8 @@ export class RewardAudio {
       oscillator.stop(start + 0.24);
     });
 
-    const durationMs = Math.ceil(((notes.length - 1) * 0.075 + 0.24) * 1000) + 40;
+    const durationMs =
+      Math.ceil(((notes.length - 1) * 0.075 + 0.24) * 1000) + 40;
 
     return new Promise((resolve) => {
       setTimeout(resolve, durationMs);
@@ -96,7 +90,9 @@ export class RewardAudio {
       return Promise.resolve();
     }
 
-    window.speechSynthesis.cancel();
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    synth.resume?.();
 
     const phrase =
       rating === 'UNBELIEVABLE'
@@ -123,9 +119,22 @@ export class RewardAudio {
       utterance.onend = finish;
       utterance.onerror = finish;
 
-      window.speechSynthesis.speak(utterance);
+      synth.speak(utterance);
 
-      setTimeout(finish, SPEECH_FALLBACK_MS[rating] ?? 1200);
+      // Do not resolve on a short timer: some browsers queue speech and only
+      // start it later. Keep the stars visible until speech really finishes.
+      const watchdog = () => {
+        if (settled) return;
+
+        if (!synth.speaking && !synth.pending) {
+          finish();
+          return;
+        }
+
+        setTimeout(watchdog, 500);
+      };
+
+      setTimeout(watchdog, 3000);
     });
   }
 }
