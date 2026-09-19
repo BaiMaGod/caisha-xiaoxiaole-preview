@@ -65,15 +65,16 @@ clearSystem.onClear = (payload) => {
   const { cleared, score, combo } = payload;
   const rating = getClearRating(cleared);
 
-  hud.setScore(score);
   hud.showCombo(combo);
 
-  clearEffects.play(payload, () =>
-    rewardAudio.play(
+  clearEffects.play(payload, () => {
+    hud.setScore(score);
+
+    return rewardAudio.play(
       rating,
       Math.min(4, cleared / 1000 + combo * 0.25)
-    )
-  );
+    );
+  });
 };
 
 const material = new THREE.MeshBasicMaterial({
@@ -139,9 +140,8 @@ function loop(time) {
 
   if (!gameOver) {
     if (clearEffects.isBusy()) {
-      // Hold the board still while the cleared sand glows, flies inward and
-      // becomes stars. This keeps the reward readable and makes chain clears
-      // play one after another instead of visually overlapping.
+      // Hold the board still during the one-second flash + left-to-right
+      // clear sweep so the disappearing component stays visually readable.
       lastSimulation = time;
     } else {
       const previousFruitState = lastFruitState;
