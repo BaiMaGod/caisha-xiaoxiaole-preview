@@ -1,36 +1,60 @@
-const WIDTH = 44;
-const HEIGHT = 26;
+const WIDTH = 46;
+const HEIGHT = 30;
 
 function buildBananaRows() {
   const rows = [];
+
+  // Build the banana around a curved center line rather than subtracting
+  // two ellipses. This produces a thicker belly, tapered tips and a more
+  // organic asymmetric silhouette.
+  const centerline = [];
+
+  for (let i = 0; i <= 100; i++) {
+    const t = i / 100;
+
+    const x =
+      (1 - t) ** 2 * 5 +
+      2 * (1 - t) * t * 22 +
+      t ** 2 * 39;
+
+    const y =
+      (1 - t) ** 2 * 7 +
+      2 * (1 - t) * t * 25 +
+      t ** 2 * 9;
+
+    const radius = 3 + 2.3 * Math.sin(Math.PI * t);
+
+    centerline.push({ x, y, radius });
+  }
 
   for (let y = 0; y < HEIGHT; y++) {
     let row = '';
 
     for (let x = 0; x < WIDTH; x++) {
-      const outer =
-        ((x - 21.5) / 19.2) ** 2 +
-          ((y - 12.8) / 10.2) ** 2 <=
-        1;
+      let body = false;
 
-      // Cut an ellipse from the upper half to create the banana crescent.
-      const inner =
-        ((x - 21.5) / 15.7) ** 2 +
-          ((y - 7.7) / 7.6) ** 2 <=
-        1;
+      for (const point of centerline) {
+        const dx = x - point.x;
+        const dy = y - point.y;
 
+        if (dx * dx + dy * dy <= point.radius * point.radius) {
+          body = true;
+          break;
+        }
+      }
+
+      // Distinct short stalk on the right end.
+      const stalk =
+        (x >= 39 && x <= 41 && y >= 3 && y <= 10) ||
+        (x >= 40 && x <= 42 && y >= 2 && y <= 5);
+
+      // Round the left tip so it does not look like a crescent moon point.
       const leftTip =
-        ((x - 3.7) / 3.1) ** 2 +
-          ((y - 7.6) / 4.5) ** 2 <=
+        ((x - 4) / 2.8) ** 2 +
+          ((y - 6) / 3.6) ** 2 <=
         1;
 
-      const rightTip =
-        ((x - 39.3) / 3.1) ** 2 +
-          ((y - 7.1) / 4.7) ** 2 <=
-        1;
-
-      const crescent = outer && !inner;
-      row += crescent || leftTip || rightTip ? '1' : '0';
+      row += body || stalk || leftTip ? '1' : '0';
     }
 
     rows.push(row);
