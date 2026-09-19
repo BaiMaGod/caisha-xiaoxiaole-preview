@@ -45,11 +45,13 @@ const sandRenderer = new SandRenderer(grid);
 const stats = new SandStats(simulation);
 
 const fruitManager = new FruitManager(grid, simulation);
-new FruitController(renderer.domElement, fruitManager, grid);
-
 const clearSystem = new ConnectivityClear(grid, simulation);
 const rules = new GameRules(grid);
 const hud = new GameHUD(gameShell);
+
+new FruitController(renderer.domElement, fruitManager, grid, {
+  onRelease: () => hud.notifyDropReleased()
+});
 
 clearSystem.onClear = ({ score, combo }) => {
   hud.setScore(score);
