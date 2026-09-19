@@ -25,7 +25,7 @@ export class GameHUD {
     this.root.style.userSelect = 'none';
 
     this.tip = document.createElement('div');
-    this.tip.textContent = '左右拖动 · 松手下落';
+    this.tip.textContent = '左右拖动 · 松手下落 · 下滑×2';
     this.tip.style.position = 'absolute';
     this.tip.style.left = '50%';
     this.tip.style.top =
