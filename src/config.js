@@ -21,6 +21,11 @@ export const CONFIG = {
   FRUIT_IMPACT_DURATION_MS: 90,
   FRUIT_BREAK_DURATION_MS: 300,
 
+  // debug
+  // Keep this enabled during effect development so every registered clear
+  // effect is immediately available. Set to false before production release.
+  DEBUG_UNLOCK_ALL_CLEAR_EFFECTS: true,
+
   // clear effects
   // Keep the highlight implementation available, but disable it by default
   // while we evaluate the direct random jump-clear look.
