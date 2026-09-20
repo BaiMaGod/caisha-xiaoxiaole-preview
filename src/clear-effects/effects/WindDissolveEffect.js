@@ -16,17 +16,23 @@ export const WIND_EFFECT_TOTAL_MS = 1500;
 export const WIND_FLYER_LIMIT = 240;
 export const WIND_DUST_LIMIT = 120;
 
+// One shared wind front drives erosion, flyer release and dust release.
+// The sweep finishes before the full animation so the last grains still have
+// time to drift and fade instead of being cut off at the right edge.
+export const WIND_SWEEP_START_PROGRESS = 0.05;
+export const WIND_SWEEP_END_PROGRESS = 0.74;
+export const WIND_FRONT_PADDING_COLUMNS = 8;
+export const WIND_FLYER_LIFETIME_MIN = 0.14;
+export const WIND_FLYER_LIFETIME_MAX = 0.22;
+export const WIND_DUST_LIFETIME_MIN = 0.18;
+export const WIND_DUST_LIFETIME_MAX = 0.28;
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
 function easeOutCubic(value) {
   return 1 - (1 - value) ** 3;
-}
-
-function smoothstep(value) {
-  const t = clamp(value, 0, 1);
-  return t * t * (3 - 2 * t);
 }
 
 function hash01(x, y, seed = 0) {
@@ -49,6 +55,51 @@ export function getWindErosionOffset(gridX, gridY, seed = 0) {
     Math.sin(gridY * 0.061 + gridX * 0.083 + seed) * 2.1;
   const grain = (hash01(gridX, gridY, seed) - 0.5) * 5.5;
   return broad + grain;
+}
+
+export function getWindSweepProgress(progress) {
+  return clamp(
+    (progress - WIND_SWEEP_START_PROGRESS) /
+      (WIND_SWEEP_END_PROGRESS - WIND_SWEEP_START_PROGRESS),
+    0,
+    1
+  );
+}
+
+export function getWindFrontX(progress, bounds) {
+  const range = Math.max(1, bounds.maxX - bounds.minX + 1);
+  const startX = bounds.minX - WIND_FRONT_PADDING_COLUMNS;
+  const endX = bounds.maxX + WIND_FRONT_PADDING_COLUMNS;
+  const sweep = getWindSweepProgress(progress);
+
+  return startX + (endX - startX) * sweep;
+}
+
+export function getWindParticleHitProgress(
+  particle,
+  bounds,
+  effectSeed = 0
+) {
+  const range = Math.max(1, bounds.maxX - bounds.minX + 1);
+  const startX = bounds.minX - WIND_FRONT_PADDING_COLUMNS;
+  const endX = bounds.maxX + WIND_FRONT_PADDING_COLUMNS;
+  const erosionOffset = getWindErosionOffset(
+    particle.gridX,
+    particle.gridY,
+    effectSeed
+  );
+  const targetFrontX = particle.gridX - erosionOffset;
+  const normalized = clamp(
+    (targetFrontX - startX) / Math.max(1, endX - startX),
+    0,
+    1
+  );
+
+  return (
+    WIND_SWEEP_START_PROGRESS +
+    normalized *
+      (WIND_SWEEP_END_PROGRESS - WIND_SWEEP_START_PROGRESS)
+  );
 }
 
 export class WindDissolveEffect extends BaseClearEffect {
@@ -216,9 +267,18 @@ export class WindDissolveEffect extends BaseClearEffect {
 
       flyers.push({
         ...particle,
-        speed: 0.78 + r1 * 0.55,
-        lift: 11 + r2 * 34,
-        drift: 34 + r1 * 76,
+        hitProgress: getWindParticleHitProgress(
+          particle,
+          bounds,
+          effectSeed
+        ),
+        speed: 0.9 + r1 * 0.35,
+        liftRatio: 0.035 + r2 * 0.055,
+        driftRatio: 0.18 + r1 * 0.14,
+        lifeProgress:
+          WIND_FLYER_LIFETIME_MIN +
+          r2 *
+            (WIND_FLYER_LIFETIME_MAX - WIND_FLYER_LIFETIME_MIN),
         phase: r2 * Math.PI * 2,
         size: 0.7 + r1 * 1.3
       });
@@ -233,9 +293,18 @@ export class WindDissolveEffect extends BaseClearEffect {
 
       dust.push({
         ...particle,
-        speed: 0.55 + r1 * 0.6,
-        lift: 20 + r2 * 54,
-        drift: 50 + r1 * 100,
+        hitProgress: getWindParticleHitProgress(
+          particle,
+          bounds,
+          effectSeed
+        ),
+        speed: 0.82 + r1 * 0.4,
+        liftRatio: 0.055 + r2 * 0.075,
+        driftRatio: 0.2 + r1 * 0.18,
+        lifeProgress:
+          WIND_DUST_LIFETIME_MIN +
+          r2 *
+            (WIND_DUST_LIFETIME_MAX - WIND_DUST_LIFETIME_MIN),
         phase: r1 * Math.PI * 2,
         size: 0.35 + r2 * 0.65
       });
@@ -312,21 +381,20 @@ export class WindDissolveEffect extends BaseClearEffect {
     maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
     maskCtx.fillStyle = '#fff';
 
-    const range = Math.max(1, bounds.maxX - bounds.minX + 1);
-    const sweep = easeOutCubic(clamp(progress / 0.9, 0, 1));
-    const frontX = bounds.minX - 7 + (range + 18) * sweep;
+    const frontX = getWindFrontX(progress, bounds);
     let remaining = 0;
 
     for (const particle of effect.particles) {
-      const erosion =
-        frontX +
-        getWindErosionOffset(
-          particle.gridX,
-          particle.gridY,
-          effect.effectSeed
-        );
+      const erosionOffset = getWindErosionOffset(
+        particle.gridX,
+        particle.gridY,
+        effect.effectSeed
+      );
 
-      const survives = progress < 0.96 && particle.gridX > erosion;
+      // The exact same wind front and erosion offset are also used to compute
+      // the visual particle's hitProgress. This keeps the disappearing grain
+      // and its released flyer causally locked to the same frame.
+      const survives = particle.gridX > frontX + erosionOffset;
 
       if (survives) {
         maskCtx.fillRect(particle.gridX, particle.gridY, 1, 1);
@@ -356,17 +424,6 @@ export class WindDissolveEffect extends BaseClearEffect {
     this.ctx.restore();
   }
 
-  getReleaseProgress(particle) {
-    const { bounds } = this.current;
-    const range = Math.max(1, bounds.maxX - bounds.minX + 1);
-
-    return clamp(
-      ((particle.gridX - bounds.minX) / range) * 0.72,
-      0,
-      0.72
-    );
-  }
-
   drawFlyingParticles(progress, particles, isDust) {
     const cellW = this.cssWidth / this.grid.width;
     const cellH = this.cssHeight / this.grid.height;
@@ -375,33 +432,42 @@ export class WindDissolveEffect extends BaseClearEffect {
     this.ctx.globalCompositeOperation = isDust ? 'lighter' : 'source-over';
 
     for (const particle of particles) {
-      const release = this.getReleaseProgress(particle);
       const local = clamp(
-        (progress - release) / Math.max(0.001, 1 - release),
+        (progress - particle.hitProgress) /
+          Math.max(0.001, particle.lifeProgress),
         0,
         1
       );
 
-      if (local <= 0 || local >= 1) continue;
+      if (progress < particle.hitProgress || local >= 1) continue;
 
       const eased = easeOutCubic(local);
-      const alpha =
-        (isDust ? 0.34 : 0.88) *
-        Math.sin(Math.PI * smoothstep(local));
+      const fadeIn = clamp(local * 7, 0, 1);
+      const fadeOut = (1 - local) ** (isDust ? 1.15 : 0.9);
+      const alpha = (isDust ? 0.34 : 0.88) * fadeIn * fadeOut;
 
       if (alpha <= 0.01) continue;
 
       const startX = (particle.gridX + 0.5) * cellW;
       const startY = (particle.gridY + 0.5) * cellH;
+      const horizontalTravel =
+        this.cssWidth *
+        particle.driftRatio *
+        particle.speed *
+        eased;
+      const verticalTravel =
+        this.cssWidth *
+        particle.liftRatio *
+        eased;
 
       const x =
         startX +
-        particle.drift * eased +
-        Math.sin(particle.phase + local * 8) * (isDust ? 10 : 5);
+        horizontalTravel +
+        Math.sin(particle.phase + local * 8) * (isDust ? 8 : 4);
       const y =
         startY -
-        particle.lift * eased -
-        Math.sin(particle.phase + local * 4) * (isDust ? 5 : 2);
+        verticalTravel -
+        Math.sin(particle.phase + local * 4) * (isDust ? 4 : 2);
 
       const rgb = getParticleRgb(
         particle.gridX,
@@ -434,16 +500,18 @@ export class WindDissolveEffect extends BaseClearEffect {
   }
 
   drawWindStreaks(progress) {
-    if (progress <= 0.04 || progress >= 0.94) return;
+    if (
+      progress <= WIND_SWEEP_START_PROGRESS * 0.6 ||
+      progress >= WIND_SWEEP_END_PROGRESS + 0.08
+    ) {
+      return;
+    }
 
     const effect = this.current;
     const { bounds } = effect;
     const cellW = this.cssWidth / this.grid.width;
     const cellH = this.cssHeight / this.grid.height;
-    const range = Math.max(1, bounds.maxX - bounds.minX + 1);
-    const front =
-      (bounds.minX - 4 + (range + 12) * easeOutCubic(progress / 0.94)) *
-      cellW;
+    const front = getWindFrontX(progress, bounds) * cellW;
 
     this.ctx.save();
     this.ctx.lineCap = 'round';
