@@ -16,6 +16,7 @@ import { PlayerProgress } from './progress/PlayerProgress.js';
 import { UnlockManager } from './progress/UnlockManager.js';
 import { EffectCollectionPanel } from './ui/EffectCollectionPanel.js';
 import { HomeScreen } from './ui/HomeScreen.js';
+import { GameOverArtwork } from './ui/GameOverArtwork.js';
 
 const gameShell = document.getElementById('game-shell');
 const gameRoot = document.getElementById('game-root');
@@ -81,6 +82,11 @@ const homeScreen = new HomeScreen(gameShell, {
   onEffects: () => effectPanel.open()
 });
 
+const gameOverArtwork = new GameOverArtwork(gameShell, {
+  onRestart: () => restartGame(),
+  onHome: () => returnHome()
+});
+
 // The game exists behind the home screen, but no fruit or physics should move
 // until the player explicitly starts a run.
 fruitManager.setEnabled(false);
@@ -139,10 +145,20 @@ function triggerGameOver() {
   fruitManager.setEnabled(false);
   progress.recordGameOver(clearSystem.score);
   unlockManager.checkAll();
-  hud.showGameOver(clearSystem.score);
+
+  const artworkCanvas = sandRenderer.createArtworkCanvas({
+    scale: 3
+  });
+
+  gameOverArtwork.show({
+    score: clearSystem.score,
+    rating: getClearRating(clearSystem.score),
+    artworkCanvas
+  });
 }
 
 function restartGame() {
+  gameOverArtwork.hide();
   grid.clear();
   simulation.reset();
   clearSystem.reset();
@@ -163,14 +179,14 @@ function restartGame() {
   sandRenderer.update(fruitManager.current);
 }
 
-hud.setRestartHandler(restartGame);
-hud.setHomeHandler(() => {
+function returnHome() {
   rewardAudio.stop();
   clearEffects.clear();
   effectPanel.close();
+  gameOverArtwork.hide();
   fruitManager.setEnabled(false);
   homeScreen.show();
-});
+}
 
 function canResolveConnectivity(fruitState) {
   // During IMPACT/BREAKING the fruit is still writing grains into SandGrid.
