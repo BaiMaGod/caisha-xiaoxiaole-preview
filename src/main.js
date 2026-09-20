@@ -12,6 +12,9 @@ import { SettlementGate } from './SettlementGate.js';
 import { FruitManager } from './fruit/FruitManager.js';
 import { FruitController } from './fruit/FruitController.js';
 import { CONFIG } from './config.js';
+import { PlayerProgress } from './progress/PlayerProgress.js';
+import { UnlockManager } from './progress/UnlockManager.js';
+import { EffectCollectionPanel } from './ui/EffectCollectionPanel.js';
 
 const gameShell = document.getElementById('game-shell');
 const gameRoot = document.getElementById('game-root');
@@ -46,6 +49,9 @@ const grid = new SandGrid();
 const simulation = new SandSimulation(grid);
 const sandRenderer = new SandRenderer(grid);
 const stats = new SandStats(simulation);
+const progress = new PlayerProgress();
+const unlockManager = new UnlockManager(progress);
+unlockManager.checkAll();
 
 const clearSystem = new ConnectivityClear(grid, simulation);
 const fruitManager = new FruitManager(grid, simulation, {
@@ -56,10 +62,17 @@ const hud = new GameHUD(gameShell);
 const clearEffects = new ClearEffectManager(
   gameShell,
   grid,
-  sandRenderer.canvas
+  sandRenderer.canvas,
+  {
+    getEffectId: () => progress.getSelectedEffectId()
+  }
 );
 const rewardAudio = new RewardAudio(gameShell);
 const settlementGate = new SettlementGate(3);
+const effectPanel = new EffectCollectionPanel(gameShell, {
+  progress,
+  unlockManager
+});
 
 new FruitController(renderer.domElement, fruitManager, grid, {
   onRelease: () => hud.notifyDropReleased()
@@ -75,6 +88,9 @@ clearSystem.onBeforeClear = () => {
 clearSystem.onClear = (payload) => {
   const { cleared, score, combo } = payload;
   const rating = getClearRating(cleared);
+
+  progress.recordClear({ cleared, score, combo });
+  unlockManager.checkAll();
 
   hud.showCombo(combo);
 
@@ -110,6 +126,8 @@ function triggerGameOver() {
 
   gameOver = true;
   fruitManager.setEnabled(false);
+  progress.recordGameOver(clearSystem.score);
+  unlockManager.checkAll();
   hud.showGameOver(clearSystem.score);
 }
 
@@ -149,10 +167,9 @@ function loop(time) {
   const deltaMs = Math.min(50, time - lastFrame);
   lastFrame = time;
 
-  if (!gameOver) {
+  if (!gameOver && !effectPanel.isOpen()) {
     if (clearEffects.isBusy()) {
-      // Hold the board still while the component flashes, returns to its
-      // original color, then breaks apart left-to-right in a random 1.5s wave.
+      // Hold the board still while the currently equipped clear effect plays.
       lastSimulation = time;
     } else {
       const previousFruitState = lastFruitState;
