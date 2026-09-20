@@ -99,19 +99,68 @@ export class SandRenderer {
     }
   }
 
+  createArtworkCanvas({ scale = 3, background = '#fff8ea' } = {}) {
+    const safeScale = Math.max(1, Math.min(4, Math.round(scale)));
+    const canvas = document.createElement('canvas');
+    canvas.width = this.grid.width * safeScale;
+    canvas.height = this.grid.height * safeScale;
+
+    const ctx = canvas.getContext('2d', { alpha: false });
+    if (!ctx) return canvas;
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.scale(safeScale, safeScale);
+
+    for (let y = 0; y < this.grid.height; y++) {
+      for (let x = 0; x < this.grid.width; x++) {
+        const type = this.grid.get(x, y);
+        if (!type) continue;
+
+        // Artwork captures settled sand only. The death line, HUD and the
+        // controllable fruit deliberately stay out of the framed result.
+        this.drawParticleTo(ctx, x, y, type, false);
+      }
+    }
+
+    ctx.restore();
+    return canvas;
+  }
+
   drawParticle(x, y, type, activeFruit, breakProgress = 0) {
+    this.drawParticleTo(
+      this.ctx,
+      x,
+      y,
+      type,
+      activeFruit,
+      breakProgress
+    );
+  }
+
+  drawParticleTo(
+    ctx,
+    x,
+    y,
+    type,
+    activeFruit,
+    breakProgress = 0
+  ) {
     const boost = activeFruit ? 10 + Math.round(breakProgress * 7) : 0;
     const rgb = getParticleRgb(x, y, type, boost);
     if (!rgb) return;
 
-    this.ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+    ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
 
     if (activeFruit) {
-      this.ctx.fillRect(x + 0.01, y + 0.01, 0.98, 0.98);
+      ctx.fillRect(x + 0.01, y + 0.01, 0.98, 0.98);
     } else {
       // Slight air gap between settled grains preserves a fine-sand texture
       // after the 180x320 logical canvas is scaled to the phone viewport.
-      this.ctx.fillRect(
+      ctx.fillRect(
         x + SETTLED_PARTICLE_INSET,
         y + SETTLED_PARTICLE_INSET,
         SETTLED_PARTICLE_SIZE,
