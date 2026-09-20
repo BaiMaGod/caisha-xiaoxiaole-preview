@@ -30,7 +30,7 @@ export const CLEAR_FADE_START_MS = CLEAR_TIMING.fadeStartMs;
 export const CLEAR_EFFECT_TOTAL_MS = CLEAR_TIMING.totalMs;
 
 const SCORE_BOUNCE_MS = 105;
-export const CLEAR_RANDOM_AHEAD_COLUMNS = 4;
+export const CLEAR_RANDOM_AHEAD_COLUMNS = 9;
 
 // Normal settled sand intentionally has tiny gaps for texture. During the
 // random jump-clear phase those gaps read as a checkerboard once neighboring
@@ -128,7 +128,9 @@ export function getJumpClearProbability(distanceAheadColumns) {
     return 0;
   }
 
-  return 0.5 ** band;
+  // Ahead of the wave front, clear probability now falls linearly by 10%
+  // per column: 90%, 80%, ... 10% across the next nine columns.
+  return (10 - band) / 10;
 }
 
 export function isParticleJumpCleared(
