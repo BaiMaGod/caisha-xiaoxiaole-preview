@@ -5,6 +5,7 @@ export class GameHUD {
     this.score = 0;
     this.combo = 0;
     this.restartHandler = null;
+    this.homeHandler = null;
     this.container = container;
     this.dropHintCount = 0;
 
@@ -92,7 +93,31 @@ export class GameHUD {
       this.restartHandler?.();
     });
 
-    this.panel.append(this.title, this.finalScore, this.restartButton);
+    this.restartButton.style.marginTop = '0';
+
+    this.homeButton = document.createElement('button');
+    this.homeButton.textContent = '返回首页';
+    this.homeButton.style.border = '1px solid rgba(114,81,58,0.14)';
+    this.homeButton.style.borderRadius = '999px';
+    this.homeButton.style.padding = '12px 22px';
+    this.homeButton.style.fontSize = '15px';
+    this.homeButton.style.fontWeight = '750';
+    this.homeButton.style.color = '#72513a';
+    this.homeButton.style.background = '#f6ede3';
+    this.homeButton.style.cursor = 'pointer';
+
+    this.homeButton.addEventListener('click', () => {
+      this.homeHandler?.();
+    });
+
+    this.actions = document.createElement('div');
+    this.actions.style.marginTop = '20px';
+    this.actions.style.display = 'flex';
+    this.actions.style.justifyContent = 'center';
+    this.actions.style.gap = '9px';
+    this.actions.append(this.homeButton, this.restartButton);
+
+    this.panel.append(this.title, this.finalScore, this.actions);
     this.overlay.appendChild(this.panel);
 
     this.container.append(this.root, this.tip, this.overlay);
@@ -140,6 +165,10 @@ export class GameHUD {
 
   setRestartHandler(handler) {
     this.restartHandler = handler;
+  }
+
+  setHomeHandler(handler) {
+    this.homeHandler = handler;
   }
 
   showGameOver(score) {
