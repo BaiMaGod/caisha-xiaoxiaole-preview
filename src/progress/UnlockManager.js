@@ -1,8 +1,15 @@
 import { CLEAR_EFFECTS } from '../clear-effects/ClearEffectRegistry.js';
+import { CONFIG } from '../config.js';
 
 export class UnlockManager {
-  constructor(progress) {
+  constructor(
+    progress,
+    {
+      debugUnlockAll = CONFIG.DEBUG_UNLOCK_ALL_CLEAR_EFFECTS
+    } = {}
+  ) {
     this.progress = progress;
+    this.debugUnlockAll = Boolean(debugUnlockAll);
   }
 
   checkAll() {
@@ -11,6 +18,13 @@ export class UnlockManager {
 
     for (const effect of CLEAR_EFFECTS) {
       if (this.progress.isUnlocked(effect.id)) continue;
+
+      if (this.debugUnlockAll) {
+        if (this.progress.unlock(effect.id, false)) {
+          unlockedNow.push(effect);
+        }
+        continue;
+      }
 
       const { type, value } = effect.unlock ?? {};
 
