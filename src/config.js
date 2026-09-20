@@ -21,5 +21,10 @@ export const CONFIG = {
   FRUIT_IMPACT_DURATION_MS: 90,
   FRUIT_BREAK_DURATION_MS: 300,
 
+  // clear effects
+  // Keep the highlight implementation available, but disable it by default
+  // while we evaluate the direct random jump-clear look.
+  CLEAR_HIGHLIGHT_ENABLED: false,
+
   POUR_RADIUS: 3
 };

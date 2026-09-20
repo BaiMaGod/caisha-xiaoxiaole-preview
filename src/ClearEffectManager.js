@@ -5,14 +5,29 @@ import {
   SETTLED_PARTICLE_INSET,
   SETTLED_PARTICLE_SIZE
 } from './colors.js';
+import { CONFIG } from './config.js';
 
 export const CLEAR_FLASH_MS = 110;
 export const CLEAR_RESTORE_MS = 90;
 export const CLEAR_FADE_MS = 1500;
-export const CLEAR_FADE_START_MS =
-  CLEAR_FLASH_MS + CLEAR_RESTORE_MS;
-export const CLEAR_EFFECT_TOTAL_MS =
-  CLEAR_FADE_START_MS + CLEAR_FADE_MS;
+
+export function getClearEffectTiming(
+  highlightEnabled = CONFIG.CLEAR_HIGHLIGHT_ENABLED
+) {
+  const fadeStartMs = highlightEnabled
+    ? CLEAR_FLASH_MS + CLEAR_RESTORE_MS
+    : 0;
+
+  return {
+    highlightEnabled,
+    fadeStartMs,
+    totalMs: fadeStartMs + CLEAR_FADE_MS
+  };
+}
+
+const CLEAR_TIMING = getClearEffectTiming();
+export const CLEAR_FADE_START_MS = CLEAR_TIMING.fadeStartMs;
+export const CLEAR_EFFECT_TOTAL_MS = CLEAR_TIMING.totalMs;
 
 const SCORE_BOUNCE_MS = 105;
 export const CLEAR_RANDOM_AHEAD_COLUMNS = 4;
@@ -387,9 +402,15 @@ export class ClearEffectManager {
 
     this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
 
-    if (elapsed < CLEAR_FLASH_MS) {
+    if (
+      CONFIG.CLEAR_HIGHLIGHT_ENABLED &&
+      elapsed < CLEAR_FLASH_MS
+    ) {
       this.drawHighlightFlash(elapsed / CLEAR_FLASH_MS);
-    } else if (elapsed < CLEAR_FADE_START_MS) {
+    } else if (
+      CONFIG.CLEAR_HIGHLIGHT_ENABLED &&
+      elapsed < CLEAR_FADE_START_MS
+    ) {
       this.drawOriginalParticles();
     } else {
       this.drawLeftToRightJumpClear(elapsed);
