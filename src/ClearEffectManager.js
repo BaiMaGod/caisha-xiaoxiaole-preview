@@ -231,9 +231,10 @@ export function getScoreAnchor({
 }
 
 export class ClearEffectManager {
-  constructor(container, grid) {
+  constructor(container, grid, sourceCanvas = null) {
     this.container = container;
     this.grid = grid;
+    this.sourceCanvas = sourceCanvas;
     this.queue = [];
     this.current = null;
     this.raf = 0;
@@ -266,7 +267,8 @@ export class ClearEffectManager {
     this.canvas.width = Math.round(this.cssWidth * dpr);
     this.canvas.height = Math.round(this.cssHeight * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    this.ctx.imageSmoothingEnabled = false;
+    this.ctx.imageSmoothingEnabled = true;
+    this.ctx.imageSmoothingQuality = 'high';
   }
 
   isBusy() {
@@ -336,6 +338,10 @@ export class ClearEffectManager {
       }
     }
 
+    const snapshotCanvas = this.captureSourceSnapshot(groups);
+    const maskCanvas = this.createLogicalCanvas();
+    const frameCanvas = this.createLogicalCanvas();
+
     return {
       groups,
       cleared,
@@ -343,9 +349,134 @@ export class ClearEffectManager {
       particles,
       bounds: getClearBounds(particles),
       scoreColor: getDominantClearColor(groups),
+      snapshotCanvas,
+      maskCanvas,
+      maskCtx: maskCanvas?.getContext('2d') ?? null,
+      frameCanvas,
+      frameCtx: frameCanvas?.getContext('2d') ?? null,
       startedAt: 0,
       startRewardAudio: null
     };
+  }
+
+  createLogicalCanvas() {
+    if (typeof document === 'undefined') return null;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = this.grid.width;
+    canvas.height = this.grid.height;
+
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.imageSmoothingEnabled = false;
+    }
+
+    return canvas;
+  }
+
+  captureSourceSnapshot(groups) {
+    if (!this.sourceCanvas) return null;
+
+    const snapshotCanvas = this.createLogicalCanvas();
+    const selectionMask = this.createLogicalCanvas();
+
+    if (!snapshotCanvas || !selectionMask) return null;
+
+    const snapshotCtx = snapshotCanvas.getContext('2d');
+    const maskCtx = selectionMask.getContext('2d');
+
+    if (!snapshotCtx || !maskCtx) return null;
+
+    snapshotCtx.clearRect(
+      0,
+      0,
+      snapshotCanvas.width,
+      snapshotCanvas.height
+    );
+    snapshotCtx.drawImage(this.sourceCanvas, 0, 0);
+
+    maskCtx.clearRect(
+      0,
+      0,
+      selectionMask.width,
+      selectionMask.height
+    );
+    maskCtx.fillStyle = '#fff';
+
+    for (const group of groups) {
+      for (const index of group.cells) {
+        const x = index % this.grid.width;
+        const y = Math.floor(index / this.grid.width);
+        maskCtx.fillRect(x, y, 1, 1);
+      }
+    }
+
+    snapshotCtx.save();
+    snapshotCtx.globalCompositeOperation = 'destination-in';
+    snapshotCtx.drawImage(selectionMask, 0, 0);
+    snapshotCtx.restore();
+
+    return snapshotCanvas;
+  }
+
+  drawSnapshotCanvas(snapshotCanvas) {
+    if (!snapshotCanvas) return false;
+
+    this.ctx.save();
+    this.ctx.imageSmoothingEnabled = true;
+    this.ctx.imageSmoothingQuality = 'high';
+    this.ctx.drawImage(
+      snapshotCanvas,
+      0,
+      0,
+      this.cssWidth,
+      this.cssHeight
+    );
+    this.ctx.restore();
+
+    return true;
+  }
+
+  buildJumpClearSnapshot(elapsed) {
+    const effect = this.current;
+
+    if (
+      !effect?.snapshotCanvas ||
+      !effect.maskCanvas ||
+      !effect.maskCtx ||
+      !effect.frameCanvas ||
+      !effect.frameCtx
+    ) {
+      return null;
+    }
+
+    const { maskCtx, frameCtx, maskCanvas, frameCanvas } = effect;
+
+    maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+    maskCtx.fillStyle = '#fff';
+
+    for (const particle of effect.particles) {
+      if (
+        isParticleJumpCleared(
+          elapsed,
+          particle,
+          effect.bounds
+        )
+      ) {
+        continue;
+      }
+
+      maskCtx.fillRect(particle.gridX, particle.gridY, 1, 1);
+    }
+
+    frameCtx.clearRect(0, 0, frameCanvas.width, frameCanvas.height);
+    frameCtx.globalCompositeOperation = 'source-over';
+    frameCtx.drawImage(effect.snapshotCanvas, 0, 0);
+    frameCtx.globalCompositeOperation = 'destination-in';
+    frameCtx.drawImage(maskCanvas, 0, 0);
+    frameCtx.globalCompositeOperation = 'source-over';
+
+    return frameCanvas;
   }
 
   startNext() {
@@ -406,12 +537,12 @@ export class ClearEffectManager {
       CONFIG.CLEAR_HIGHLIGHT_ENABLED &&
       elapsed < CLEAR_FLASH_MS
     ) {
-      this.drawHighlightFlash(elapsed / CLEAR_FLASH_MS);
+      this.drawSnapshotHighlight(elapsed / CLEAR_FLASH_MS);
     } else if (
       CONFIG.CLEAR_HIGHLIGHT_ENABLED &&
       elapsed < CLEAR_FADE_START_MS
     ) {
-      this.drawOriginalParticles();
+      this.drawSnapshotOriginal();
     } else {
       this.drawLeftToRightJumpClear(elapsed);
       this.drawClearScore(elapsed);
@@ -469,6 +600,40 @@ export class ClearEffectManager {
     );
   }
 
+  drawSnapshotHighlight(progress) {
+    const snapshot = this.current?.snapshotCanvas;
+
+    if (!snapshot) {
+      this.drawHighlightFlash(progress);
+      return;
+    }
+
+    const pulse = Math.sin(progress * Math.PI);
+
+    this.ctx.save();
+    this.ctx.imageSmoothingEnabled = true;
+    this.ctx.imageSmoothingQuality = 'high';
+    this.ctx.filter = `brightness(${1 + pulse * 0.32}) saturate(${1 + pulse * 0.08})`;
+    this.ctx.drawImage(
+      snapshot,
+      0,
+      0,
+      this.cssWidth,
+      this.cssHeight
+    );
+    this.ctx.restore();
+  }
+
+  drawSnapshotOriginal() {
+    const snapshot = this.current?.snapshotCanvas;
+
+    if (snapshot && this.drawSnapshotCanvas(snapshot)) {
+      return;
+    }
+
+    this.drawOriginalParticles();
+  }
+
   drawHighlightFlash(progress) {
     const cellW = this.cssWidth / this.grid.width;
     const cellH = this.cssHeight / this.grid.height;
@@ -515,6 +680,13 @@ export class ClearEffectManager {
   }
 
   drawLeftToRightJumpClear(elapsed) {
+    const frameCanvas = this.buildJumpClearSnapshot(elapsed);
+
+    if (frameCanvas && this.drawSnapshotCanvas(frameCanvas)) {
+      return;
+    }
+
+    // Fallback only if a source snapshot is unavailable.
     this.ctx.save();
     this.ctx.globalCompositeOperation = 'source-over';
     this.ctx.shadowColor = 'transparent';
@@ -531,9 +703,6 @@ export class ClearEffectManager {
         continue;
       }
 
-      // Keep the exact per-grain RGB, but remove the normal settled-sand
-      // spacing during the jump-clear phase. Otherwise the 0.16-cell gaps
-      // become visible as a regular grid when neighboring grains disappear.
       this.drawJumpParticle(particle);
     }
 

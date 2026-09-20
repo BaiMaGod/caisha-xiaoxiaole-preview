@@ -53,13 +53,24 @@ const fruitManager = new FruitManager(grid, simulation, {
 });
 const rules = new GameRules(grid);
 const hud = new GameHUD(gameShell);
-const clearEffects = new ClearEffectManager(gameShell, grid);
+const clearEffects = new ClearEffectManager(
+  gameShell,
+  grid,
+  sandRenderer.canvas
+);
 const rewardAudio = new RewardAudio(gameShell);
 const settlementGate = new SettlementGate(3);
 
 new FruitController(renderer.domElement, fruitManager, grid, {
   onRelease: () => hud.notifyDropReleased()
 });
+
+// ConnectivityClear calls this while every target grain still exists.
+// Rendering here guarantees the clear-effect snapshot is the exact current
+// low-resolution sand image that the player was seeing before deletion.
+clearSystem.onBeforeClear = () => {
+  sandRenderer.update(fruitManager.current);
+};
 
 clearSystem.onClear = (payload) => {
   const { cleared, score, combo } = payload;

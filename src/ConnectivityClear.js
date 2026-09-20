@@ -6,6 +6,7 @@ export class ConnectivityClear {
     this.combo = 0;
     this.visited = new Uint8Array(grid.width * grid.height);
     this.queue = new Int32Array(grid.width * grid.height);
+    this.onBeforeClear = null;
     this.onClear = null;
   }
 
@@ -13,6 +14,8 @@ export class ConnectivityClear {
     let totalCleared = 0;
     const groups = [];
 
+    // First collect every spanning component without mutating the grid.
+    // This gives rendering code one exact pre-clear frame to snapshot.
     for (let color = 1; color <= 7; color++) {
       this.visited.fill(0);
 
@@ -26,27 +29,42 @@ export class ConnectivityClear {
         if (!component.reachesRight) continue;
 
         const cells = component.cells.slice();
-        const cleared = this.clearComponent(cells);
 
-        if (cleared > 0) {
-          totalCleared += cleared;
+        if (cells.length > 0) {
+          totalCleared += cells.length;
           groups.push({ color, cells });
         }
       }
     }
 
-    if (totalCleared > 0) {
-      this.score += totalCleared;
+    if (totalCleared <= 0) {
+      return 0;
+    }
+
+    // Called while every target grain still exists in SandGrid.
+    this.onBeforeClear?.({
+      cleared: totalCleared,
+      groups
+    });
+
+    let actualCleared = 0;
+
+    for (const group of groups) {
+      actualCleared += this.clearComponent(group.cells);
+    }
+
+    if (actualCleared > 0) {
+      this.score += actualCleared;
       this.combo += 1;
       this.onClear?.({
-        cleared: totalCleared,
+        cleared: actualCleared,
         score: this.score,
         combo: this.combo,
         groups
       });
     }
 
-    return totalCleared;
+    return actualCleared;
   }
 
   collectComponent(startX, startY, color) {
