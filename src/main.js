@@ -15,6 +15,7 @@ import { CONFIG } from './config.js';
 import { PlayerProgress } from './progress/PlayerProgress.js';
 import { UnlockManager } from './progress/UnlockManager.js';
 import { EffectCollectionPanel } from './ui/EffectCollectionPanel.js';
+import { HomeScreen } from './ui/HomeScreen.js';
 
 const gameShell = document.getElementById('game-shell');
 const gameRoot = document.getElementById('game-root');
@@ -73,6 +74,16 @@ const effectPanel = new EffectCollectionPanel(gameShell, {
   progress,
   unlockManager
 });
+
+const homeScreen = new HomeScreen(gameShell, {
+  progress,
+  onStart: () => restartGame(),
+  onEffects: () => effectPanel.open()
+});
+
+// The game exists behind the home screen, but no fruit or physics should move
+// until the player explicitly starts a run.
+fruitManager.setEnabled(false);
 
 new FruitController(renderer.domElement, fruitManager, grid, {
   onRelease: () => hud.notifyDropReleased()
@@ -153,6 +164,13 @@ function restartGame() {
 }
 
 hud.setRestartHandler(restartGame);
+hud.setHomeHandler(() => {
+  rewardAudio.stop();
+  clearEffects.clear();
+  effectPanel.close();
+  fruitManager.setEnabled(false);
+  homeScreen.show();
+});
 
 function canResolveConnectivity(fruitState) {
   // During IMPACT/BREAKING the fruit is still writing grains into SandGrid.
@@ -167,7 +185,7 @@ function loop(time) {
   const deltaMs = Math.min(50, time - lastFrame);
   lastFrame = time;
 
-  if (!gameOver && !effectPanel.isOpen()) {
+  if (!gameOver && !effectPanel.isOpen() && !homeScreen.isOpen()) {
     if (clearEffects.isBusy()) {
       // Hold the board still while the currently equipped clear effect plays.
       lastSimulation = time;
