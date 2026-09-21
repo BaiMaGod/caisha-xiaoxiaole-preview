@@ -9,9 +9,11 @@ import { BANANA_TEMPLATE } from '../fruit/templates/banana.js';
 import { CONFIG } from '../config.js';
 
 const DEMO_STYLE_ID = 'dream-sand-home-demo-styles';
+const TARGET_COLOR = 4;
 const DEMO_FALL_SPEED_MULTIPLIER = 2;
-const NEXT_BLOCK_DELAY_MS = 240;
-const LOOP_RESTORE_DELAY_MS = 860;
+const NEXT_BLOCK_DELAY_MS = 230;
+const CLEAR_DURATION_MS = 900;
+const NEXT_LOOP_DELAY_MS = 420;
 
 function ensureStyles() {
   if (document.getElementById(DEMO_STYLE_ID)) return;
@@ -49,22 +51,21 @@ function ensureStyles() {
 
     .home-demo__sweep {
       position: absolute;
-      left: -38%;
-      top: 79%;
-      width: 36%;
-      height: 8px;
+      left: -34%;
+      top: 78%;
+      width: 34%;
+      height: 7px;
       opacity: 0;
       border-radius: 999px;
       background: linear-gradient(
         90deg,
         transparent,
         rgba(125,238,191,.18),
-        rgba(255,245,167,.95),
-        rgba(125,238,191,.62),
+        rgba(255,245,167,.96),
+        rgba(125,238,191,.68),
         transparent
       );
-      filter: blur(.2px);
-      box-shadow: 0 0 14px rgba(116,225,184,.52);
+      box-shadow: 0 0 15px rgba(116,225,184,.58);
       pointer-events: none;
     }
 
@@ -78,23 +79,12 @@ function ensureStyles() {
       border: 1px solid rgba(255,255,255,.62);
       border-radius: 999px;
       color: #4e765f;
-      background: rgba(255,255,255,.84);
+      background: rgba(255,255,255,.86);
       box-shadow: 0 8px 22px rgba(82,65,44,.10);
       backdrop-filter: blur(8px);
       font: 900 11px/1 system-ui, sans-serif;
       letter-spacing: .06em;
       pointer-events: none;
-    }
-
-    .home-demo__loop-mask {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      pointer-events: none;
-      background:
-        radial-gradient(circle at 50% 74%, rgba(255,247,212,.92), transparent 45%),
-        rgba(255,248,234,.52);
-      mix-blend-mode: screen;
     }
   `;
 
@@ -109,7 +99,7 @@ export class HomeDemoController {
     this.grid = new SandGrid();
     this.simulation = new SandSimulation(this.grid);
     this.renderer = new SandRenderer(this.grid);
-    this.clearSystem = new ConnectivityClear(this.grid, this.simulation);
+    this.connectivity = new ConnectivityClear(this.grid, this.simulation);
 
     this.apple = new FruitTemplate(APPLE_TEMPLATE);
     this.banana = new FruitTemplate(BANANA_TEMPLATE);
@@ -130,32 +120,35 @@ export class HomeDemoController {
     this.clearLabel.className = 'home-demo__clear-label';
     this.clearLabel.textContent = '同色贯通 · 消除！';
 
-    this.loopMask = document.createElement('div');
-    this.loopMask.className = 'home-demo__loop-mask';
-
     this.root.append(
       this.renderer.canvas,
       this.ambient,
       this.sweep,
-      this.clearLabel,
-      this.loopMask
+      this.clearLabel
     );
     this.container.appendChild(this.root);
 
-    // A deterministic 10-block loop. The first 9 build a varied, believable
-    // sand pile; the 10th green block is the teaching moment that completes
-    // the prepared left-to-right connection.
+    // The first nine blocks deliberately build two separate green banks and
+    // leave a clean center gap. The tenth wide banana lands in that gap and
+    // completes the left-to-right connection.
+    //
+    // All ten blocks use the same target color. Once that component clears,
+    // every particle added during the demo is gone. The colorful base below
+    // never participates in the clear, so the board naturally returns to the
+    // exact visual state it had before block #1 — no snapshot restore.
     this.sequence = [
-      { template: this.apple,  color: 1, center: 0.18, holdMs: 170 },
-      { template: this.banana, color: 3, center: 0.77, holdMs: 150 },
-      { template: this.apple,  color: 6, center: 0.36, holdMs: 165 },
-      { template: this.banana, color: 7, center: 0.62, holdMs: 145 },
-      { template: this.apple,  color: 2, center: 0.84, holdMs: 170 },
-      { template: this.banana, color: 1, center: 0.25, holdMs: 145 },
-      { template: this.apple,  color: 6, center: 0.69, holdMs: 160 },
-      { template: this.banana, color: 3, center: 0.46, holdMs: 150 },
-      { template: this.apple,  color: 4, center: 0.38, holdMs: 175 },
-      { template: this.apple,  color: 4, center: 0.56, holdMs: 190 }
+      { template: this.apple,  centerX: 16,  holdMs: 115 },
+      { template: this.apple,  centerX: 31,  holdMs: 100 },
+      { template: this.banana, centerX: 48,  holdMs: 105 },
+      { template: this.apple,  centerX: 61,  holdMs: 100 },
+
+      { template: this.apple,  centerX: 119, holdMs: 100 },
+      { template: this.banana, centerX: 134, holdMs: 105 },
+      { template: this.apple,  centerX: 150, holdMs: 100 },
+      { template: this.apple,  centerX: 164, holdMs: 105 },
+      { template: this.banana, centerX: 172, holdMs: 110 },
+
+      { template: this.banana, centerX: 90,  holdMs: 145 }
     ];
 
     this.opened = true;
@@ -164,24 +157,18 @@ export class HomeDemoController {
     this.spawnAt = 0;
     this.spawnedAt = 0;
     this.released = false;
-    this.settleMs = 0;
     this.lastTime = performance.now();
     this.lastPhysics = 0;
     this.phase = 'dropping';
-    this.restoreAt = 0;
-    this.bridgeInjected = false;
-    this.initialCells = null;
+    this.finalSettledAt = 0;
+    this.clearStartedAt = 0;
+    this.postClearStableTicks = 0;
+    this.nextLoopAt = 0;
+    this.baselineHash = 0;
     this.raf = null;
 
-    this.clearSystem.onClear = () => {
-      if (this.phase === 'clearing') return;
-
-      this.phase = 'clearing';
-      this.playClearCue();
-      this.restoreAt = performance.now() + LOOP_RESTORE_DELAY_MS;
-    };
-
     this.resetDemo();
+
     this.animate = this.animate.bind(this);
     this.raf = requestAnimationFrame(this.animate);
   }
@@ -200,103 +187,85 @@ export class HomeDemoController {
   resetDemo() {
     this.grid.clear();
     this.simulation.reset();
-    this.clearSystem.reset();
-    this.seedBoard();
-
-    this.initialCells = this.grid.cells.slice();
+    this.connectivity.reset();
+    this.seedStableBase();
 
     this.current = null;
     this.sequenceIndex = 0;
-    this.spawnAt = performance.now() + 420;
+    this.spawnAt = performance.now() + 380;
     this.spawnedAt = 0;
     this.released = false;
-    this.settleMs = 0;
     this.lastPhysics = 0;
     this.phase = 'dropping';
-    this.restoreAt = 0;
-    this.bridgeInjected = false;
+    this.finalSettledAt = 0;
+    this.clearStartedAt = 0;
+    this.postClearStableTicks = 0;
+    this.nextLoopAt = 0;
+    this.baselineHash = this.hashGrid();
 
     this.renderer.update(null);
   }
 
-  restoreLoopStart(time) {
-    if (!this.initialCells) {
-      this.resetDemo();
-      return;
-    }
-
-    this.grid.cells.set(this.initialCells);
-    this.simulation.reset();
-    this.clearSystem.reset();
-
-    this.current = null;
-    this.sequenceIndex = 0;
-    this.spawnAt = time + 360;
-    this.spawnedAt = 0;
-    this.released = false;
-    this.settleMs = 0;
-    this.lastPhysics = time;
-    this.phase = 'dropping';
-    this.restoreAt = 0;
-    this.bridgeInjected = false;
-
-    this.renderer.update(null);
-    this.playLoopResetMask();
-  }
-
-  seedBoard() {
+  seedStableBase() {
     const width = this.grid.width;
     const height = this.grid.height;
-    const terrainColors = [1, 3, 6, 7, 2];
+    const baseTop = 268;
 
-    for (let x = 0; x < width; x++) {
-      const surface =
-        267 +
-        Math.round(Math.sin(x * 0.085) * 5) +
-        Math.round(Math.sin(x * 0.031 + 1.4) * 4);
+    // The base is completely filled below a flat surface, so waking it during
+    // impacts cannot make it slide or collapse. TARGET_COLOR is intentionally
+    // excluded, keeping demo-added green sand isolated from the permanent art.
+    const baseColors = [1, 3, 6, 7, 2];
 
-      for (let y = Math.max(267, surface); y < height; y++) {
-        const segment = Math.floor(x / 24);
-        const band = Math.floor((y - 263) / 15);
-        const color = terrainColors[(segment + band * 2) % terrainColors.length];
+    for (let y = baseTop; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const waveA = Math.floor(
+          2.4 * Math.sin(x * 0.075 + y * 0.035)
+        );
+        const waveB = Math.floor(
+          1.8 * Math.sin(x * 0.031 - y * 0.052 + 1.7)
+        );
+        const band = Math.floor((y - baseTop + waveA + waveB) / 10);
+        const segment = Math.floor((x + band * 13) / 30);
+        const color =
+          baseColors[
+            ((segment + band * 2) % baseColors.length + baseColors.length) %
+              baseColors.length
+          ];
+
         this.grid.set(x, y, color);
       }
     }
-
-    // Two green banks intentionally stop short of the middle. The 10th drop
-    // visually lands in this area; after it settles we only fill any tiny
-    // remaining gaps and let ConnectivityClear perform the real clear.
-    for (let y = 258; y <= 264; y++) {
-      for (let x = 0; x <= 69; x++) {
-        this.grid.set(x, y, 4);
-      }
-
-      for (let x = 112; x < width; x++) {
-        this.grid.set(x, y, 4);
-      }
-    }
-
-    this.paintPocket(18, 242, 26, 16, 7);
-    this.paintPocket(127, 244, 29, 15, 6);
-    this.paintPocket(56, 250, 21, 11, 3);
-    this.paintPocket(97, 251, 18, 9, 1);
-
-    this.simulation.activateRect(0, 232, width - 1, height - 1);
   }
 
-  paintPocket(cx, cy, rx, ry, color) {
-    for (let y = cy - ry; y <= cy + ry; y++) {
-      for (let x = cx - rx; x <= cx + rx; x++) {
-        const dx = (x - cx) / Math.max(1, rx);
-        const dy = (y - cy) / Math.max(1, ry);
+  hashGrid() {
+    let hash = 2166136261 >>> 0;
 
-        if (dx * dx + dy * dy > 1) continue;
-
-        if (this.grid.empty(x, y)) {
-          this.grid.set(x, y, color);
-        }
-      }
+    for (let i = 0; i < this.grid.cells.length; i++) {
+      hash ^= this.grid.cells[i] + (i & 255);
+      hash = Math.imul(hash, 16777619) >>> 0;
     }
+
+    return hash;
+  }
+
+  beginNextLoop(time) {
+    // Do not restore or rewrite any particle here. The whole point of the demo
+    // loop is that progressive clearing has already returned the board to the
+    // original base through normal physics.
+    this.current = null;
+    this.sequenceIndex = 0;
+    this.spawnAt = time + NEXT_LOOP_DELAY_MS;
+    this.spawnedAt = 0;
+    this.released = false;
+    this.phase = 'dropping';
+    this.finalSettledAt = 0;
+    this.clearStartedAt = 0;
+    this.postClearStableTicks = 0;
+    this.nextLoopAt = 0;
+
+    // Reset only simulation bookkeeping; SandGrid itself is untouched.
+    this.simulation.reset();
+    this.connectivity.reset();
   }
 
   spawnNext(time) {
@@ -312,24 +281,21 @@ export class HomeDemoController {
 
     this.current = new FruitPiece({
       template: descriptor.template,
-      color: descriptor.color,
+      color: TARGET_COLOR,
       grid: this.grid,
       simulation: this.simulation
     });
 
-    // Home demo only: fall exactly 2x faster than normal gameplay.
+    // Home demo only: exactly 2x the normal game fall speed.
     this.current.fallStepMs = Math.max(
       1,
       CONFIG.FRUIT_FALL_STEP_MS / DEMO_FALL_SPEED_MULTIPLIER
     );
 
-    this.current.setCenterX(
-      Math.round(this.grid.width * descriptor.center)
-    );
+    this.current.setCenterX(descriptor.centerX);
 
     this.spawnedAt = time;
     this.released = false;
-    this.settleMs = 0;
   }
 
   updateCurrent(deltaMs, time) {
@@ -339,10 +305,11 @@ export class HomeDemoController {
 
     if (this.current.state === 'CONTROL') {
       const elapsed = time - this.spawnedAt;
-      const sway = Math.sin(elapsed * 0.009) * 5;
-      const target = this.grid.width * descriptor.center + sway;
+      const sway = Math.sin(elapsed * 0.012) * 3;
 
-      this.current.setCenterX(Math.round(target));
+      this.current.setCenterX(
+        Math.round(descriptor.centerX + sway)
+      );
 
       if (!this.released && elapsed >= descriptor.holdMs) {
         this.current.release();
@@ -355,67 +322,153 @@ export class HomeDemoController {
     if (settled || this.current.state === 'SAND') {
       this.current = null;
       this.sequenceIndex += 1;
-      this.spawnAt = time + NEXT_BLOCK_DELAY_MS;
-      this.settleMs = 0;
 
-      if (this.sequenceIndex >= this.sequence.length) {
-        this.phase = 'settling';
+      if (this.sequenceIndex < this.sequence.length) {
+        this.spawnAt = time + NEXT_BLOCK_DELAY_MS;
+      } else {
+        this.phase = 'waiting-for-bridge';
+        this.finalSettledAt = time;
       }
     }
   }
 
-  updatePhysics(time, deltaMs) {
-    if (this.phase === 'clearing') return;
+  findSpanningTarget() {
+    this.connectivity.visited.fill(0);
+
+    for (let y = 0; y < this.grid.height; y++) {
+      if (this.grid.get(0, y) !== TARGET_COLOR) continue;
+
+      const startIndex = this.grid.index(0, y);
+      if (this.connectivity.visited[startIndex]) continue;
+
+      const component =
+        this.connectivity.collectComponent(0, y, TARGET_COLOR);
+
+      if (component.reachesRight) {
+        return component;
+      }
+    }
+
+    return null;
+  }
+
+  startProgressiveClear(time) {
+    this.phase = 'clearing';
+    this.clearStartedAt = time;
+    this.playClearCue();
+  }
+
+  clearTargetBehindWave(waveX, forceAll = false) {
+    let minX = this.grid.width;
+    let maxX = -1;
+    let maxY = -1;
+    let removed = 0;
+
+    for (let y = 0; y < this.grid.height; y++) {
+      for (let x = 0; x < this.grid.width; x++) {
+        if (this.grid.get(x, y) !== TARGET_COLOR) continue;
+        if (!forceAll && x > waveX) continue;
+
+        this.grid.set(x, y, 0);
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+        removed++;
+      }
+    }
+
+    if (removed > 0) {
+      this.simulation.activateRect(
+        Math.max(0, minX - 4),
+        0,
+        Math.min(this.grid.width - 1, maxX + 5),
+        Math.min(this.grid.height - 1, maxY + 8)
+      );
+    }
+
+    return removed;
+  }
+
+  updateProgressiveClear(time) {
+    const elapsed = time - this.clearStartedAt;
+    const progress = Math.min(1, elapsed / CLEAR_DURATION_MS);
+    const eased = 1 - Math.pow(1 - progress, 2.15);
+    const waveX = Math.floor(
+      -8 + eased * (this.grid.width + 16)
+    );
+
+    this.clearTargetBehindWave(waveX, progress >= 1);
+
+    if (time - this.lastPhysics >= CONFIG.UPDATE_INTERVAL) {
+      this.simulation.update();
+      this.lastPhysics = time;
+    }
+
+    if (progress < 1) return;
+
+    // One final pass catches green grains that moved behind the sweep during
+    // the clear. No baseline particles are touched.
+    this.clearTargetBehindWave(this.grid.width, true);
+
+    this.phase = 'post-clear-settle';
+    this.postClearStableTicks = 0;
+    this.nextLoopAt = time + 260;
+  }
+
+  updatePhysics(time) {
+    if (this.phase === 'clearing') {
+      this.updateProgressiveClear(time);
+      return;
+    }
+
     if (time - this.lastPhysics < CONFIG.UPDATE_INTERVAL) return;
 
     this.simulation.update();
     this.lastPhysics = time;
 
-    if (this.current) {
-      this.settleMs = 0;
-      return;
-    }
+    if (this.phase === 'waiting-for-bridge') {
+      const component = this.findSpanningTarget();
 
-    if (this.phase === 'dropping') return;
-
-    this.settleMs += deltaMs;
-
-    if (this.phase !== 'settling') return;
-
-    // Give the 10th block time to fully turn into sand and settle.
-    if (this.settleMs < 520) return;
-
-    let cleared = this.clearSystem.resolve();
-
-    if (cleared > 0) {
-      return;
-    }
-
-    // Guarantee the teaching beat only after all 10 blocks have dropped.
-    // The visible 10th green block does most of the work; this closes only
-    // remaining microscopic gaps caused by cellular-automata randomness.
-    if (!this.bridgeInjected && this.settleMs >= 760) {
-      this.bridgeInjected = true;
-
-      for (let x = 66; x <= 115; x++) {
-        for (let y = 254; y <= 262; y++) {
-          if (this.grid.empty(x, y)) {
-            this.grid.set(x, y, 4);
-          }
-        }
-      }
-
-      this.simulation.activateRect(62, 248, 119, 268);
-      cleared = this.clearSystem.resolve();
-
-      if (cleared > 0) {
+      if (component) {
+        this.startProgressiveClear(time);
         return;
       }
+
+      // The last banana is intentionally wide and the banks are positioned to
+      // overlap it. Give cellular sand a short moment to settle before checking
+      // again; unlike the previous version, no hidden cells are injected.
+      if (time - this.finalSettledAt > 1300) {
+        // Safety: keep physics alive rather than freezing the homepage. The
+        // next checks normally find the span as the final grains finish sliding.
+        this.simulation.activateRect(
+          0,
+          210,
+          this.grid.width - 1,
+          this.grid.height - 1
+        );
+      }
+
+      return;
     }
 
-    // Absolute safety net: never let the homepage demo stall.
-    if (this.settleMs >= 1450) {
-      this.restoreLoopStart(time);
+    if (this.phase === 'post-clear-settle') {
+      if (this.simulation.movedCount === 0) {
+        this.postClearStableTicks += 1;
+      } else {
+        this.postClearStableTicks = 0;
+      }
+
+      const noTargetLeft = !this.grid.cells.includes(TARGET_COLOR);
+      const naturallyBackAtStart =
+        noTargetLeft && this.hashGrid() === this.baselineHash;
+
+      if (
+        naturallyBackAtStart &&
+        this.postClearStableTicks >= 2 &&
+        time >= this.nextLoopAt
+      ) {
+        this.beginNextLoop(time);
+      }
     }
   }
 
@@ -426,40 +479,38 @@ export class HomeDemoController {
     this.sweep.animate(
       [
         { transform: 'translateX(0)', opacity: 0 },
-        { transform: 'translateX(125%)', opacity: .95, offset: .18 },
+        { transform: 'translateX(125%)', opacity: .95, offset: .16 },
         { transform: 'translateX(410%)', opacity: 0 }
       ],
       {
-        duration: 760,
+        duration: CLEAR_DURATION_MS,
         easing: 'cubic-bezier(.2,.75,.2,1)'
       }
     );
 
     this.clearLabel.animate(
       [
-        { opacity: 0, transform: 'translate(-50%, 8px) scale(.94)' },
-        { opacity: 1, transform: 'translate(-50%, 0) scale(1)', offset: .22 },
-        { opacity: 1, transform: 'translate(-50%, 0) scale(1)', offset: .66 },
-        { opacity: 0, transform: 'translate(-50%, -7px) scale(.98)' }
+        {
+          opacity: 0,
+          transform: 'translate(-50%, 8px) scale(.94)'
+        },
+        {
+          opacity: 1,
+          transform: 'translate(-50%, 0) scale(1)',
+          offset: .2
+        },
+        {
+          opacity: 1,
+          transform: 'translate(-50%, 0) scale(1)',
+          offset: .66
+        },
+        {
+          opacity: 0,
+          transform: 'translate(-50%, -7px) scale(.98)'
+        }
       ],
       {
         duration: 1050,
-        easing: 'ease-out'
-      }
-    );
-  }
-
-  playLoopResetMask() {
-    this.loopMask.getAnimations().forEach((animation) => animation.cancel());
-
-    this.loopMask.animate(
-      [
-        { opacity: .68 },
-        { opacity: .22, offset: .42 },
-        { opacity: 0 }
-      ],
-      {
-        duration: 260,
         easing: 'ease-out'
       }
     );
@@ -473,17 +524,11 @@ export class HomeDemoController {
       return;
     }
 
-    const deltaMs = Math.min(50, Math.max(0, time - this.lastTime));
+    const deltaMs = Math.min(
+      50,
+      Math.max(0, time - this.lastTime)
+    );
     this.lastTime = time;
-
-    if (
-      this.phase === 'clearing' &&
-      this.restoreAt > 0 &&
-      time >= this.restoreAt
-    ) {
-      this.restoreLoopStart(time);
-      return;
-    }
 
     if (
       this.phase === 'dropping' &&
@@ -495,7 +540,7 @@ export class HomeDemoController {
     }
 
     this.updateCurrent(deltaMs, time);
-    this.updatePhysics(time, deltaMs);
+    this.updatePhysics(time);
     this.renderer.update(this.current);
   }
 }
