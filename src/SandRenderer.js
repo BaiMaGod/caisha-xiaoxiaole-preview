@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import {
   getParticleRgb,
   SETTLED_PARTICLE_INSET,
@@ -12,12 +11,16 @@ export class SandRenderer {
     this.canvas = document.createElement('canvas');
     this.canvas.width = grid.width;
     this.canvas.height = grid.height;
-    this.ctx = this.canvas.getContext('2d', { alpha: true });
+    this.ctx = this.canvas.getContext('2d', {
+      alpha: true,
+      desynchronized: true
+    });
 
-    this.texture = new THREE.CanvasTexture(this.canvas);
-    this.texture.magFilter = THREE.LinearFilter;
-    this.texture.minFilter = THREE.LinearFilter;
-    this.texture.generateMipmaps = false;
+    if (!this.ctx) {
+      throw new Error('Canvas2D is unavailable');
+    }
+
+    this.ctx.imageSmoothingEnabled = false;
   }
 
   update(fruit = null) {
@@ -37,7 +40,6 @@ export class SandRenderer {
       this.drawFruit(fruit);
     }
 
-    this.texture.needsUpdate = true;
   }
 
   drawDeathLine() {
