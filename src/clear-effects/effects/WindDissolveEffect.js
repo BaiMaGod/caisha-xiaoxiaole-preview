@@ -5,7 +5,6 @@ import {
   rgbToCss
 } from '../../colors.js';
 import {
-  compensateSnapshotPixelsForDisplay,
   getClearBounds,
   getDominantClearColor,
   getParticleClearRandom,
@@ -181,6 +180,26 @@ export class WindDissolveEffect extends BaseClearEffect {
     return canvas;
   }
 
+  getSnapshotBackgroundColor() {
+    const fallback = '#fff8ea';
+
+    if (typeof getComputedStyle !== 'function') {
+      return fallback;
+    }
+
+    const color = getComputedStyle(this.container)?.backgroundColor;
+
+    if (
+      !color ||
+      color === 'transparent' ||
+      color === 'rgba(0, 0, 0, 0)'
+    ) {
+      return fallback;
+    }
+
+    return color;
+  }
+
   captureSourceSnapshot(groups) {
     if (!this.sourceCanvas) return null;
 
@@ -191,6 +210,16 @@ export class WindDissolveEffect extends BaseClearEffect {
 
     if (!snapshotCtx || !maskCtx) return null;
 
+    // Match the already-visible settled-sand color before erosion begins.
+    // The source canvas contains transparent air gaps inside each logical
+    // particle cell, so flatten it over the game background first.
+    snapshotCtx.fillStyle = this.getSnapshotBackgroundColor();
+    snapshotCtx.fillRect(
+      0,
+      0,
+      snapshotCanvas.width,
+      snapshotCanvas.height
+    );
     snapshotCtx.drawImage(this.sourceCanvas, 0, 0);
     maskCtx.fillStyle = '#fff';
 
@@ -206,16 +235,6 @@ export class WindDissolveEffect extends BaseClearEffect {
     snapshotCtx.globalCompositeOperation = 'destination-in';
     snapshotCtx.drawImage(selectionMask, 0, 0);
     snapshotCtx.restore();
-
-    const imageData = snapshotCtx.getImageData(
-      0,
-      0,
-      snapshotCanvas.width,
-      snapshotCanvas.height
-    );
-
-    compensateSnapshotPixelsForDisplay(imageData.data);
-    snapshotCtx.putImageData(imageData, 0, 0);
 
     return snapshotCanvas;
   }
@@ -412,8 +431,9 @@ export class WindDissolveEffect extends BaseClearEffect {
     frameCtx.globalCompositeOperation = 'source-over';
 
     this.ctx.save();
-    this.ctx.imageSmoothingEnabled = true;
-    this.ctx.imageSmoothingQuality = 'high';
+    // Nearest-neighbor scaling prevents transparent cleared cells from
+    // bleeding into surviving opaque cells and making the erosion edge pale.
+    this.ctx.imageSmoothingEnabled = false;
     this.ctx.drawImage(
       frameCanvas,
       0,
