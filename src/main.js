@@ -76,9 +76,14 @@ const effectPanel = new EffectCollectionPanel(gameShell, {
   unlockManager
 });
 
+const homeDemo = new HomeDemoController(gameShell);
+
 const homeScreen = new HomeScreen(gameShell, {
   progress,
-  onStart: () => restartGame(),
+  onStart: () => {
+    homeDemo.hide();
+    restartGame();
+  },
   onEffects: () => effectPanel.open()
 });
 
@@ -185,6 +190,7 @@ function returnHome() {
   effectPanel.close();
   gameOverArtwork.hide();
   fruitManager.setEnabled(false);
+  homeDemo.show();
   homeScreen.show();
 }
 
