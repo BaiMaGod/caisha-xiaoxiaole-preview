@@ -180,26 +180,6 @@ export class WindDissolveEffect extends BaseClearEffect {
     return canvas;
   }
 
-  getSnapshotBackgroundColor() {
-    const fallback = '#fff8ea';
-
-    if (typeof getComputedStyle !== 'function') {
-      return fallback;
-    }
-
-    const color = getComputedStyle(this.container)?.backgroundColor;
-
-    if (
-      !color ||
-      color === 'transparent' ||
-      color === 'rgba(0, 0, 0, 0)'
-    ) {
-      return fallback;
-    }
-
-    return color;
-  }
-
   captureSourceSnapshot(groups) {
     if (!this.sourceCanvas) return null;
 
@@ -210,16 +190,8 @@ export class WindDissolveEffect extends BaseClearEffect {
 
     if (!snapshotCtx || !maskCtx) return null;
 
-    // Match the already-visible settled-sand color before erosion begins.
-    // The source canvas contains transparent air gaps inside each logical
-    // particle cell, so flatten it over the game background first.
-    snapshotCtx.fillStyle = this.getSnapshotBackgroundColor();
-    snapshotCtx.fillRect(
-      0,
-      0,
-      snapshotCanvas.width,
-      snapshotCanvas.height
-    );
+    // Keep the exact Canvas2D sand pixels. The erosion mask should only
+    // remove grains and must not change the color of the grains that survive.
     snapshotCtx.drawImage(this.sourceCanvas, 0, 0);
     maskCtx.fillStyle = '#fff';
 
