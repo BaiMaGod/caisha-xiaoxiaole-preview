@@ -365,6 +365,30 @@ export class DefaultJumpEffect extends BaseClearEffect {
     }
 
     const snapshotCanvas = this.captureSourceSnapshot(groups);
+
+    if (snapshotCanvas) {
+      const snapshotCtx = snapshotCanvas.getContext('2d');
+      const imageData = snapshotCtx?.getImageData(
+        0,
+        0,
+        snapshotCanvas.width,
+        snapshotCanvas.height
+      );
+
+      if (imageData) {
+        for (const particle of particles) {
+          const offset =
+            (particle.gridY * snapshotCanvas.width + particle.gridX) * 4;
+
+          particle.displayRgb = [
+            imageData.data[offset],
+            imageData.data[offset + 1],
+            imageData.data[offset + 2]
+          ];
+        }
+      }
+    }
+
     const maskCanvas = this.createLogicalCanvas();
     const frameCanvas = this.createLogicalCanvas();
 
@@ -400,6 +424,26 @@ export class DefaultJumpEffect extends BaseClearEffect {
     return canvas;
   }
 
+  getSnapshotBackgroundColor() {
+    const fallback = '#fff8ea';
+
+    if (typeof getComputedStyle !== 'function') {
+      return fallback;
+    }
+
+    const color = getComputedStyle(this.container)?.backgroundColor;
+
+    if (
+      !color ||
+      color === 'transparent' ||
+      color === 'rgba(0, 0, 0, 0)'
+    ) {
+      return fallback;
+    }
+
+    return color;
+  }
+
   captureSourceSnapshot(groups) {
     if (!this.sourceCanvas) return null;
 
@@ -414,6 +458,18 @@ export class DefaultJumpEffect extends BaseClearEffect {
     if (!snapshotCtx || !maskCtx) return null;
 
     snapshotCtx.clearRect(
+      0,
+      0,
+      snapshotCanvas.width,
+      snapshotCanvas.height
+    );
+
+    // SandRenderer draws settled grains with a small transparent air gap.
+    // Flatten that already-visible Canvas2D result onto the game background
+    // before masking it. This stores the exact on-screen color as an opaque
+    // pixel, so later random removals cannot make surviving grains look pale.
+    snapshotCtx.fillStyle = this.getSnapshotBackgroundColor();
+    snapshotCtx.fillRect(
       0,
       0,
       snapshotCanvas.width,
@@ -612,12 +668,14 @@ export class DefaultJumpEffect extends BaseClearEffect {
   drawJumpParticle(particle) {
     const cellW = this.cssWidth / this.grid.width;
     const cellH = this.cssHeight / this.grid.height;
-    const rgb = getParticleRgb(
-      particle.gridX,
-      particle.gridY,
-      particle.color,
-      0
-    );
+    const rgb =
+      particle.displayRgb ??
+      getParticleRgb(
+        particle.gridX,
+        particle.gridY,
+        particle.color,
+        0
+      );
 
     if (!rgb) return;
 
@@ -710,13 +768,11 @@ export class DefaultJumpEffect extends BaseClearEffect {
   }
 
   drawLeftToRightJumpClear(elapsed) {
-    const frameCanvas = this.buildJumpClearSnapshot(elapsed);
-
-    if (frameCanvas && this.drawSnapshotCanvas(frameCanvas)) {
-      return;
-    }
-
-    // Fallback only if a source snapshot is unavailable.
+    // Draw surviving grains directly at display resolution. The old snapshot
+    // mask path preserved per-cell transparency and then smoothed the masked
+    // image, so as neighboring cells disappeared the remaining area visually
+    // faded toward the cream background. Opaque sampled display colors keep
+    // each surviving grain the same color until that grain is actually removed.
     this.ctx.save();
     this.ctx.globalCompositeOperation = 'source-over';
     this.ctx.shadowColor = 'transparent';
