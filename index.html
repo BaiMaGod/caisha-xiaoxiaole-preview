@@ -4,16 +4,16 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#efe9df" />
-    <title>彩沙消消乐</title>
+    <meta name="theme-color" content="#30285c" />
+    <title>梦幻沙画消除</title>
     <style>
       :root {
         font-family: Inter, ui-rounded, system-ui, -apple-system, BlinkMacSystemFont,
           "Segoe UI", sans-serif;
         color: #5c4939;
-        background: #efe9df;
+        background: #241f48;
       }
 
       * {
@@ -29,7 +29,7 @@
         min-height: 100%;
         overflow: hidden;
         background:
-          radial-gradient(circle at 50% 20%, #faf6ef 0, #f3eee6 42%, #e8e1d7 100%);
+          radial-gradient(circle at 50% 12%, #5b4779 0, #342b59 36%, #211d3e 100%);
       }
 
       body {
@@ -51,12 +51,12 @@
         aspect-ratio: 9 / 16;
         max-height: calc(100vh - 36px);
         overflow: hidden;
-        border: 1px solid rgba(116, 89, 62, 0.12);
+        border: 1px solid rgba(255,255,255,.10);
         border-radius: 28px;
         background: #fff8ea;
         box-shadow:
-          0 24px 70px rgba(78, 59, 42, 0.16),
-          0 4px 18px rgba(78, 59, 42, 0.08);
+          0 28px 80px rgba(17, 13, 40, 0.38),
+          0 8px 28px rgba(17, 13, 40, 0.18);
         touch-action: none;
         user-select: none;
       }
@@ -75,17 +75,22 @@
 
       @media (max-width: 520px) {
         .page-shell {
-          padding: 10px;
+          padding: 0;
         }
 
         .game-shell {
-          width: min(calc(100vw - 20px), 405px);
-          max-height: calc(100vh - 20px);
-          border-radius: 22px;
+          width: 100vw;
+          height: 100dvh;
+          max-width: none;
+          max-height: none;
+          aspect-ratio: auto;
+          border: 0;
+          border-radius: 0;
+          box-shadow: none;
         }
       }
 
-      @media (max-height: 700px) {
+      @media (min-width: 521px) and (max-height: 700px) {
         .game-shell {
           height: calc(100vh - 24px);
           width: auto;
@@ -96,7 +101,7 @@
   </head>
   <body>
     <main class="page-shell">
-      <section class="game-shell" id="game-shell" aria-label="彩沙消消乐游戏区域">
+      <section class="game-shell" id="game-shell" aria-label="梦幻沙画消除游戏区域">
         <div id="game-root"></div>
       </section>
     </main>
