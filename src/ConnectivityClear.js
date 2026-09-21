@@ -126,7 +126,7 @@ export class ConnectivityClear {
       const x = index % this.grid.width;
       const y = Math.floor(index / this.grid.width);
 
-      this.grid.cells[index] = 0;
+      this.grid.set(x, y, 0);
       minX = Math.min(minX, x);
       maxX = Math.max(maxX, x);
       maxY = Math.max(maxY, y);
