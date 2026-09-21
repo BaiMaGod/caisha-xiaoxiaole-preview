@@ -9,6 +9,9 @@ import { BANANA_TEMPLATE } from '../fruit/templates/banana.js';
 import { CONFIG } from '../config.js';
 
 const DEMO_STYLE_ID = 'dream-sand-home-demo-styles';
+const DEMO_FALL_SPEED_MULTIPLIER = 2;
+const NEXT_BLOCK_DELAY_MS = 240;
+const LOOP_RESTORE_DELAY_MS = 860;
 
 function ensureStyles() {
   if (document.getElementById(DEMO_STYLE_ID)) return;
@@ -82,6 +85,17 @@ function ensureStyles() {
       letter-spacing: .06em;
       pointer-events: none;
     }
+
+    .home-demo__loop-mask {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 74%, rgba(255,247,212,.92), transparent 45%),
+        rgba(255,248,234,.52);
+      mix-blend-mode: screen;
+    }
   `;
 
   document.head.appendChild(style);
@@ -105,26 +119,43 @@ export class HomeDemoController {
     this.root.setAttribute('aria-hidden', 'true');
 
     this.renderer.canvas.className = 'home-demo__canvas';
+
     this.ambient = document.createElement('div');
     this.ambient.className = 'home-demo__ambient';
+
     this.sweep = document.createElement('div');
     this.sweep.className = 'home-demo__sweep';
+
     this.clearLabel = document.createElement('div');
     this.clearLabel.className = 'home-demo__clear-label';
     this.clearLabel.textContent = '同色贯通 · 消除！';
+
+    this.loopMask = document.createElement('div');
+    this.loopMask.className = 'home-demo__loop-mask';
 
     this.root.append(
       this.renderer.canvas,
       this.ambient,
       this.sweep,
-      this.clearLabel
+      this.clearLabel,
+      this.loopMask
     );
     this.container.appendChild(this.root);
 
+    // A deterministic 10-block loop. The first 9 build a varied, believable
+    // sand pile; the 10th green block is the teaching moment that completes
+    // the prepared left-to-right connection.
     this.sequence = [
-      { template: this.banana, color: 3, center: 0.24, holdMs: 420 },
-      { template: this.apple, color: 6, center: 0.73, holdMs: 360 },
-      { template: this.apple, color: 4, center: 0.50, holdMs: 520 }
+      { template: this.apple,  color: 1, center: 0.18, holdMs: 170 },
+      { template: this.banana, color: 3, center: 0.77, holdMs: 150 },
+      { template: this.apple,  color: 6, center: 0.36, holdMs: 165 },
+      { template: this.banana, color: 7, center: 0.62, holdMs: 145 },
+      { template: this.apple,  color: 2, center: 0.84, holdMs: 170 },
+      { template: this.banana, color: 1, center: 0.25, holdMs: 145 },
+      { template: this.apple,  color: 6, center: 0.69, holdMs: 160 },
+      { template: this.banana, color: 3, center: 0.46, holdMs: 150 },
+      { template: this.apple,  color: 4, center: 0.38, holdMs: 175 },
+      { template: this.apple,  color: 4, center: 0.56, holdMs: 190 }
     ];
 
     this.opened = true;
@@ -136,13 +167,18 @@ export class HomeDemoController {
     this.settleMs = 0;
     this.lastTime = performance.now();
     this.lastPhysics = 0;
-    this.cycleResetAt = 0;
-    this.guaranteedBridgeUsed = false;
+    this.phase = 'dropping';
+    this.restoreAt = 0;
+    this.bridgeInjected = false;
+    this.initialCells = null;
     this.raf = null;
 
     this.clearSystem.onClear = () => {
+      if (this.phase === 'clearing') return;
+
+      this.phase = 'clearing';
       this.playClearCue();
-      this.cycleResetAt = performance.now() + 1450;
+      this.restoreAt = performance.now() + LOOP_RESTORE_DELAY_MS;
     };
 
     this.resetDemo();
@@ -167,17 +203,45 @@ export class HomeDemoController {
     this.clearSystem.reset();
     this.seedBoard();
 
+    this.initialCells = this.grid.cells.slice();
+
     this.current = null;
     this.sequenceIndex = 0;
-    this.spawnAt = performance.now() + 650;
+    this.spawnAt = performance.now() + 420;
     this.spawnedAt = 0;
     this.released = false;
     this.settleMs = 0;
     this.lastPhysics = 0;
-    this.cycleResetAt = 0;
-    this.guaranteedBridgeUsed = false;
+    this.phase = 'dropping';
+    this.restoreAt = 0;
+    this.bridgeInjected = false;
 
     this.renderer.update(null);
+  }
+
+  restoreLoopStart(time) {
+    if (!this.initialCells) {
+      this.resetDemo();
+      return;
+    }
+
+    this.grid.cells.set(this.initialCells);
+    this.simulation.reset();
+    this.clearSystem.reset();
+
+    this.current = null;
+    this.sequenceIndex = 0;
+    this.spawnAt = time + 360;
+    this.spawnedAt = 0;
+    this.released = false;
+    this.settleMs = 0;
+    this.lastPhysics = time;
+    this.phase = 'dropping';
+    this.restoreAt = 0;
+    this.bridgeInjected = false;
+
+    this.renderer.update(null);
+    this.playLoopResetMask();
   }
 
   seedBoard() {
@@ -187,37 +251,37 @@ export class HomeDemoController {
 
     for (let x = 0; x < width; x++) {
       const surface =
-        262 +
+        267 +
         Math.round(Math.sin(x * 0.085) * 5) +
         Math.round(Math.sin(x * 0.031 + 1.4) * 4);
 
-      for (let y = Math.max(262, surface); y < height; y++) {
+      for (let y = Math.max(267, surface); y < height; y++) {
         const segment = Math.floor(x / 24);
-        const band = Math.floor((y - 258) / 15);
+        const band = Math.floor((y - 263) / 15);
         const color = terrainColors[(segment + band * 2) % terrainColors.length];
         this.grid.set(x, y, color);
       }
     }
 
-    // Two stable green banks leave a center gap. The final green fruit falls
-    // into that gap and completes a real left-to-right connected component.
-    for (let y = 255; y <= 261; y++) {
-      for (let x = 0; x <= 74; x++) {
+    // Two green banks intentionally stop short of the middle. The 10th drop
+    // visually lands in this area; after it settles we only fill any tiny
+    // remaining gaps and let ConnectivityClear perform the real clear.
+    for (let y = 258; y <= 264; y++) {
+      for (let x = 0; x <= 69; x++) {
         this.grid.set(x, y, 4);
       }
-      for (let x = 105; x < width; x++) {
+
+      for (let x = 112; x < width; x++) {
         this.grid.set(x, y, 4);
       }
     }
 
-    // Add a few small color pockets so the board looks like a real mid-game
-    // state instead of a flat scripted platform.
-    this.paintPocket(18, 235, 28, 19, 7);
-    this.paintPocket(124, 239, 31, 17, 6);
-    this.paintPocket(57, 244, 24, 13, 3);
-    this.paintPocket(97, 247, 20, 10, 1);
+    this.paintPocket(18, 242, 26, 16, 7);
+    this.paintPocket(127, 244, 29, 15, 6);
+    this.paintPocket(56, 250, 21, 11, 3);
+    this.paintPocket(97, 251, 18, 9, 1);
 
-    this.simulation.activateRect(0, 228, width - 1, height - 1);
+    this.simulation.activateRect(0, 232, width - 1, height - 1);
   }
 
   paintPocket(cx, cy, rx, ry, color) {
@@ -227,6 +291,7 @@ export class HomeDemoController {
         const dy = (y - cy) / Math.max(1, ry);
 
         if (dx * dx + dy * dy > 1) continue;
+
         if (this.grid.empty(x, y)) {
           this.grid.set(x, y, color);
         }
@@ -235,15 +300,28 @@ export class HomeDemoController {
   }
 
   spawnNext(time) {
-    if (this.current || this.sequenceIndex >= this.sequence.length) return;
+    if (
+      this.phase !== 'dropping' ||
+      this.current ||
+      this.sequenceIndex >= this.sequence.length
+    ) {
+      return;
+    }
 
     const descriptor = this.sequence[this.sequenceIndex];
+
     this.current = new FruitPiece({
       template: descriptor.template,
       color: descriptor.color,
       grid: this.grid,
       simulation: this.simulation
     });
+
+    // Home demo only: fall exactly 2x faster than normal gameplay.
+    this.current.fallStepMs = Math.max(
+      1,
+      CONFIG.FRUIT_FALL_STEP_MS / DEMO_FALL_SPEED_MULTIPLIER
+    );
 
     this.current.setCenterX(
       Math.round(this.grid.width * descriptor.center)
@@ -255,15 +333,14 @@ export class HomeDemoController {
   }
 
   updateCurrent(deltaMs, time) {
-    if (!this.current) return;
+    if (!this.current || this.phase !== 'dropping') return;
 
     const descriptor = this.sequence[this.sequenceIndex];
 
     if (this.current.state === 'CONTROL') {
       const elapsed = time - this.spawnedAt;
-      const sway = Math.sin(elapsed * 0.006) * 7;
-      const target =
-        this.grid.width * descriptor.center + sway;
+      const sway = Math.sin(elapsed * 0.009) * 5;
+      const target = this.grid.width * descriptor.center + sway;
 
       this.current.setCenterX(Math.round(target));
 
@@ -278,12 +355,17 @@ export class HomeDemoController {
     if (settled || this.current.state === 'SAND') {
       this.current = null;
       this.sequenceIndex += 1;
-      this.spawnAt = time + 520;
+      this.spawnAt = time + NEXT_BLOCK_DELAY_MS;
       this.settleMs = 0;
+
+      if (this.sequenceIndex >= this.sequence.length) {
+        this.phase = 'settling';
+      }
     }
   }
 
   updatePhysics(time, deltaMs) {
+    if (this.phase === 'clearing') return;
     if (time - this.lastPhysics < CONFIG.UPDATE_INTERVAL) return;
 
     this.simulation.update();
@@ -294,37 +376,46 @@ export class HomeDemoController {
       return;
     }
 
+    if (this.phase === 'dropping') return;
+
     this.settleMs += deltaMs;
 
-    if (this.sequenceIndex < this.sequence.length) {
-      return;
-    }
+    if (this.phase !== 'settling') return;
 
-    // Let the final fruit settle naturally first.
+    // Give the 10th block time to fully turn into sand and settle.
     if (this.settleMs < 520) return;
 
     let cleared = this.clearSystem.resolve();
 
-    // The demo must always teach the rule. If the randomly settling grains did
-    // not quite touch both green banks, finish only the tiny hidden bridge at
-    // the top of the prepared gap, then run the real connectivity clear.
-    if (cleared === 0 && !this.guaranteedBridgeUsed && this.settleMs >= 900) {
-      this.guaranteedBridgeUsed = true;
+    if (cleared > 0) {
+      return;
+    }
 
-      for (let x = 72; x <= 108; x++) {
-        for (let y = 252; y <= 259; y++) {
+    // Guarantee the teaching beat only after all 10 blocks have dropped.
+    // The visible 10th green block does most of the work; this closes only
+    // remaining microscopic gaps caused by cellular-automata randomness.
+    if (!this.bridgeInjected && this.settleMs >= 760) {
+      this.bridgeInjected = true;
+
+      for (let x = 66; x <= 115; x++) {
+        for (let y = 254; y <= 262; y++) {
           if (this.grid.empty(x, y)) {
             this.grid.set(x, y, 4);
           }
         }
       }
 
-      this.simulation.activateRect(68, 246, 112, 264);
+      this.simulation.activateRect(62, 248, 119, 268);
       cleared = this.clearSystem.resolve();
+
+      if (cleared > 0) {
+        return;
+      }
     }
 
-    if (cleared === 0 && this.settleMs >= 1900) {
-      this.cycleResetAt = time + 700;
+    // Absolute safety net: never let the homepage demo stall.
+    if (this.settleMs >= 1450) {
+      this.restoreLoopStart(time);
     }
   }
 
@@ -347,12 +438,28 @@ export class HomeDemoController {
     this.clearLabel.animate(
       [
         { opacity: 0, transform: 'translate(-50%, 8px) scale(.94)' },
-        { opacity: 1, transform: 'translate(-50%, 0) scale(1)', offset: .24 },
-        { opacity: 1, transform: 'translate(-50%, 0) scale(1)', offset: .68 },
+        { opacity: 1, transform: 'translate(-50%, 0) scale(1)', offset: .22 },
+        { opacity: 1, transform: 'translate(-50%, 0) scale(1)', offset: .66 },
         { opacity: 0, transform: 'translate(-50%, -7px) scale(.98)' }
       ],
       {
         duration: 1050,
+        easing: 'ease-out'
+      }
+    );
+  }
+
+  playLoopResetMask() {
+    this.loopMask.getAnimations().forEach((animation) => animation.cancel());
+
+    this.loopMask.animate(
+      [
+        { opacity: .68 },
+        { opacity: .22, offset: .42 },
+        { opacity: 0 }
+      ],
+      {
+        duration: 260,
         easing: 'ease-out'
       }
     );
@@ -369,12 +476,21 @@ export class HomeDemoController {
     const deltaMs = Math.min(50, Math.max(0, time - this.lastTime));
     this.lastTime = time;
 
-    if (this.cycleResetAt && time >= this.cycleResetAt) {
-      this.resetDemo();
+    if (
+      this.phase === 'clearing' &&
+      this.restoreAt > 0 &&
+      time >= this.restoreAt
+    ) {
+      this.restoreLoopStart(time);
       return;
     }
 
-    if (!this.current && this.sequenceIndex < this.sequence.length && time >= this.spawnAt) {
+    if (
+      this.phase === 'dropping' &&
+      !this.current &&
+      this.sequenceIndex < this.sequence.length &&
+      time >= this.spawnAt
+    ) {
       this.spawnNext(time);
     }
 
