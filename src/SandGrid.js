@@ -5,6 +5,7 @@ export class SandGrid {
     this.width = CONFIG.WIDTH;
     this.height = CONFIG.HEIGHT;
     this.cells = new Uint8Array(this.width * this.height);
+    this.revision = 0;
   }
 
   index(x, y) {
@@ -18,7 +19,12 @@ export class SandGrid {
 
   set(x, y, value) {
     if (x < 0 || y < 0 || x >= this.width || y >= this.height) return;
-    this.cells[this.index(x, y)] = value;
+
+    const index = this.index(x, y);
+    if (this.cells[index] === value) return;
+
+    this.cells[index] = value;
+    this.revision += 1;
   }
 
   empty(x, y) {
@@ -27,5 +33,6 @@ export class SandGrid {
 
   clear() {
     this.cells.fill(0);
+    this.revision += 1;
   }
 }
