@@ -15,7 +15,8 @@ import { CONFIG } from './config.js';
 import { PlayerProgress } from './progress/PlayerProgress.js';
 import { UnlockManager } from './progress/UnlockManager.js';
 import { EffectCollectionPanel } from './ui/EffectCollectionPanel.js';
-import { HomeScreen } from './ui/HomeScreen.js';\nimport { HomeDemoController } from './ui/HomeDemoController.js';
+import { HomeScreen } from './ui/HomeScreen.js';
+import { HomeDemoController } from './ui/HomeDemoController.js';
 import { GameOverArtwork } from './ui/GameOverArtwork.js';
 
 const gameShell = document.getElementById('game-shell');
