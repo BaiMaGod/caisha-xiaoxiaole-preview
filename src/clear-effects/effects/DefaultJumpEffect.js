@@ -442,18 +442,9 @@ export class DefaultJumpEffect extends BaseClearEffect {
     snapshotCtx.drawImage(selectionMask, 0, 0);
     snapshotCtx.restore();
 
-    // Normal sand goes through the current Three.js WebGL output pipeline,
-    // while the clear overlay is a plain 2D canvas. Match the already-visible
-    // WebGL appearance here without touching SandRenderer, COLOR_MAP, or the
-    // game's normal texture/material setup.
-    const imageData = snapshotCtx.getImageData(
-      0,
-      0,
-      snapshotCanvas.width,
-      snapshotCanvas.height
-    );
-    compensateSnapshotPixelsForDisplay(imageData.data);
-    snapshotCtx.putImageData(imageData, 0, 0);
+    // The game now renders settled sand directly with Canvas2D. Keep the
+    // snapshot pixels exactly as drawn by SandRenderer so entering the clear
+    // effect cannot apply a second color-space conversion or lighten colors.
 
     return snapshotCanvas;
   }
