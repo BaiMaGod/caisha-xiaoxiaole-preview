@@ -1,11 +1,13 @@
 export const COLOR_MAP = {
-  1: [255, 90, 95],
-  2: [255, 159, 67],
-  3: [255, 217, 61],
-  4: [107, 203, 119],
-  5: [78, 205, 196],
-  6: [77, 150, 255],
-  7: [155, 93, 229]
+  // Pastel palette calibrated for direct Canvas2D output so the game keeps
+  // the softer appearance of the previous WebGL presentation.
+  1: [255, 160, 164],
+  2: [255, 207, 140],
+  3: [255, 238, 134],
+  4: [173, 231, 182],
+  5: [150, 232, 227],
+  6: [149, 202, 255],
+  7: [205, 163, 243]
 };
 
 export const SETTLED_PARTICLE_INSET = 0.08;
