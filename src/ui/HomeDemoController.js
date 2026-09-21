@@ -176,12 +176,25 @@ export class HomeDemoController {
   show() {
     this.opened = true;
     this.root.style.display = 'block';
+    this.lastTime = performance.now();
     this.resetDemo();
+
+    if (!this.raf) {
+      this.raf = requestAnimationFrame(this.animate);
+    }
   }
 
   hide() {
     this.opened = false;
     this.root.style.display = 'none';
+
+    if (this.raf) {
+      cancelAnimationFrame(this.raf);
+      this.raf = null;
+    }
+
+    this.sweep.getAnimations().forEach((animation) => animation.cancel());
+    this.clearLabel.getAnimations().forEach((animation) => animation.cancel());
   }
 
   resetDemo() {
@@ -517,7 +530,7 @@ export class HomeDemoController {
   }
 
   animate(time) {
-    this.raf = requestAnimationFrame(this.animate);
+    this.raf = null;
 
     if (!this.opened) {
       this.lastTime = time;
@@ -542,5 +555,9 @@ export class HomeDemoController {
     this.updateCurrent(deltaMs, time);
     this.updatePhysics(time);
     this.renderer.update(this.current);
+
+    if (this.opened) {
+      this.raf = requestAnimationFrame(this.animate);
+    }
   }
 }
