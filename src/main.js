@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { SandGrid } from './SandGrid.js';
 import { SandSimulation } from './SandSimulation.js';
 import { SandRenderer } from './SandRenderer.js';
@@ -26,31 +25,13 @@ if (!gameShell || !gameRoot) {
   throw new Error('Missing mobile game container');
 }
 
-const boardAspect = CONFIG.WIDTH / CONFIG.HEIGHT;
-
-const scene = new THREE.Scene();
-scene.background = new THREE.Color('#fff8ea');
-
-const camera = new THREE.OrthographicCamera(
-  -boardAspect,
-  boardAspect,
-  1,
-  -1,
-  0.1,
-  10
-);
-camera.position.z = 1;
-
-const renderer = new THREE.WebGLRenderer({
-  antialias: false,
-  alpha: false
-});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-gameRoot.appendChild(renderer.domElement);
-
 const grid = new SandGrid();
 const simulation = new SandSimulation(grid);
 const sandRenderer = new SandRenderer(grid);
+sandRenderer.canvas.className = 'game-canvas';
+sandRenderer.canvas.setAttribute('aria-label', '梦幻沙画消除游戏画布');
+gameRoot.appendChild(sandRenderer.canvas);
+
 const stats = new SandStats(simulation);
 const progress = new PlayerProgress();
 const unlockManager = new UnlockManager(progress);
@@ -97,7 +78,7 @@ const gameOverArtwork = new GameOverArtwork(gameShell, {
 // until the player explicitly starts a run.
 fruitManager.setEnabled(false);
 
-new FruitController(renderer.domElement, fruitManager, grid, {
+new FruitController(sandRenderer.canvas, fruitManager, grid, {
   onRelease: () => hud.notifyDropReleased()
 });
 
@@ -105,7 +86,7 @@ new FruitController(renderer.domElement, fruitManager, grid, {
 // Rendering here guarantees the clear-effect snapshot is the exact current
 // low-resolution sand image that the player was seeing before deletion.
 clearSystem.onBeforeClear = () => {
-  sandRenderer.update(fruitManager.current);
+  renderGameCanvas(true);
 };
 
 clearSystem.onClear = (payload) => {
@@ -127,19 +108,45 @@ clearSystem.onClear = (payload) => {
   });
 };
 
-const material = new THREE.MeshBasicMaterial({
-  map: sandRenderer.texture,
-  transparent: true
-});
-
-const mesh = new THREE.Mesh(
-  new THREE.PlaneGeometry(boardAspect * 2, 2),
-  material
-);
-scene.add(mesh);
-
 let lastSimulation = 0;
 let lastFrame = performance.now();
+
+let lastRenderedGridRevision = -1;
+let lastRenderedFruit = null;
+let lastRenderedFruitKey = '';
+
+function getFruitRenderKey(fruit) {
+  if (!fruit) return '';
+
+  return [
+    fruit.state,
+    fruit.x,
+    fruit.y,
+    fruit.color,
+    Math.round(fruit.impactTimer ?? 0),
+    Math.round(fruit.breakTimer ?? 0),
+    fruit.dissolvedCount ?? 0
+  ].join(':');
+}
+
+function renderGameCanvas(force = false) {
+  const fruit = fruitManager.current;
+  const fruitKey = getFruitRenderKey(fruit);
+
+  if (
+    !force &&
+    grid.revision === lastRenderedGridRevision &&
+    fruit === lastRenderedFruit &&
+    fruitKey === lastRenderedFruitKey
+  ) {
+    return;
+  }
+
+  sandRenderer.update(fruit);
+  lastRenderedGridRevision = grid.revision;
+  lastRenderedFruit = fruit;
+  lastRenderedFruitKey = fruitKey;
+}
 
 let lastFruitState = fruitManager.current?.state ?? null;
 let gameOver = false;
@@ -182,7 +189,7 @@ function restartGame() {
   lastSimulation = now;
   lastFrame = now;
 
-  sandRenderer.update(fruitManager.current);
+  renderGameCanvas(true);
 }
 
 function returnHome() {
@@ -284,37 +291,17 @@ function loop(time) {
   }
 
   stats.update();
-  sandRenderer.update(fruitManager.current);
-  renderer.render(scene, camera);
+  renderGameCanvas();
 }
 
-function resize() {
-  const rect = gameRoot.getBoundingClientRect();
-  const width = Math.max(1, Math.round(rect.width));
-  const height = Math.max(1, Math.round(rect.height));
-  const viewAspect = width / height;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
 
-  renderer.setSize(width, height, false);
+  const now = performance.now();
+  lastFrame = now;
+  lastSimulation = now;
+  renderGameCanvas(true);
+});
 
-  if (viewAspect >= boardAspect) {
-    camera.left = -viewAspect;
-    camera.right = viewAspect;
-    camera.top = 1;
-    camera.bottom = -1;
-  } else {
-    const halfHeight = boardAspect / viewAspect;
-    camera.left = -boardAspect;
-    camera.right = boardAspect;
-    camera.top = halfHeight;
-    camera.bottom = -halfHeight;
-  }
-
-  camera.updateProjectionMatrix();
-}
-
-const resizeObserver = new ResizeObserver(resize);
-resizeObserver.observe(gameRoot);
-resize();
-
-sandRenderer.update(fruitManager.current);
+renderGameCanvas(true);
 loop(performance.now());
