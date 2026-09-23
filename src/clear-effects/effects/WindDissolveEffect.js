@@ -2,7 +2,9 @@ import { BaseClearEffect } from '../BaseClearEffect.js';
 import {
   getDisplayColorRgb,
   getParticleRgb,
-  rgbToCss
+  rgbToCss,
+  SETTLED_PARTICLE_INSET,
+  SETTLED_PARTICLE_SIZE
 } from '../../colors.js';
 import {
   getClearBounds,
@@ -389,24 +391,38 @@ export class WindDissolveEffect extends BaseClearEffect {
     this.scheduleFrame();
   }
 
+  drawSettledParticle(particle, alpha = 1) {
+    const cellW = this.cssWidth / this.grid.width;
+    const cellH = this.cssHeight / this.grid.height;
+    const rgb = getParticleRgb(
+      particle.gridX,
+      particle.gridY,
+      particle.color,
+      0
+    );
+
+    if (!rgb) return;
+
+    this.ctx.fillStyle = rgbToCss(rgb, alpha);
+    this.ctx.fillRect(
+      (particle.gridX + SETTLED_PARTICLE_INSET) * cellW,
+      (particle.gridY + SETTLED_PARTICLE_INSET) * cellH,
+      SETTLED_PARTICLE_SIZE * cellW,
+      SETTLED_PARTICLE_SIZE * cellH
+    );
+  }
+
   drawErodedSnapshot(progress) {
     const effect = this.current;
-    const {
-      maskCtx,
-      frameCtx,
-      maskCanvas,
-      frameCanvas,
-      snapshotCanvas,
-      bounds
-    } = effect;
-
-    if (!snapshotCanvas || !maskCtx || !frameCtx) return;
-
-    maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
-    maskCtx.fillStyle = '#fff';
-
+    const { bounds } = effect;
     const frontX = getWindFrontX(progress, bounds);
     let remaining = 0;
+
+    this.ctx.save();
+    this.ctx.globalCompositeOperation = 'source-over';
+    this.ctx.shadowColor = 'transparent';
+    this.ctx.shadowBlur = 0;
+    this.ctx.globalAlpha = 1;
 
     for (const particle of effect.particles) {
       const erosionOffset = getWindErosionOffset(
@@ -415,49 +431,20 @@ export class WindDissolveEffect extends BaseClearEffect {
         effect.effectSeed
       );
 
-      // The exact same wind front and erosion offset are also used to compute
-      // the visual particle's hitProgress. This keeps the disappearing grain
-      // and its released flyer causally locked to the same frame.
+      // Wind erosion now removes individual grains. It no longer erases a
+      // full logical cell from a bitmap mask, so the empty space is exactly
+      // the size of the original settled grain rather than a larger square.
       const survives = particle.gridX > frontX + erosionOffset;
 
-      if (survives) {
-        this.fillDisplayMaskCell(
-          maskCtx,
-          maskCanvas,
-          particle.gridX,
-          particle.gridY
-        );
-        remaining += 1;
-      }
+      if (!survives) continue;
+
+      this.drawSettledParticle(particle, 1);
+      remaining += 1;
     }
 
-    effect.clearedVisual = effect.particles.length - remaining;
-
-    frameCtx.clearRect(0, 0, frameCanvas.width, frameCanvas.height);
-    frameCtx.globalCompositeOperation = 'source-over';
-    frameCtx.drawImage(snapshotCanvas, 0, 0);
-    frameCtx.globalCompositeOperation = 'destination-in';
-    frameCtx.drawImage(maskCanvas, 0, 0);
-    frameCtx.globalCompositeOperation = 'source-over';
-
-    this.ctx.save();
-    // frameCanvas already matches the visible DPR-resolution game frame.
-    // Keeping high-quality smoothing here avoids reintroducing the blocky
-    // nearest-neighbor edge during wind erosion.
-    this.ctx.imageSmoothingEnabled = true;
-    this.ctx.imageSmoothingQuality = 'high';
-    this.ctx.drawImage(
-      frameCanvas,
-      0,
-      0,
-      frameCanvas.width,
-      frameCanvas.height,
-      0,
-      0,
-      this.cssWidth,
-      this.cssHeight
-    );
     this.ctx.restore();
+
+    effect.clearedVisual = effect.particles.length - remaining;
   }
 
   drawFlyingParticles(progress, particles, isDust) {
