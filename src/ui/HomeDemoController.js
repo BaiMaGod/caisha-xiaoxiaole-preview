@@ -32,9 +32,11 @@ function ensureStyles() {
 
     .home-demo__canvas {
       position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
+      left: 50%;
+      top: 50%;
+      width: min(100%, 405px, 56.25dvh);
+      aspect-ratio: 9 / 16;
+      transform: translate(-50%, -50%);
       display: block;
       image-rendering: auto;
     }
