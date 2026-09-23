@@ -2,11 +2,11 @@ import { BaseClearEffect } from '../BaseClearEffect.js';
 import {
   getDisplayColorRgb,
   getParticleRgb,
-  rgbToCss
+  rgbToCss,
+  SETTLED_PARTICLE_INSET,
+  SETTLED_PARTICLE_SIZE
 } from '../../colors.js';
 import {
-  CLEAR_JUMP_PARTICLE_INSET,
-  CLEAR_JUMP_PARTICLE_SIZE,
   getClearBounds,
   getDominantClearColor,
   getParticleClearRandom,
@@ -191,6 +191,19 @@ export class WindDissolveEffect extends BaseClearEffect {
     return canvas;
   }
 
+  createLogicalCanvas() {
+    const canvas = document.createElement('canvas');
+    canvas.width = this.grid.width;
+    canvas.height = this.grid.height;
+
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.imageSmoothingEnabled = false;
+    }
+
+    return canvas;
+  }
+
   fillDisplayMaskCell(ctx, canvas, gridX, gridY) {
     const left = Math.round((gridX / this.grid.width) * canvas.width);
     const right = Math.round(
@@ -273,6 +286,7 @@ export class WindDissolveEffect extends BaseClearEffect {
     const snapshotCanvas = this.captureSourceSnapshot(groups);
     const maskCanvas = this.createDisplayCanvas();
     const frameCanvas = this.createDisplayCanvas();
+    const logicalFrameCanvas = this.createLogicalCanvas();
 
     const flyerStep = Math.max(
       1,
@@ -353,6 +367,8 @@ export class WindDissolveEffect extends BaseClearEffect {
       maskCtx: maskCanvas.getContext('2d'),
       frameCanvas,
       frameCtx: frameCanvas.getContext('2d'),
+      logicalFrameCanvas,
+      logicalFrameCtx: logicalFrameCanvas.getContext('2d'),
       startedAt: 0,
       startRewardAudio: null,
       clearedVisual: 0
@@ -391,9 +407,7 @@ export class WindDissolveEffect extends BaseClearEffect {
     this.scheduleFrame();
   }
 
-  drawSettledParticle(particle, alpha = 1) {
-    const cellW = this.cssWidth / this.grid.width;
-    const cellH = this.cssHeight / this.grid.height;
+  drawLogicalParticle(ctx, particle) {
     const rgb = getParticleRgb(
       particle.gridX,
       particle.gridY,
@@ -403,26 +417,49 @@ export class WindDissolveEffect extends BaseClearEffect {
 
     if (!rgb) return;
 
-    this.ctx.fillStyle = rgbToCss(rgb, alpha);
-    this.ctx.fillRect(
-      (particle.gridX + CLEAR_JUMP_PARTICLE_INSET) * cellW,
-      (particle.gridY + CLEAR_JUMP_PARTICLE_INSET) * cellH,
-      CLEAR_JUMP_PARTICLE_SIZE * cellW,
-      CLEAR_JUMP_PARTICLE_SIZE * cellH
+    ctx.fillStyle = rgbToCss(rgb, 1);
+    ctx.fillRect(
+      particle.gridX + SETTLED_PARTICLE_INSET,
+      particle.gridY + SETTLED_PARTICLE_INSET,
+      SETTLED_PARTICLE_SIZE,
+      SETTLED_PARTICLE_SIZE
     );
+  }
+
+  presentLogicalFrame(frameCanvas) {
+    this.ctx.save();
+    this.ctx.imageSmoothingEnabled = true;
+    this.ctx.imageSmoothingQuality = 'high';
+    this.ctx.drawImage(
+      frameCanvas,
+      0,
+      0,
+      frameCanvas.width,
+      frameCanvas.height,
+      0,
+      0,
+      this.cssWidth,
+      this.cssHeight
+    );
+    this.ctx.restore();
   }
 
   drawErodedSnapshot(progress) {
     const effect = this.current;
-    const { bounds } = effect;
+    const { bounds, logicalFrameCanvas, logicalFrameCtx } = effect;
     const frontX = getWindFrontX(progress, bounds);
     let remaining = 0;
 
-    this.ctx.save();
-    this.ctx.globalCompositeOperation = 'source-over';
-    this.ctx.shadowColor = 'transparent';
-    this.ctx.shadowBlur = 0;
-    this.ctx.globalAlpha = 1;
+    if (!logicalFrameCanvas || !logicalFrameCtx) return;
+
+    logicalFrameCtx.clearRect(
+      0,
+      0,
+      logicalFrameCanvas.width,
+      logicalFrameCanvas.height
+    );
+    logicalFrameCtx.globalCompositeOperation = 'source-over';
+    logicalFrameCtx.globalAlpha = 1;
 
     for (const particle of effect.particles) {
       const erosionOffset = getWindErosionOffset(
@@ -431,19 +468,17 @@ export class WindDissolveEffect extends BaseClearEffect {
         effect.effectSeed
       );
 
-      // Wind erosion now removes individual grains. It no longer erases a
-      // full logical cell from a bitmap mask, so the empty space is exactly
-      // the size of the original settled grain rather than a larger square.
       const survives = particle.gridX > frontX + erosionOffset;
-
       if (!survives) continue;
 
-      this.drawSettledParticle(particle, 1);
+      // Use the same logical-raster -> smoothed-display pipeline as normal
+      // settled sand. Direct screen-space rectangles reveal each grain's
+      // deterministic brightness variation as a checker/grid pattern.
+      this.drawLogicalParticle(logicalFrameCtx, particle);
       remaining += 1;
     }
 
-    this.ctx.restore();
-
+    this.presentLogicalFrame(logicalFrameCanvas);
     effect.clearedVisual = effect.particles.length - remaining;
   }
 
