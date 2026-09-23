@@ -1,5 +1,5 @@
 import {
-  COLOR_MAP,
+  getDisplayColorRgb,
   getParticleRgb,
   rgbToCss,
   SETTLED_PARTICLE_INSET,
@@ -44,30 +44,11 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-export function linearToSrgbByte(channel) {
-  const linear = clamp(channel / 255, 0, 1);
-  const srgb =
-    linear <= 0.0031308
-      ? linear * 12.92
-      : 1.055 * linear ** (1 / 2.4) - 0.055;
-
-  return Math.round(clamp(srgb * 255, 0, 255));
-}
-
-export function compensateSnapshotPixelsForDisplay(data) {
-  for (let i = 0; i < data.length; i += 4) {
-    if (data[i + 3] === 0) continue;
-
-    data[i] = linearToSrgbByte(data[i]);
-    data[i + 1] = linearToSrgbByte(data[i + 1]);
-    data[i + 2] = linearToSrgbByte(data[i + 2]);
-  }
-
-  return data;
-}
-
 function baseColorToCss(type, alpha = 1) {
-  return rgbToCss(COLOR_MAP[type] ?? [255, 255, 255], alpha);
+  return rgbToCss(
+    getDisplayColorRgb(type) ?? [255, 255, 255],
+    alpha
+  );
 }
 
 export function getClearRating(cleared) {
@@ -768,8 +749,8 @@ export class DefaultJumpEffect extends BaseClearEffect {
     const y = anchor.y + offsetY;
     const label = `+${value}`;
     const rgb =
-      COLOR_MAP[this.current.scoreColor] ??
-      COLOR_MAP[1];
+      getDisplayColorRgb(this.current.scoreColor) ??
+      getDisplayColorRgb(1);
 
     this.ctx.save();
     this.ctx.textAlign = 'center';
