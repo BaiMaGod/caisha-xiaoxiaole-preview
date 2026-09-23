@@ -1,6 +1,6 @@
 import { BaseClearEffect } from '../BaseClearEffect.js';
 import {
-  COLOR_MAP,
+  getDisplayColorRgb,
   getParticleRgb,
   rgbToCss
 } from '../../colors.js';
@@ -550,7 +550,9 @@ export class WindDissolveEffect extends BaseClearEffect {
     });
 
     const hop = Math.sin(progress * Math.PI * 10) * 1.8;
-    const rgb = COLOR_MAP[this.current.scoreColor] ?? COLOR_MAP[1];
+    const rgb =
+      getDisplayColorRgb(this.current.scoreColor) ??
+      getDisplayColorRgb(1);
 
     this.ctx.save();
     this.ctx.textAlign = 'center';
