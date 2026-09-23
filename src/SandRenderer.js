@@ -261,8 +261,8 @@ export class SandRenderer {
     if (activeFruit) {
       ctx.fillRect(x + 0.01, y + 0.01, 0.98, 0.98);
     } else {
-      // Keep the exact particle footprint from the Three.js version. Only the
-      // presentation resolution changes; physics density and sand texture do not.
+      // Use the shared settled-grain footprint. The 0.90-cell size keeps
+      // the sand texture fine while reducing visible grid seams on scaled displays.
       ctx.fillRect(
         x + SETTLED_PARTICLE_INSET,
         y + SETTLED_PARTICLE_INSET,
