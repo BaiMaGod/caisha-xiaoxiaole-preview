@@ -769,10 +769,12 @@ export class DefaultJumpEffect extends BaseClearEffect {
         continue;
       }
 
-      // Clear by hiding individual grains, not by punching out a full 1x1
-      // logical cell. Surviving grains keep the exact same 0.84-cell
-      // footprint and RGB as normal settled sand.
-      this.drawSettledParticle(particle, 1);
+      // Keep the grain-by-grain clear path (no full-cell mask), but use the
+      // previously-proven gapless clear footprint. Normal settled sand has a
+      // deliberate 0.16-cell gap; during random disappearance that gap turns
+      // into a visible checker/grid pattern. Slight overlap removes the seam
+      // without bringing back the oversized 1x1 mask holes.
+      this.drawJumpParticle(particle);
     }
 
     this.ctx.restore();
