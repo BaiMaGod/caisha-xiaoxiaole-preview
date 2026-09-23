@@ -169,37 +169,70 @@ export class WindDissolveEffect extends BaseClearEffect {
     this.raf = requestAnimationFrame((time) => this.frame(time));
   }
 
-  createLogicalCanvas() {
+  createDisplayCanvas() {
     const canvas = document.createElement('canvas');
-    canvas.width = this.grid.width;
-    canvas.height = this.grid.height;
+    canvas.width = Math.max(
+      1,
+      this.sourceCanvas?.width ?? this.canvas.width
+    );
+    canvas.height = Math.max(
+      1,
+      this.sourceCanvas?.height ?? this.canvas.height
+    );
 
     const ctx = canvas.getContext('2d');
-    if (ctx) ctx.imageSmoothingEnabled = false;
+    if (ctx) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+    }
 
     return canvas;
+  }
+
+  fillDisplayMaskCell(ctx, canvas, gridX, gridY) {
+    const left = Math.round((gridX / this.grid.width) * canvas.width);
+    const right = Math.round(
+      ((gridX + 1) / this.grid.width) * canvas.width
+    );
+    const top = Math.round((gridY / this.grid.height) * canvas.height);
+    const bottom = Math.round(
+      ((gridY + 1) / this.grid.height) * canvas.height
+    );
+
+    ctx.fillRect(
+      left,
+      top,
+      Math.max(1, right - left),
+      Math.max(1, bottom - top)
+    );
   }
 
   captureSourceSnapshot(groups) {
     if (!this.sourceCanvas) return null;
 
-    const snapshotCanvas = this.createLogicalCanvas();
-    const selectionMask = this.createLogicalCanvas();
+    const snapshotCanvas = this.createDisplayCanvas();
+    const selectionMask = this.createDisplayCanvas();
     const snapshotCtx = snapshotCanvas.getContext('2d');
     const maskCtx = selectionMask.getContext('2d');
 
     if (!snapshotCtx || !maskCtx) return null;
 
-    // Keep the exact Canvas2D sand pixels. The erosion mask should only
-    // remove grains and must not change the color of the grains that survive.
-    snapshotCtx.drawImage(this.sourceCanvas, 0, 0);
+    snapshotCtx.imageSmoothingEnabled = true;
+    snapshotCtx.imageSmoothingQuality = 'high';
+    snapshotCtx.drawImage(
+      this.sourceCanvas,
+      0,
+      0,
+      snapshotCanvas.width,
+      snapshotCanvas.height
+    );
     maskCtx.fillStyle = '#fff';
 
     for (const group of groups) {
       for (const index of group.cells) {
         const x = index % this.grid.width;
         const y = Math.floor(index / this.grid.width);
-        maskCtx.fillRect(x, y, 1, 1);
+        this.fillDisplayMaskCell(maskCtx, selectionMask, x, y);
       }
     }
 
@@ -236,8 +269,8 @@ export class WindDissolveEffect extends BaseClearEffect {
 
     const bounds = getClearBounds(particles);
     const snapshotCanvas = this.captureSourceSnapshot(groups);
-    const maskCanvas = this.createLogicalCanvas();
-    const frameCanvas = this.createLogicalCanvas();
+    const maskCanvas = this.createDisplayCanvas();
+    const frameCanvas = this.createDisplayCanvas();
 
     const flyerStep = Math.max(
       1,
@@ -388,7 +421,12 @@ export class WindDissolveEffect extends BaseClearEffect {
       const survives = particle.gridX > frontX + erosionOffset;
 
       if (survives) {
-        maskCtx.fillRect(particle.gridX, particle.gridY, 1, 1);
+        this.fillDisplayMaskCell(
+          maskCtx,
+          maskCanvas,
+          particle.gridX,
+          particle.gridY
+        );
         remaining += 1;
       }
     }
@@ -403,11 +441,17 @@ export class WindDissolveEffect extends BaseClearEffect {
     frameCtx.globalCompositeOperation = 'source-over';
 
     this.ctx.save();
-    // Nearest-neighbor scaling prevents transparent cleared cells from
-    // bleeding into surviving opaque cells and making the erosion edge pale.
-    this.ctx.imageSmoothingEnabled = false;
+    // frameCanvas already matches the visible DPR-resolution game frame.
+    // Keeping high-quality smoothing here avoids reintroducing the blocky
+    // nearest-neighbor edge during wind erosion.
+    this.ctx.imageSmoothingEnabled = true;
+    this.ctx.imageSmoothingQuality = 'high';
     this.ctx.drawImage(
       frameCanvas,
+      0,
+      0,
+      frameCanvas.width,
+      frameCanvas.height,
       0,
       0,
       this.cssWidth,
