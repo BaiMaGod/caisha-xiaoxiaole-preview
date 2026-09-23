@@ -5,26 +5,79 @@ import {
 } from './colors.js';
 import { CONFIG } from './config.js';
 
+const DISPLAY_BACKGROUND = '#fff8ea';
+const MAX_DISPLAY_DPR = 2;
+
+export function getDisplayBackingSize(
+  cssWidth,
+  cssHeight,
+  devicePixelRatio = 1
+) {
+  const dpr = Math.max(
+    1,
+    Math.min(MAX_DISPLAY_DPR, Number(devicePixelRatio) || 1)
+  );
+
+  return {
+    dpr,
+    width: Math.max(1, Math.round(cssWidth * dpr)),
+    height: Math.max(1, Math.round(cssHeight * dpr))
+  };
+}
+
 export class SandRenderer {
   constructor(grid) {
     this.grid = grid;
-    this.canvas = document.createElement('canvas');
-    this.canvas.width = grid.width;
-    this.canvas.height = grid.height;
-    this.ctx = this.canvas.getContext('2d', {
+
+    // 180x320 remains the fixed gameplay/physics raster. Clear effects read
+    // from this canvas so gameplay never depends on screen resolution.
+    this.logicalCanvas = document.createElement('canvas');
+    this.logicalCanvas.width = grid.width;
+    this.logicalCanvas.height = grid.height;
+    this.logicalCtx = this.logicalCanvas.getContext('2d', {
       alpha: true,
       desynchronized: true
     });
 
-    if (!this.ctx) {
+    // The DOM canvas is only the presentation surface. Its backing store is
+    // resized to CSS pixels x DPR so a high-density phone does not simply
+    // stretch the 180x320 gameplay raster as a low-resolution bitmap.
+    this.canvas = document.createElement('canvas');
+    this.canvas.width = grid.width;
+    this.canvas.height = grid.height;
+    this.displayCtx = this.canvas.getContext('2d', {
+      alpha: false,
+      desynchronized: true
+    });
+
+    if (!this.logicalCtx || !this.displayCtx) {
       throw new Error('Canvas2D is unavailable');
     }
 
-    this.ctx.imageSmoothingEnabled = false;
+    // Preserve the old public ctx meaning for any callers that need the
+    // logical gameplay image rather than the presentation surface.
+    this.ctx = this.logicalCtx;
+    this.logicalCtx.imageSmoothingEnabled = false;
+
+    this.cssWidth = grid.width;
+    this.cssHeight = grid.height;
+    this.displayDpr = 1;
+
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.present(true);
+      });
+      this.resizeObserver.observe(this.canvas);
+    }
   }
 
   update(fruit = null) {
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.logicalCtx.clearRect(
+      0,
+      0,
+      this.logicalCanvas.width,
+      this.logicalCanvas.height
+    );
 
     for (let y = 0; y < this.grid.height; y++) {
       for (let x = 0; x < this.grid.width; x++) {
@@ -40,20 +93,68 @@ export class SandRenderer {
       this.drawFruit(fruit);
     }
 
+    this.present();
+  }
+
+  present(force = false) {
+    const rect = this.canvas.getBoundingClientRect();
+    const cssWidth = Math.max(1, rect.width || this.grid.width);
+    const cssHeight = Math.max(1, rect.height || this.grid.height);
+    const backing = getDisplayBackingSize(
+      cssWidth,
+      cssHeight,
+      typeof window !== 'undefined' ? window.devicePixelRatio : 1
+    );
+
+    if (
+      force ||
+      this.canvas.width !== backing.width ||
+      this.canvas.height !== backing.height
+    ) {
+      this.canvas.width = backing.width;
+      this.canvas.height = backing.height;
+    }
+
+    this.cssWidth = cssWidth;
+    this.cssHeight = cssHeight;
+    this.displayDpr = backing.dpr;
+
+    const ctx = this.displayCtx;
+    ctx.setTransform(backing.dpr, 0, 0, backing.dpr, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Match the old opaque WebGL scene: first paint the cream background,
+    // then linearly scale/composite the transparent logical sand texture.
+    ctx.fillStyle = DISPLAY_BACKGROUND;
+    ctx.fillRect(0, 0, cssWidth, cssHeight);
+    ctx.drawImage(
+      this.logicalCanvas,
+      0,
+      0,
+      this.logicalCanvas.width,
+      this.logicalCanvas.height,
+      0,
+      0,
+      cssWidth,
+      cssHeight
+    );
   }
 
   drawDeathLine() {
     const y = CONFIG.DEATH_LINE_Y + 0.5;
 
-    this.ctx.save();
-    this.ctx.setLineDash([5, 4]);
-    this.ctx.lineWidth = 1;
-    this.ctx.strokeStyle = 'rgba(255, 105, 105, 0.68)';
-    this.ctx.beginPath();
-    this.ctx.moveTo(0, y);
-    this.ctx.lineTo(this.grid.width, y);
-    this.ctx.stroke();
-    this.ctx.restore();
+    this.logicalCtx.save();
+    this.logicalCtx.setLineDash([5, 4]);
+    this.logicalCtx.lineWidth = 1;
+    this.logicalCtx.strokeStyle = 'rgba(255, 105, 105, 0.68)';
+    this.logicalCtx.beginPath();
+    this.logicalCtx.moveTo(0, y);
+    this.logicalCtx.lineTo(this.grid.width, y);
+    this.logicalCtx.stroke();
+    this.logicalCtx.restore();
   }
 
   drawFruit(fruit) {
@@ -101,7 +202,7 @@ export class SandRenderer {
     }
   }
 
-  createArtworkCanvas({ scale = 3, background = '#fff8ea' } = {}) {
+  createArtworkCanvas({ scale = 3, background = DISPLAY_BACKGROUND } = {}) {
     const safeScale = Math.max(1, Math.min(4, Math.round(scale)));
     const canvas = document.createElement('canvas');
     canvas.width = this.grid.width * safeScale;
@@ -134,7 +235,7 @@ export class SandRenderer {
 
   drawParticle(x, y, type, activeFruit, breakProgress = 0) {
     this.drawParticleTo(
-      this.ctx,
+      this.logicalCtx,
       x,
       y,
       type,
@@ -160,8 +261,8 @@ export class SandRenderer {
     if (activeFruit) {
       ctx.fillRect(x + 0.01, y + 0.01, 0.98, 0.98);
     } else {
-      // Slight air gap between settled grains preserves a fine-sand texture
-      // after the 180x320 logical canvas is scaled to the phone viewport.
+      // Keep the exact particle footprint from the Three.js version. Only the
+      // presentation resolution changes; physics density and sand texture do not.
       ctx.fillRect(
         x + SETTLED_PARTICLE_INSET,
         y + SETTLED_PARTICLE_INSET,
