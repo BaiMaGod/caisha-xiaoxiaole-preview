@@ -2,11 +2,11 @@ import { BaseClearEffect } from '../BaseClearEffect.js';
 import {
   getDisplayColorRgb,
   getParticleRgb,
-  rgbToCss,
-  SETTLED_PARTICLE_INSET,
-  SETTLED_PARTICLE_SIZE
+  rgbToCss
 } from '../../colors.js';
 import {
+  CLEAR_JUMP_PARTICLE_INSET,
+  CLEAR_JUMP_PARTICLE_SIZE,
   getClearBounds,
   getDominantClearColor,
   getParticleClearRandom,
@@ -405,10 +405,10 @@ export class WindDissolveEffect extends BaseClearEffect {
 
     this.ctx.fillStyle = rgbToCss(rgb, alpha);
     this.ctx.fillRect(
-      (particle.gridX + SETTLED_PARTICLE_INSET) * cellW,
-      (particle.gridY + SETTLED_PARTICLE_INSET) * cellH,
-      SETTLED_PARTICLE_SIZE * cellW,
-      SETTLED_PARTICLE_SIZE * cellH
+      (particle.gridX + CLEAR_JUMP_PARTICLE_INSET) * cellW,
+      (particle.gridY + CLEAR_JUMP_PARTICLE_INSET) * cellH,
+      CLEAR_JUMP_PARTICLE_SIZE * cellW,
+      CLEAR_JUMP_PARTICLE_SIZE * cellH
     );
   }
 
