@@ -346,8 +346,8 @@ export class DefaultJumpEffect extends BaseClearEffect {
     }
 
     const snapshotCanvas = this.captureSourceSnapshot(groups);
-    const maskCanvas = this.createLogicalCanvas();
-    const frameCanvas = this.createLogicalCanvas();
+    const maskCanvas = this.createDisplayCanvas();
+    const frameCanvas = this.createDisplayCanvas();
 
     return {
       groups,
@@ -366,26 +366,51 @@ export class DefaultJumpEffect extends BaseClearEffect {
     };
   }
 
-  createLogicalCanvas() {
+  createDisplayCanvas() {
     if (typeof document === 'undefined') return null;
 
     const canvas = document.createElement('canvas');
-    canvas.width = this.grid.width;
-    canvas.height = this.grid.height;
+    canvas.width = Math.max(
+      1,
+      this.sourceCanvas?.width ?? this.canvas.width
+    );
+    canvas.height = Math.max(
+      1,
+      this.sourceCanvas?.height ?? this.canvas.height
+    );
 
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      ctx.imageSmoothingEnabled = false;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
     }
 
     return canvas;
   }
 
+  fillDisplayMaskCell(ctx, canvas, gridX, gridY) {
+    const left = Math.round((gridX / this.grid.width) * canvas.width);
+    const right = Math.round(
+      ((gridX + 1) / this.grid.width) * canvas.width
+    );
+    const top = Math.round((gridY / this.grid.height) * canvas.height);
+    const bottom = Math.round(
+      ((gridY + 1) / this.grid.height) * canvas.height
+    );
+
+    ctx.fillRect(
+      left,
+      top,
+      Math.max(1, right - left),
+      Math.max(1, bottom - top)
+    );
+  }
+
   captureSourceSnapshot(groups) {
     if (!this.sourceCanvas) return null;
 
-    const snapshotCanvas = this.createLogicalCanvas();
-    const selectionMask = this.createLogicalCanvas();
+    const snapshotCanvas = this.createDisplayCanvas();
+    const selectionMask = this.createDisplayCanvas();
 
     if (!snapshotCanvas || !selectionMask) return null;
 
@@ -400,10 +425,19 @@ export class DefaultJumpEffect extends BaseClearEffect {
       snapshotCanvas.width,
       snapshotCanvas.height
     );
+    snapshotCtx.imageSmoothingEnabled = true;
+    snapshotCtx.imageSmoothingQuality = 'high';
 
-    // Keep the exact Canvas2D pixels, including the normal fine-sand air
-    // gaps. The clear overlay must only remove grains; it must not recolor them.
-    snapshotCtx.drawImage(this.sourceCanvas, 0, 0);
+    // Capture the already-presented DPR-resolution game frame. This preserves
+    // the same soft sand edge the player sees before the clear starts and
+    // avoids enlarging the 180x320 logical raster inside the effect layer.
+    snapshotCtx.drawImage(
+      this.sourceCanvas,
+      0,
+      0,
+      snapshotCanvas.width,
+      snapshotCanvas.height
+    );
 
     maskCtx.clearRect(
       0,
@@ -417,7 +451,7 @@ export class DefaultJumpEffect extends BaseClearEffect {
       for (const index of group.cells) {
         const x = index % this.grid.width;
         const y = Math.floor(index / this.grid.width);
-        maskCtx.fillRect(x, y, 1, 1);
+        this.fillDisplayMaskCell(maskCtx, selectionMask, x, y);
       }
     }
 
@@ -426,10 +460,6 @@ export class DefaultJumpEffect extends BaseClearEffect {
     snapshotCtx.drawImage(selectionMask, 0, 0);
     snapshotCtx.restore();
 
-    // The game now renders settled sand directly with Canvas2D. Keep the
-    // snapshot pixels exactly as drawn by SandRenderer so entering the clear
-    // effect cannot apply a second color-space conversion or lighten colors.
-
     return snapshotCanvas;
   }
 
@@ -437,12 +467,16 @@ export class DefaultJumpEffect extends BaseClearEffect {
     if (!snapshotCanvas) return false;
 
     this.ctx.save();
-    // The logical clear canvas contains transparent removed cells beside
-    // surviving cells. Bilinear filtering blends those transparent neighbors
-    // into the survivors and makes them look pale, so scale with nearest-neighbor.
-    this.ctx.imageSmoothingEnabled = false;
+    // The snapshot is already captured at display/DPR resolution, so this is
+    // effectively a 1:1 presentation instead of nearest-neighbor magnification.
+    this.ctx.imageSmoothingEnabled = true;
+    this.ctx.imageSmoothingQuality = 'high';
     this.ctx.drawImage(
       snapshotCanvas,
+      0,
+      0,
+      snapshotCanvas.width,
+      snapshotCanvas.height,
       0,
       0,
       this.cssWidth,
@@ -482,7 +516,12 @@ export class DefaultJumpEffect extends BaseClearEffect {
         continue;
       }
 
-      maskCtx.fillRect(particle.gridX, particle.gridY, 1, 1);
+      this.fillDisplayMaskCell(
+        maskCtx,
+        maskCanvas,
+        particle.gridX,
+        particle.gridY
+      );
     }
 
     frameCtx.clearRect(0, 0, frameCanvas.width, frameCanvas.height);
