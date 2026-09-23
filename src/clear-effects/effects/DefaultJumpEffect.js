@@ -406,6 +406,18 @@ export class DefaultJumpEffect extends BaseClearEffect {
     );
   }
 
+  fillDisplayParticleFootprint(ctx, canvas, gridX, gridY) {
+    const cellW = canvas.width / this.grid.width;
+    const cellH = canvas.height / this.grid.height;
+
+    ctx.fillRect(
+      (gridX + SETTLED_PARTICLE_INSET) * cellW,
+      (gridY + SETTLED_PARTICLE_INSET) * cellH,
+      SETTLED_PARTICLE_SIZE * cellW,
+      SETTLED_PARTICLE_SIZE * cellH
+    );
+  }
+
   captureSourceSnapshot(groups) {
     if (!this.sourceCanvas) return null;
 
@@ -451,7 +463,12 @@ export class DefaultJumpEffect extends BaseClearEffect {
       for (const index of group.cells) {
         const x = index % this.grid.width;
         const y = Math.floor(index / this.grid.width);
-        this.fillDisplayMaskCell(maskCtx, selectionMask, x, y);
+        this.fillDisplayParticleFootprint(
+          maskCtx,
+          selectionMask,
+          x,
+          y
+        );
       }
     }
 
@@ -735,17 +752,11 @@ export class DefaultJumpEffect extends BaseClearEffect {
   }
 
   drawLeftToRightJumpClear(elapsed) {
-    const frameCanvas = this.buildJumpClearSnapshot(elapsed);
-
-    if (frameCanvas && this.drawSnapshotCanvas(frameCanvas)) {
-      return;
-    }
-
-    // Fallback only if a source snapshot is unavailable.
     this.ctx.save();
     this.ctx.globalCompositeOperation = 'source-over';
     this.ctx.shadowColor = 'transparent';
     this.ctx.shadowBlur = 0;
+    this.ctx.globalAlpha = 1;
 
     for (const particle of this.current.particles) {
       if (
@@ -758,7 +769,10 @@ export class DefaultJumpEffect extends BaseClearEffect {
         continue;
       }
 
-      this.drawJumpParticle(particle);
+      // Clear by hiding individual grains, not by punching out a full 1x1
+      // logical cell. Surviving grains keep the exact same 0.84-cell
+      // footprint and RGB as normal settled sand.
+      this.drawSettledParticle(particle, 1);
     }
 
     this.ctx.restore();
