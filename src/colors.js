@@ -1,17 +1,43 @@
 export const COLOR_MAP = {
-  // Pastel palette calibrated for direct Canvas2D output so the game keeps
-  // the softer appearance of the previous WebGL presentation.
-  1: [255, 160, 164],
-  2: [255, 207, 140],
-  3: [255, 238, 134],
-  4: [173, 231, 182],
-  5: [150, 232, 227],
-  6: [149, 202, 255],
-  7: [205, 163, 243]
+  // Keep the original linear-space palette used by the Three.js version.
+  // Canvas2D display conversion happens only after per-particle variation and
+  // active-fruit boost have been applied, matching the old WebGL pipeline.
+  1: [255, 90, 95],
+  2: [255, 159, 67],
+  3: [255, 217, 61],
+  4: [107, 203, 119],
+  5: [78, 205, 196],
+  6: [77, 150, 255],
+  7: [155, 93, 229]
 };
 
 export const SETTLED_PARTICLE_INSET = 0.08;
 export const SETTLED_PARTICLE_SIZE = 0.84;
+
+function clampByte(value) {
+  return Math.max(0, Math.min(255, value));
+}
+
+export function linearToSrgbByte(channel) {
+  const linear = clampByte(channel) / 255;
+  const srgb =
+    linear <= 0.0031308
+      ? linear * 12.92
+      : 1.055 * linear ** (1 / 2.4) - 0.055;
+
+  return Math.round(clampByte(srgb * 255));
+}
+
+export function getDisplayColorRgb(type, boost = 0) {
+  const rgb = COLOR_MAP[type];
+  if (!rgb) return null;
+
+  return [
+    linearToSrgbByte(rgb[0] + boost),
+    linearToSrgbByte(rgb[1] + boost),
+    linearToSrgbByte(rgb[2] + boost)
+  ];
+}
 
 export function getParticleRgb(x, y, type, boost = 0) {
   const rgb = COLOR_MAP[type];
@@ -24,9 +50,9 @@ export function getParticleRgb(x, y, type, boost = 0) {
   const offset = (hash % 13) - 6;
 
   return [
-    Math.max(0, Math.min(255, rgb[0] + offset + boost)),
-    Math.max(0, Math.min(255, rgb[1] + offset + boost)),
-    Math.max(0, Math.min(255, rgb[2] + offset + boost))
+    linearToSrgbByte(rgb[0] + offset + boost),
+    linearToSrgbByte(rgb[1] + offset + boost),
+    linearToSrgbByte(rgb[2] + offset + boost)
   ];
 }
 
