@@ -44,9 +44,9 @@ const fruitManager = new FruitManager(grid, simulation, {
 const rules = new GameRules(grid);
 const hud = new GameHUD(gameShell);
 const clearEffects = new ClearEffectManager(
-  gameShell,
+  gameRoot,
   grid,
-  sandRenderer.canvas,
+  sandRenderer.logicalCanvas,
   {
     getEffectId: () => progress.getSelectedEffectId()
   }
@@ -83,8 +83,8 @@ new FruitController(sandRenderer.canvas, fruitManager, grid, {
 });
 
 // ConnectivityClear calls this while every target grain still exists.
-// Rendering here guarantees the clear-effect snapshot is the exact current
-// low-resolution sand image that the player was seeing before deletion.
+// Rendering here guarantees the logical 180x320 sand image used by clear
+// effects contains the exact current board before deletion.
 clearSystem.onBeforeClear = () => {
   renderGameCanvas(true);
 };
