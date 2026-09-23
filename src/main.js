@@ -46,7 +46,7 @@ const hud = new GameHUD(gameShell);
 const clearEffects = new ClearEffectManager(
   gameRoot,
   grid,
-  sandRenderer.logicalCanvas,
+  sandRenderer.canvas,
   {
     getEffectId: () => progress.getSelectedEffectId()
   }
@@ -83,8 +83,8 @@ new FruitController(sandRenderer.canvas, fruitManager, grid, {
 });
 
 // ConnectivityClear calls this while every target grain still exists.
-// Rendering here guarantees the logical 180x320 sand image used by clear
-// effects contains the exact current board before deletion.
+// Rendering here guarantees the DPR-resolution presentation canvas used by
+// clear effects contains the exact current board before deletion.
 clearSystem.onBeforeClear = () => {
   renderGameCanvas(true);
 };
