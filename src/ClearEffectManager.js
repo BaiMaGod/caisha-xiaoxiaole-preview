@@ -14,7 +14,6 @@ export {
   CLEAR_JUMP_PARTICLE_SIZE,
   CLEAR_RANDOM_AHEAD_COLUMNS,
   CLEAR_RESTORE_MS,
-  compensateSnapshotPixelsForDisplay,
   getClearBounds,
   getClearEffectTiming,
   getClearedParticleCount,
@@ -26,8 +25,7 @@ export {
   getParticleClearRandom,
   getScoreAnchor,
   getScoreBounce,
-  isParticleJumpCleared,
-  linearToSrgbByte
+  isParticleJumpCleared
 } from './clear-effects/effects/DefaultJumpEffect.js';
 
 export class ClearEffectManager {
