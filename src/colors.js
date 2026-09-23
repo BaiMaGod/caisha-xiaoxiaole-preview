@@ -11,8 +11,10 @@ export const COLOR_MAP = {
   7: [155, 93, 229]
 };
 
-export const SETTLED_PARTICLE_INSET = 0.08;
-export const SETTLED_PARTICLE_SIZE = 0.84;
+// Settled grains are slightly larger than before to reduce visible grid seams
+// while preserving a centered air gap around each logical cell.
+export const SETTLED_PARTICLE_INSET = 0.05;
+export const SETTLED_PARTICLE_SIZE = 0.90;
 
 function clampByte(value) {
   return Math.max(0, Math.min(255, value));
