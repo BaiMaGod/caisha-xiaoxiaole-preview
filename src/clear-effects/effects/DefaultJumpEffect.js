@@ -348,6 +348,7 @@ export class DefaultJumpEffect extends BaseClearEffect {
     const snapshotCanvas = this.captureSourceSnapshot(groups);
     const maskCanvas = this.createDisplayCanvas();
     const frameCanvas = this.createDisplayCanvas();
+    const logicalFrameCanvas = this.createLogicalCanvas();
 
     return {
       groups,
@@ -361,6 +362,8 @@ export class DefaultJumpEffect extends BaseClearEffect {
       maskCtx: maskCanvas?.getContext('2d') ?? null,
       frameCanvas,
       frameCtx: frameCanvas?.getContext('2d') ?? null,
+      logicalFrameCanvas,
+      logicalFrameCtx: logicalFrameCanvas?.getContext('2d') ?? null,
       startedAt: 0,
       startRewardAudio: null
     };
@@ -383,6 +386,21 @@ export class DefaultJumpEffect extends BaseClearEffect {
     if (ctx) {
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
+    }
+
+    return canvas;
+  }
+
+  createLogicalCanvas() {
+    if (typeof document === 'undefined') return null;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = this.grid.width;
+    canvas.height = this.grid.height;
+
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.imageSmoothingEnabled = false;
     }
 
     return canvas;
@@ -672,6 +690,47 @@ export class DefaultJumpEffect extends BaseClearEffect {
     );
   }
 
+  drawLogicalParticle(ctx, particle) {
+    const rgb = getParticleRgb(
+      particle.gridX,
+      particle.gridY,
+      particle.color,
+      0
+    );
+
+    if (!rgb) return;
+
+    ctx.fillStyle = rgbToCss(rgb, 1);
+    ctx.fillRect(
+      particle.gridX + SETTLED_PARTICLE_INSET,
+      particle.gridY + SETTLED_PARTICLE_INSET,
+      SETTLED_PARTICLE_SIZE,
+      SETTLED_PARTICLE_SIZE
+    );
+  }
+
+  presentLogicalFrame(frameCanvas) {
+    if (!frameCanvas) return false;
+
+    this.ctx.save();
+    this.ctx.imageSmoothingEnabled = true;
+    this.ctx.imageSmoothingQuality = 'high';
+    this.ctx.drawImage(
+      frameCanvas,
+      0,
+      0,
+      frameCanvas.width,
+      frameCanvas.height,
+      0,
+      0,
+      this.cssWidth,
+      this.cssHeight
+    );
+    this.ctx.restore();
+
+    return true;
+  }
+
   drawSnapshotHighlight(progress) {
     const snapshot = this.current?.snapshotCanvas;
 
@@ -752,29 +811,44 @@ export class DefaultJumpEffect extends BaseClearEffect {
   }
 
   drawLeftToRightJumpClear(elapsed) {
-    this.ctx.save();
-    this.ctx.globalCompositeOperation = 'source-over';
-    this.ctx.shadowColor = 'transparent';
-    this.ctx.shadowBlur = 0;
-    this.ctx.globalAlpha = 1;
+    const effect = this.current;
+    const frameCanvas = effect?.logicalFrameCanvas;
+    const frameCtx = effect?.logicalFrameCtx;
 
-    for (const particle of this.current.particles) {
-      if (
-        isParticleJumpCleared(
-          elapsed,
-          particle,
-          this.current.bounds
-        )
-      ) {
-        continue;
+    if (frameCanvas && frameCtx) {
+      frameCtx.clearRect(0, 0, frameCanvas.width, frameCanvas.height);
+      frameCtx.globalCompositeOperation = 'source-over';
+      frameCtx.globalAlpha = 1;
+
+      for (const particle of effect.particles) {
+        if (
+          isParticleJumpCleared(
+            elapsed,
+            particle,
+            effect.bounds
+          )
+        ) {
+          continue;
+        }
+
+        // Match SandRenderer exactly: rebuild the surviving grains on the
+        // same logical 180x320 raster, then let bilinear display scaling blend
+        // the per-cell color variation. Drawing each grain directly at screen
+        // resolution exposes those color steps as a visible grid.
+        this.drawLogicalParticle(frameCtx, particle);
       }
 
-      // Keep the grain-by-grain clear path (no full-cell mask), but use the
-      // previously-proven gapless clear footprint. Normal settled sand has a
-      // deliberate 0.16-cell gap; during random disappearance that gap turns
-      // into a visible checker/grid pattern. Slight overlap removes the seam
-      // without bringing back the oversized 1x1 mask holes.
-      this.drawJumpParticle(particle);
+      this.presentLogicalFrame(frameCanvas);
+      return;
+    }
+
+    // Defensive fallback only if logical offscreen Canvas2D is unavailable.
+    this.ctx.save();
+    this.ctx.globalCompositeOperation = 'source-over';
+
+    for (const particle of effect.particles) {
+      if (isParticleJumpCleared(elapsed, particle, effect.bounds)) continue;
+      this.drawSettledParticle(particle, 1);
     }
 
     this.ctx.restore();
