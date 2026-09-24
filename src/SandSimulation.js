@@ -3,8 +3,9 @@ import { DirtyRegion } from './DirtyRegion.js';
 import { ChunkManager } from './ChunkManager.js';
 
 export class SandSimulation {
-  constructor(grid) {
+  constructor(grid, { random = Math.random } = {}) {
     this.grid = grid;
+    this.random = random;
     this.flip = false;
     this.movedCount = 0;
 
@@ -16,6 +17,10 @@ export class SandSimulation {
     this.chunkManager = new ChunkManager();
 
     this.fullUpdate = true;
+  }
+
+  setRandom(random = Math.random) {
+    this.random = random;
   }
 
   update(afterSubstep = null) {
@@ -33,7 +38,7 @@ export class SandSimulation {
   }
 
   stepOnce() {
-    const leftToRight = Math.random() < 0.5;
+    const leftToRight = this.random() < 0.5;
     this.flip = leftToRight;
 
     if (this.fullUpdate) {
@@ -101,12 +106,12 @@ export class SandSimulation {
       return;
     }
 
-    if (Math.random() <= CONFIG.FRICTION) {
+    if (this.random() <= CONFIG.FRICTION) {
       this.sleepFrames[index] = Math.min(255, this.sleepFrames[index] + 1);
       return;
     }
 
-    const directions = Math.random() < 0.5 ? [-1, 1] : [1, -1];
+    const directions = this.random() < 0.5 ? [-1, 1] : [1, -1];
 
     for (const dir of directions) {
       if (!this.grid.empty(x + dir, y + 1)) continue;

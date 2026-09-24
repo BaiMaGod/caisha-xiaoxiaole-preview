@@ -62,7 +62,9 @@ const homeDemo = new HomeDemoController({
   container: gameShell,
   fruitManager,
   grid,
-  onResetWorld: () => resetHomeDemoWorld()
+  simulation,
+  onResetWorld: (baselineCells) =>
+    resetHomeDemoWorld(baselineCells)
 });
 
 const homeScreen = new HomeScreen(gameShell, {
@@ -180,10 +182,16 @@ function triggerGameOver() {
   });
 }
 
-function resetHomeDemoWorld() {
+function resetHomeDemoWorld(baselineCells = null) {
   clearEffects.clear();
   rewardAudio.stop();
   grid.clear();
+
+  if (baselineCells) {
+    grid.cells.set(baselineCells);
+    grid.revision += 1;
+  }
+
   simulation.reset();
   clearSystem.reset();
   rules.reset();

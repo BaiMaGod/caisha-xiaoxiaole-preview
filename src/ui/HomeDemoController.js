@@ -1,10 +1,15 @@
 import { CONFIG } from '../config.js';
 import {
+  HOME_DEMO_PHYSICS_SEED,
   HOME_DEMO_SCRIPT,
-  createDemoRoleColors
+  createDemoRoleColors,
+  createSeededRandom,
+  rotateChainRoleColors
 } from './HomeDemoScript.js';
+import { buildHomeDemoBaseline } from './HomeDemoBaseline.js';
 
 const STYLE_ID = 'home-demo-shared-gameplay-styles';
+const STABLE_TICKS_BEFORE_NEXT_LOOP = 6;
 
 function ensureStyles() {
   if (document.getElementById(STYLE_ID)) return;
@@ -31,6 +36,7 @@ function ensureStyles() {
       letter-spacing: .05em;
     }
   `;
+
   document.head.appendChild(style);
 }
 
@@ -39,6 +45,7 @@ export class HomeDemoController {
     container,
     fruitManager,
     grid,
+    simulation,
     onResetWorld
   }) {
     ensureStyles();
@@ -46,16 +53,19 @@ export class HomeDemoController {
     this.container = container;
     this.fruitManager = fruitManager;
     this.grid = grid;
+    this.simulation = simulation;
     this.onResetWorld = onResetWorld;
 
     this.running = false;
-    this.scriptIndex = 0;
-    this.completedDrops = 0;
     this.roleColors = createDemoRoleColors();
+    this.spawnIndex = 0;
+    this.activeSpec = null;
     this.configuredFruit = null;
     this.configuredAt = 0;
-    this.lastFruit = null;
-    this.lastSafetyCheck = 0;
+    this.awaitingCascade = false;
+    this.cascadeClears = 0;
+    this.cascadeComplete = false;
+    this.postCascadeStableTicks = 0;
 
     this.comboChip = document.createElement('div');
     this.comboChip.className = 'home-demo-combo';
@@ -64,21 +74,42 @@ export class HomeDemoController {
 
   show() {
     this.running = true;
-    this.scriptIndex = 0;
-    this.completedDrops = 0;
     this.roleColors = createDemoRoleColors();
+    this.spawnIndex = 0;
+    this.activeSpec = null;
     this.configuredFruit = null;
-    this.lastFruit = null;
+    this.awaitingCascade = false;
+    this.cascadeClears = 0;
+    this.cascadeComplete = false;
+    this.postCascadeStableTicks = 0;
+
     this.container.classList.add('home-demo-active');
-    this.onResetWorld?.();
+
+    this.fruitManager.setSpawnProvider(
+      () => this.provideSpawn()
+    );
+    this.simulation.setRandom(
+      createSeededRandom(HOME_DEMO_PHYSICS_SEED)
+    );
+
+    const baseline = buildHomeDemoBaseline(this.roleColors);
+    this.onResetWorld?.(baseline);
   }
 
   hide() {
     this.running = false;
+    this.activeSpec = null;
     this.configuredFruit = null;
-    this.lastFruit = null;
+    this.awaitingCascade = false;
+    this.cascadeComplete = false;
+
+    this.fruitManager.setSpawnProvider(null);
+    this.simulation.setRandom(Math.random);
+
     this.container.classList.remove('home-demo-active');
-    this.comboChip.getAnimations().forEach((a) => a.cancel());
+    this.comboChip.getAnimations().forEach(
+      (animation) => animation.cancel()
+    );
     this.comboChip.style.opacity = '0';
   }
 
@@ -86,91 +117,155 @@ export class HomeDemoController {
     return this.running;
   }
 
+  provideSpawn() {
+    if (!this.running || this.awaitingCascade) {
+      return null;
+    }
+
+    if (this.spawnIndex >= HOME_DEMO_SCRIPT.length) {
+      this.awaitingCascade = true;
+      return null;
+    }
+
+    const spec = HOME_DEMO_SCRIPT[this.spawnIndex++];
+    this.activeSpec = spec;
+
+    if (this.spawnIndex >= HOME_DEMO_SCRIPT.length) {
+      this.awaitingCascade = true;
+      this.cascadeClears = 0;
+    }
+
+    return {
+      templateId: spec.templateId,
+      color: this.roleColors[spec.role],
+      centerX: spec.centerX
+    };
+  }
+
   update(time) {
     if (!this.running) return;
 
     const fruit = this.fruitManager.current;
 
-    if (this.lastFruit && !fruit) {
-      this.completedDrops += 1;
-      if (this.completedDrops % HOME_DEMO_SCRIPT.length === 0) {
-        this.roleColors = createDemoRoleColors();
+    if (fruit && fruit !== this.configuredFruit) {
+      this.configuredFruit = fruit;
+      this.configuredAt = time;
+
+      fruit.fallStepMs = Math.max(
+        1,
+        CONFIG.FRUIT_FALL_STEP_MS / 2
+      );
+
+      if (this.activeSpec) {
+        this.fruitManager.setPointerX(
+          this.activeSpec.centerX
+        );
       }
     }
 
-    this.lastFruit = fruit;
-
-    if (fruit && fruit !== this.configuredFruit) {
-      this.configureFruit(fruit, time);
-    }
-
-    if (fruit?.state === 'CONTROL' && fruit === this.configuredFruit) {
-      const spec = HOME_DEMO_SCRIPT[
-        (this.scriptIndex - 1 + HOME_DEMO_SCRIPT.length) %
-          HOME_DEMO_SCRIPT.length
-      ];
-
+    if (
+      fruit &&
+      fruit === this.configuredFruit &&
+      fruit.state === 'CONTROL' &&
+      this.activeSpec
+    ) {
       const elapsed = time - this.configuredAt;
-      const sway = Math.sin(elapsed * 0.011) * 2.2;
-      const centerX = (spec.x * this.grid.width) + sway;
-      this.fruitManager.setPointerX(centerX);
+      const sway = Math.sin(elapsed * 0.011) * 1.6;
 
-      if (elapsed >= spec.holdMs) {
+      this.fruitManager.setPointerX(
+        this.activeSpec.centerX + sway
+      );
+
+      if (elapsed >= this.activeSpec.holdMs) {
         this.fruitManager.releaseCurrent();
       }
     }
 
-    if (time - this.lastSafetyCheck >= 450) {
-      this.lastSafetyCheck = time;
+    if (!fruit && this.configuredFruit) {
+      this.configuredFruit = null;
+      this.activeSpec = null;
+    }
 
-      if (this.isNearDeathLine() && !this.fruitManager.current) {
-        this.scriptIndex = 0;
-        this.completedDrops = 0;
-        this.roleColors = createDemoRoleColors();
-        this.configuredFruit = null;
-        this.lastFruit = null;
-        this.onResetWorld?.();
+    if (this.cascadeComplete && !fruit) {
+      if (this.simulation.movedCount === 0) {
+        this.postCascadeStableTicks += 1;
+      } else {
+        this.postCascadeStableTicks = 0;
+      }
+
+      if (
+        this.postCascadeStableTicks >=
+        STABLE_TICKS_BEFORE_NEXT_LOOP
+      ) {
+        this.beginNextLoop();
       }
     }
   }
 
-  configureFruit(fruit, time) {
-    const spec = HOME_DEMO_SCRIPT[
-      this.scriptIndex % HOME_DEMO_SCRIPT.length
-    ];
-
-    this.scriptIndex += 1;
-    this.configuredFruit = fruit;
-    this.configuredAt = time;
-
-    fruit.color = this.roleColors[spec.role];
-    fruit.fallStepMs = Math.max(
-      1,
-      CONFIG.FRUIT_FALL_STEP_MS / 2
+  beginNextLoop() {
+    this.roleColors = rotateChainRoleColors(
+      this.roleColors
     );
 
-    this.fruitManager.setPointerX(spec.x * this.grid.width);
+    this.spawnIndex = 0;
+    this.activeSpec = null;
+    this.configuredFruit = null;
+    this.awaitingCascade = false;
+    this.cascadeClears = 0;
+    this.cascadeComplete = false;
+    this.postCascadeStableTicks = 0;
+
+    this.simulation.setRandom(
+      createSeededRandom(HOME_DEMO_PHYSICS_SEED)
+    );
   }
 
-  isNearDeathLine() {
-    const maxY = Math.min(
-      this.grid.height - 1,
-      CONFIG.DEATH_LINE_Y + 20
-    );
+  cleanupChainResidue() {
+    const chainColors = new Set([
+      this.roleColors.A,
+      this.roleColors.B,
+      this.roleColors.C
+    ]);
 
-    for (let y = 0; y <= maxY; y++) {
-      for (let x = 0; x < this.grid.width; x++) {
-        if (this.grid.get(x, y) > 0) return true;
+    let removed = 0;
+
+    for (
+      let index = 0;
+      index < this.grid.cells.length;
+      index++
+    ) {
+      if (!chainColors.has(this.grid.cells[index])) {
+        continue;
       }
+
+      const x = index % this.grid.width;
+      const y = Math.floor(index / this.grid.width);
+
+      this.grid.set(x, y, 0);
+      removed += 1;
     }
 
-    return false;
+    return removed;
   }
 
   onClear(payload) {
     if (!this.running) return;
 
-    const combo = payload?.combo ?? 1;
+    if (this.awaitingCascade) {
+      this.cascadeClears += 1;
+
+      if (this.cascadeClears >= 3) {
+        this.cleanupChainResidue();
+        this.cascadeComplete = true;
+        this.postCascadeStableTicks = 0;
+      }
+    }
+
+    const combo =
+      this.awaitingCascade
+        ? Math.min(3, Math.max(1, this.cascadeClears))
+        : (payload?.combo ?? 1);
+
     this.comboChip.textContent =
       combo >= 3
         ? 'COMBO ×3'
@@ -178,7 +273,10 @@ export class HomeDemoController {
           ? 'COMBO ×2'
           : '连通消除！';
 
-    this.comboChip.getAnimations().forEach((a) => a.cancel());
+    this.comboChip.getAnimations().forEach(
+      (animation) => animation.cancel()
+    );
+
     this.comboChip.animate(
       [
         {
@@ -188,7 +286,7 @@ export class HomeDemoController {
         {
           opacity: 1,
           transform: 'translate(-50%, 0) scale(1)',
-          offset: .22
+          offset: .2
         },
         {
           opacity: 1,
@@ -204,7 +302,7 @@ export class HomeDemoController {
         }
       ],
       {
-        duration: 900,
+        duration: 950,
         easing: 'ease-out'
       }
     );

@@ -44,6 +44,7 @@ export class FruitManager {
     this.spawnDelayMs = 350;
     this.spawnTimer = 0;
     this.enabled = true;
+    this.spawnProvider = null;
 
     this.spawnRandomFruit();
   }
@@ -51,15 +52,31 @@ export class FruitManager {
   spawnRandomFruit() {
     if (!this.enabled) return;
 
-    const template =
-      this.templates[Math.floor(this.random() * this.templates.length)];
+    const spec = this.spawnProvider?.() ?? null;
+
+    if (this.spawnProvider && !spec) {
+      this.current = null;
+      return;
+    }
+
+    const template = spec?.templateId
+      ? this.templates.find((item) => item.id === spec.templateId)
+      : this.templates[Math.floor(this.random() * this.templates.length)];
+
+    if (!template) {
+      throw new Error('Unknown fruit template in spawn provider');
+    }
 
     this.current = new FruitPiece({
       template,
-      color: this.pickNextColor(),
+      color: spec?.color ?? this.pickNextColor(),
       grid: this.grid,
       simulation: this.simulation
     });
+
+    if (Number.isFinite(spec?.centerX)) {
+      this.current.setCenterX(spec.centerX);
+    }
   }
 
   pickNextColor() {
@@ -181,6 +198,11 @@ export class FruitManager {
 
   setEnabled(enabled) {
     this.enabled = enabled;
+  }
+
+  setSpawnProvider(provider = null) {
+    this.spawnProvider =
+      typeof provider === 'function' ? provider : null;
   }
 
   reset() {
