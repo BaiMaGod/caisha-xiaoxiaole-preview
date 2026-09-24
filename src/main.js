@@ -29,7 +29,7 @@ const grid = new SandGrid();
 const simulation = new SandSimulation(grid);
 const sandRenderer = new SandRenderer(grid);
 sandRenderer.canvas.className = 'game-canvas';
-sandRenderer.canvas.setAttribute('aria-label', '梦幻沙画消除游戏画布');
+sandRenderer.canvas.setAttribute('aria-label', '七彩沙画消除游戏画布');
 gameRoot.appendChild(sandRenderer.canvas);
 
 const stats = new SandStats(simulation);
