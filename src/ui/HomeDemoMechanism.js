@@ -1,21 +1,22 @@
+import { CONFIG } from '../config.js';
 import { SandSimulation } from '../SandSimulation.js';
 
 export const HOME_DEMO_CHAIN_ROLES = ['A', 'B', 'C'];
 export const HOME_DEMO_ALL_COLORS = [1, 2, 3, 4, 5, 6, 7];
 
 export const HOME_DEMO_LAYOUT = Object.freeze({
-  A_GAP: { x1: 28, y1: 244, x2: 40, y2: 249 },
-  B_GAP: { x1: 85, y1: 262, x2: 95, y2: 267 },
-  C_GAP: { x1: 139, y1: 280, x2: 151, y2: 285 },
+  A_GAP: { x1: 29, y1: 244, x2: 42, y2: 252 },
+  B_GAP: { x1: 90, y1: 260, x2: 96, y2: 270 },
+  C_GAP: { x1: 144, y1: 276, x2: 152, y2: 288 },
 
-  B_KEY: { x1: 85, y1: 216, x2: 95, y2: 225 },
-  C_KEY: { x1: 139, y1: 213, x2: 151, y2: 222 },
+  B_KEY: { x1: 84, y1: 209, x2: 102, y2: 220 },
+  C_KEY: { x1: 137, y1: 211, x2: 158, y2: 223 },
 
-  A_SUPPORT: { x1: 85, y1: 226, x2: 95, y2: 243 },
-  B_SUPPORT: { x1: 139, y1: 223, x2: 151, y2: 261 },
+  A_SUPPORT: { x1: 84, y1: 221, x2: 102, y2: 246 },
+  B_SUPPORT: { x1: 137, y1: 224, x2: 158, y2: 264 },
 
-  B_SHAFT: { x1: 82, y1: 250, x2: 98, y2: 267 },
-  C_SHAFT: { x1: 135, y1: 250, x2: 155, y2: 285 }
+  B_SHAFT: { x1: 84, y1: 246, x2: 102, y2: 271 },
+  C_SHAFT: { x1: 137, y1: 262, x2: 158, y2: 289 }
 });
 
 function addRect(target, x1, y1, x2, y2) {
@@ -26,9 +27,86 @@ function addRect(target, x1, y1, x2, y2) {
   }
 }
 
-function addHorizontal(target, y1, y2, segments) {
-  for (const [x1, x2] of segments) {
-    addRect(target, x1, y1, x2, y2);
+function addTaperedColumn(target, rect, seed = 1) {
+  const cx = (rect.x1 + rect.x2) / 2;
+  const height = Math.max(1, rect.y2 - rect.y1);
+
+  for (let y = rect.y1; y <= rect.y2; y++) {
+    const t = (y - rect.y1) / height;
+    const hash =
+      ((Math.round(cx) * 73856093) ^
+        (y * 19349663) ^
+        (seed * 83492791)) >>> 0;
+    const jitter = (hash % 3) - 1;
+    const halfWidth = Math.max(
+      2,
+      Math.round(2.5 + t * 2.2 + jitter * 0.45)
+    );
+
+    for (let x = Math.round(cx) - halfWidth; x <= Math.round(cx) + halfWidth; x++) {
+      target.add(x + ',' + y);
+    }
+  }
+}
+
+function addCurvedBridge(
+  target,
+  { x1, x2, topY, bottomY, thickness = 4, phase = 0 }
+) {
+  const cx = (x1 + x2) / 2;
+  const radius = Math.max(1, (x2 - x1) / 2);
+
+  for (let x = x1; x <= x2; x++) {
+    const edge = Math.min(1, Math.abs(x - cx) / radius);
+    const curve = Math.pow(edge, 1.55);
+    const wave = Math.round(Math.sin(x * 0.31 + phase) * 0.8);
+    const y0 = Math.round(
+      topY + (bottomY - topY) * curve + wave
+    );
+
+    for (let y = y0; y < y0 + thickness; y++) {
+      target.add(x + ',' + y);
+    }
+  }
+}
+
+function gapRibbonCells(rect, phase = 0) {
+  const set = new Set();
+  const centerY = Math.round((rect.y1 + rect.y2) / 2);
+
+  for (let x = rect.x1; x <= rect.x2; x++) {
+    const wave =
+      Math.round(Math.sin(x * 0.42 + phase) * 1.2);
+    const y0 = centerY - 2 + wave;
+
+    for (let y = y0; y <= y0 + 4; y++) {
+      set.add(x + ',' + y);
+    }
+  }
+
+  return toCells(set);
+}
+
+
+function addRibbon(target, {
+  x1,
+  x2,
+  baseY,
+  thickness = 5,
+  gap = null,
+  phase = 0
+}) {
+  for (let x = x1; x <= x2; x++) {
+    if (gap && x >= gap.x1 && x <= gap.x2) continue;
+
+    const wave =
+      Math.round(Math.sin(x * 0.095 + phase) * 2.2) +
+      Math.round(Math.sin(x * 0.031 + phase * 1.7) * 1.4);
+    const y0 = baseY + wave;
+
+    for (let y = y0; y < y0 + thickness; y++) {
+      target.add(x + ',' + y);
+    }
   }
 }
 
@@ -45,6 +123,34 @@ function toCells(keys) {
 function rectCells(rect) {
   const set = new Set();
   addRect(set, rect.x1, rect.y1, rect.x2, rect.y2);
+  return toCells(set);
+}
+
+function moundCells(rect, seed = 1) {
+  const set = new Set();
+  const cx = (rect.x1 + rect.x2) / 2;
+  const width = rect.x2 - rect.x1 + 1;
+  const height = rect.y2 - rect.y1 + 1;
+
+  for (let y = rect.y1; y <= rect.y2; y++) {
+    const t = (y - rect.y1) / Math.max(1, height - 1);
+    const halfWidth = Math.max(
+      2,
+      Math.round((width * (0.24 + t * 0.28)))
+    );
+
+    for (let x = rect.x1; x <= rect.x2; x++) {
+      const hash =
+        ((x * 73856093) ^ (y * 19349663) ^ (seed * 83492791)) >>> 0;
+      const edgeJitter = ((hash % 3) - 1);
+      const localHalf = halfWidth + edgeJitter;
+
+      if (Math.abs(x - cx) <= localHalf) {
+        set.add(x + ',' + y);
+      }
+    }
+  }
+
   return toCells(set);
 }
 
@@ -71,14 +177,15 @@ function splitIntoParts(cells, count) {
 }
 
 function centerX(cells) {
-  if (!cells.length) return 90;
+  if (!cells.length) return Math.floor(CONFIG.WIDTH / 2);
+
   const total = cells.reduce((sum, cell) => sum + cell.x, 0);
   return Math.round(total / cells.length);
 }
 
 function boundsOf(cells) {
-  let minX = 180;
-  let minY = 320;
+  let minX = CONFIG.WIDTH;
+  let minY = CONFIG.HEIGHT;
   let maxX = 0;
   let maxY = 0;
 
@@ -97,46 +204,76 @@ export function createHomeDemoMechanism() {
   const b = new Set();
   const c = new Set();
 
-  // A receiver is intentionally broken twice:
-  // 1) x=28..40 is the real A key gap;
-  // 2) x=139..151 is occupied by B's support column.
-  // A climbs over the B support as an arch, so B support never creates
-  // a second accidental A gap.
-  addHorizontal(a, 244, 249, [
-    [0, 27],
-    [41, 138],
-    [152, 179]
-  ]);
+  // A: shallow wavy band with one real key gap. It also owns the support
+  // column that keeps B's key suspended until A clears.
+  addRibbon(a, {
+    x1: 0,
+    x2: 179,
+    baseY: 246,
+    thickness: 5,
+    gap: HOME_DEMO_LAYOUT.A_GAP,
+    phase: 0.4
+  });
 
-  addRect(a, 132, 199, 138, 243);
-  addRect(a, 152, 199, 158, 243);
-  addRect(a, 132, 199, 158, 205);
-  addRect(
+  addTaperedColumn(
     a,
-    HOME_DEMO_LAYOUT.A_SUPPORT.x1,
-    HOME_DEMO_LAYOUT.A_SUPPORT.y1,
-    HOME_DEMO_LAYOUT.A_SUPPORT.x2,
-    HOME_DEMO_LAYOUT.A_SUPPORT.y2
+    HOME_DEMO_LAYOUT.A_SUPPORT,
+    11
   );
 
-  // B is split at x=85..95. The separate B key initially rests on A support.
-  addHorizontal(b, 262, 267, [
-    [0, 84],
-    [96, 179]
-  ]);
-  addRect(
+  // B support for C cuts through A's band. Route A around it with a small
+  // natural-looking arch instead of leaving a second accidental A gap.
+  for (let x = 132; x <= 163; x++) {
+    for (let y = 238; y <= 255; y++) {
+      a.delete(x + ',' + y);
+    }
+  }
+  addCurvedBridge(a, {
+    x1: 128,
+    x2: 167,
+    topY: 198,
+    bottomY: 245,
+    thickness: 4,
+    phase: 0.6
+  });
+
+  // B: deeper wavy receiver with its own center gap plus a support branch
+  // that holds C's key.
+  addRibbon(b, {
+    x1: 0,
+    x2: 179,
+    baseY: 263,
+    thickness: 5,
+    gap: HOME_DEMO_LAYOUT.B_GAP,
+    phase: 1.7
+  });
+
+  addTaperedColumn(
     b,
-    HOME_DEMO_LAYOUT.B_SUPPORT.x1,
-    HOME_DEMO_LAYOUT.B_SUPPORT.y1,
-    HOME_DEMO_LAYOUT.B_SUPPORT.x2,
-    HOME_DEMO_LAYOUT.B_SUPPORT.y2
+    HOME_DEMO_LAYOUT.B_SUPPORT,
+    23
   );
 
-  // C is split at x=139..151. Its key rests on B support.
-  addHorizontal(c, 280, 285, [
-    [0, 138],
-    [152, 179]
-  ]);
+  // Downward shoulders follow the natural shape of a settled sand mound.
+  // They remain separated until the falling B key fills the center.
+  addRect(b, 88, 266, 89, 269);
+  addRect(b, 97, 266, 98, 269);
+
+  // C: lowest receiver. It intentionally sits just above the permanent
+  // natural base and has a wider gap so its falling key visibly pours in.
+  addRibbon(c, {
+    x1: 0,
+    x2: 179,
+    baseY: 281,
+    thickness: 5,
+    gap: HOME_DEMO_LAYOUT.C_GAP,
+    phase: 2.8
+  });
+
+  // C receiver also narrows into two low shoulders. The released C mound
+  // reaches these shoulders only after B support disappears.
+  addRect(c, 142, 285, 143, 288);
+  addRect(c, 153, 285, 154, 288);
 
   const aCells = toCells(a);
   const bCells = toCells(b);
@@ -146,9 +283,9 @@ export function createHomeDemoMechanism() {
   const bParts = splitIntoParts(bCells, 3);
   const cParts = splitIntoParts(cCells, 3);
 
-  const cKey = rectCells(HOME_DEMO_LAYOUT.C_KEY);
-  const bKey = rectCells(HOME_DEMO_LAYOUT.B_KEY);
-  const aKey = rectCells(HOME_DEMO_LAYOUT.A_GAP);
+  const cKey = moundCells(HOME_DEMO_LAYOUT.C_KEY, 31);
+  const bKey = moundCells(HOME_DEMO_LAYOUT.B_KEY, 17);
+  const aKey = gapRibbonCells(HOME_DEMO_LAYOUT.A_GAP, 0.9);
 
   const makeStep = (role, cells, kind, holdMs = 95) => ({
     role,
@@ -177,7 +314,7 @@ export function createHomeDemoMechanism() {
       ...aParts.map((cells) => makeStep('A', cells, 'structure')),
       makeStep('B', bKey, 'key')
     ],
-    finalKeyStep: makeStep('A', aKey, 'trigger', 175)
+    finalKeyStep: makeStep('A', aKey, 'trigger', 180)
   };
 }
 
@@ -221,13 +358,41 @@ export function roleColorMap(chainColors, random = Math.random) {
 }
 
 function permanentColorAt(x, y, baseColors) {
-  const band = Math.floor((x + y * 0.37) / 18);
-  const wave = Math.floor(2 * Math.sin(x * 0.11 + y * 0.037));
+  const patch =
+    Math.floor(
+      (
+        x +
+        y * 0.31 +
+        Math.sin(x * 0.073 + y * 0.021) * 18 +
+        Math.sin(x * 0.019 - y * 0.047) * 13
+      ) / 24
+    );
+
   const index =
-    ((band + wave) % baseColors.length + baseColors.length) %
+    ((patch % baseColors.length) + baseColors.length) %
     baseColors.length;
 
   return baseColors[index];
+}
+
+function naturalSurfaceY(x) {
+  const broad = Math.sin(x * 0.047 + 0.5) * 5.5;
+  const medium = Math.sin(x * 0.11 + 2.1) * 3.6;
+  const fine = Math.sin(x * 0.23 + 0.9) * 1.8;
+
+  const leftHill = 8 * Math.exp(-((x - 38) ** 2) / 900);
+  const rightHill = 10 * Math.exp(-((x - 142) ** 2) / 760);
+  const centerDip = -6 * Math.exp(-((x - 91) ** 2) / 520);
+
+  return Math.max(
+    292,
+    Math.min(
+      306,
+      Math.round(
+        302 - broad - medium - fine - leftHill - rightHill - centerDip
+      )
+    )
+  );
 }
 
 function addPermanentCell(grid, simulation, x, y, baseColors, written) {
@@ -246,51 +411,48 @@ export function seedHomeDemoPermanentBase(
 ) {
   const written = [];
 
-  // Deep stable base.
-  for (let y = 292; y < grid.height; y++) {
-    for (let x = 0; x < grid.width; x++) {
-      addPermanentCell(grid, simulation, x, y, baseColors, written);
+  // One contiguous irregular sand hill. No horizontal shelves or white
+  // stripes: the surface itself is a multi-frequency height field.
+  for (let x = 0; x < grid.width; x++) {
+    const surface = naturalSurfaceY(x);
+
+    for (let y = surface; y < grid.height; y++) {
+      addPermanentCell(
+        grid,
+        simulation,
+        x,
+        y,
+        baseColors,
+        written
+      );
     }
   }
 
-  // Shelf directly below A. Leave open shafts for B and C keys.
-  for (let y = 250; y <= 253; y++) {
-    for (let x = 0; x < grid.width; x++) {
-      const inBShaft = x >= 82 && x <= 98;
-      const inCShaft = x >= 135 && x <= 155;
-      if (inBShaft || inCShaft) continue;
-
-      addPermanentCell(grid, simulation, x, y, baseColors, written);
+  // Local B pedestal: catches B key, ends before the C receiver.
+  for (let y = 270; y <= 279; y++) {
+    for (let x = 91; x <= 95; x++) {
+      addPermanentCell(
+        grid,
+        simulation,
+        x,
+        y,
+        baseColors,
+        written
+      );
     }
   }
 
-  // Shelf directly below B. C needs to pass through this layer later.
-  for (let y = 268; y <= 271; y++) {
-    for (let x = 0; x < grid.width; x++) {
-      if (x >= 135 && x <= 155) continue;
-
-      addPermanentCell(grid, simulation, x, y, baseColors, written);
-    }
-  }
-
-  // C catch shelf; joins naturally into the deep base below.
-  for (let y = 286; y <= 291; y++) {
-    for (let x = 0; x < grid.width; x++) {
-      addPermanentCell(grid, simulation, x, y, baseColors, written);
-    }
-  }
-
-  // Narrow B funnel beneath A shelf.
-  for (let y = 254; y <= 261; y++) {
-    for (const x of [82, 83, 84, 96, 97, 98]) {
-      addPermanentCell(grid, simulation, x, y, baseColors, written);
-    }
-  }
-
-  // Narrow C funnel beneath B shelf.
-  for (let y = 272; y <= 279; y++) {
-    for (const x of [135, 136, 137, 138, 152, 153, 154, 155]) {
-      addPermanentCell(grid, simulation, x, y, baseColors, written);
+  // Local C pedestal merges into the natural base below.
+  for (let y = 289; y < grid.height; y++) {
+    for (let x = 146; x <= 150; x++) {
+      addPermanentCell(
+        grid,
+        simulation,
+        x,
+        y,
+        baseColors,
+        written
+      );
     }
   }
 
@@ -303,17 +465,25 @@ export function placeLockedCells(
   cells,
   color
 ) {
-  let written = 0;
+  let satisfied = 0;
 
   for (const cell of cells) {
-    if (!grid.empty(cell.x, cell.y)) continue;
+    const current = grid.get(cell.x, cell.y);
 
-    grid.set(cell.x, cell.y, color);
-    simulation.lockCell(cell.x, cell.y);
-    written += 1;
+    if (current === 0) {
+      grid.set(cell.x, cell.y, color);
+      simulation.lockCell(cell.x, cell.y);
+      satisfied += 1;
+      continue;
+    }
+
+    if (current === color) {
+      simulation.lockCell(cell.x, cell.y);
+      satisfied += 1;
+    }
   }
 
-  return written;
+  return satisfied;
 }
 
 export function gridHash(grid) {
@@ -363,7 +533,12 @@ export class HomeDemoSimulation extends SandSimulation {
   }
 
   lockCell(x, y) {
-    if (x < 0 || y < 0 || x >= this.grid.width || y >= this.grid.height) {
+    if (
+      x < 0 ||
+      y < 0 ||
+      x >= this.grid.width ||
+      y >= this.grid.height
+    ) {
       return;
     }
 
@@ -371,12 +546,18 @@ export class HomeDemoSimulation extends SandSimulation {
   }
 
   unlockCell(x, y) {
-    if (x < 0 || y < 0 || x >= this.grid.width || y >= this.grid.height) {
+    if (
+      x < 0 ||
+      y < 0 ||
+      x >= this.grid.width ||
+      y >= this.grid.height
+    ) {
       return;
     }
 
-    this.locked[this.grid.index(x, y)] = 0;
-    this.sleepFrames[this.grid.index(x, y)] = 0;
+    const index = this.grid.index(x, y);
+    this.locked[index] = 0;
+    this.sleepFrames[index] = 0;
   }
 
   lockCells(cells) {
@@ -389,6 +570,7 @@ export class HomeDemoSimulation extends SandSimulation {
 
   unlockIndex(index) {
     if (index < 0 || index >= this.locked.length) return;
+
     this.locked[index] = 0;
     this.sleepFrames[index] = 0;
   }
@@ -432,11 +614,11 @@ export class HomeDemoSimulation extends SandSimulation {
 
     const index = this.grid.index(x, y);
     if (this.locked[index]) return;
-    if (this.sleepFrames[index] > 8) return;
+    if (this.sleepFrames[index] > CONFIG.SLEEP_THRESHOLD) return;
 
     this.velocity[index] = Math.min(
-      this.velocity[index] + 0.15,
-      1
+      this.velocity[index] + CONFIG.GRAVITY,
+      CONFIG.MAX_VELOCITY
     );
 
     if (this.grid.empty(x, y + 1)) {
@@ -444,7 +626,7 @@ export class HomeDemoSimulation extends SandSimulation {
       return;
     }
 
-    if (this.random() <= 0.35) {
+    if (this.random() <= CONFIG.FRICTION) {
       this.sleepFrames[index] = Math.min(
         255,
         this.sleepFrames[index] + 1

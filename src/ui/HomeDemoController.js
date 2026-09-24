@@ -130,17 +130,13 @@ class DemoBlueprintPiece extends FruitPiece {
   }
 
   dissolveToProgress(progress) {
-    const visualTargetCount = Math.min(
-      this.template.cells.length,
-      Math.ceil(this.template.cells.length * progress)
-    );
+    // First keep the game's real crumble behavior: grains appear exactly
+    // where the fruit hits, fall under CA gravity and visibly build the pile.
+    super.dissolveToProgress(progress);
 
-    while (this.dissolvedCount < visualTargetCount) {
-      const cellIndex = this.dissolveOrder[this.dissolvedCount];
-      this.dissolvedCount += 1;
-      this.dissolved[cellIndex] = 1;
-    }
-
+    // The demo scaffold is filled in the same color underneath the visible
+    // pile. It stabilizes the three-key mechanism, but no longer replaces
+    // the actual impact sand.
     const targetCount = Math.min(
       this.targetCells.length,
       Math.ceil(this.targetCells.length * progress)
@@ -403,7 +399,16 @@ export class HomeDemoController {
     this.clearStartedAt = time;
     this.clearCursor = 0;
 
-    this.clearCells = [...component.cells].sort((ia, ib) => {
+    const roleColor = this.roleColors[role];
+    const allRoleCells = [];
+
+    for (let index = 0; index < this.grid.cells.length; index++) {
+      if (this.grid.cells[index] === roleColor) {
+        allRoleCells.push(index);
+      }
+    }
+
+    this.clearCells = allRoleCells.sort((ia, ib) => {
       const ax = ia % this.grid.width;
       const bx = ib % this.grid.width;
 
