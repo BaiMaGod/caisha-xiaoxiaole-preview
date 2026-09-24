@@ -674,7 +674,7 @@ export class GameOverArtwork {
 
     ctx.fillStyle = 'rgba(93,70,50,.42)';
     ctx.font = '700 18px system-ui, sans-serif';
-    ctx.fillText('DREAM SAND ART', 540, 1386);
+    ctx.fillText('RAINBOW SAND ART', 540, 1386);
 
     return canvas;
   }
