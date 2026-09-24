@@ -1,4 +1,4 @@
-# 彩沙消消乐 Preview
+# 七彩沙画消除 Preview
 
 此仓库用于 `caisha-xiaoxiaole` 的 GitHub Pages 在线预览。
 
