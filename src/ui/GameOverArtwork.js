@@ -572,7 +572,7 @@ export class GameOverArtwork {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#75523a';
     ctx.font = '900 42px system-ui, sans-serif';
-    ctx.fillText('梦幻沙画消除', 540, 88);
+    ctx.fillText('七彩沙画消除', 540, 88);
 
     ctx.fillStyle = 'rgba(112,81,57,.56)';
     ctx.font = '800 21px system-ui, sans-serif';
@@ -687,7 +687,7 @@ export class GameOverArtwork {
       const link = document.createElement('a');
 
       link.href = url;
-      link.download = `梦幻沙画消除-${Date.now()}.png`;
+      link.download = `七彩沙画消除-${Date.now()}.png`;
       link.rel = 'noopener';
       document.body.appendChild(link);
       link.click();
@@ -707,12 +707,12 @@ export class GameOverArtwork {
       const blob = await canvasToBlob(poster);
       const file = new File(
         [blob],
-        `梦幻沙画消除-${Date.now()}.png`,
+        `七彩沙画消除-${Date.now()}.png`,
         { type: 'image/png' }
       );
 
       const payload = {
-        title: '梦幻沙画消除',
+        title: '七彩沙画消除',
         text: '这一局，拼出了一幅不错的沙画',
         files: [file]
       };
