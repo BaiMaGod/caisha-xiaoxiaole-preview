@@ -58,7 +58,12 @@ const effectPanel = new EffectCollectionPanel(gameShell, {
   unlockManager
 });
 
-const homeDemo = new HomeDemoController(gameShell);
+const homeDemo = new HomeDemoController({
+  container: gameShell,
+  fruitManager,
+  grid,
+  onResetWorld: () => resetHomeDemoWorld()
+});
 
 const homeScreen = new HomeScreen(gameShell, {
   progress,
@@ -74,10 +79,6 @@ const gameOverArtwork = new GameOverArtwork(gameShell, {
   onHome: () => returnHome()
 });
 
-// The game exists behind the home screen, but no fruit or physics should move
-// until the player explicitly starts a run.
-fruitManager.setEnabled(false);
-
 new FruitController(sandRenderer.canvas, fruitManager, grid, {
   onRelease: () => hud.notifyDropReleased()
 });
@@ -91,6 +92,13 @@ clearSystem.onBeforeClear = () => {
 
 clearSystem.onClear = (payload) => {
   const { cleared, score, combo } = payload;
+
+  if (homeDemo.isRunning()) {
+    homeDemo.onClear(payload);
+    clearEffects.play(payload);
+    return;
+  }
+
   const rating = getClearRating(cleared);
 
   progress.recordClear({ cleared, score, combo });
@@ -151,6 +159,8 @@ function renderGameCanvas(force = false) {
 let lastFruitState = fruitManager.current?.state ?? null;
 let gameOver = false;
 
+homeDemo.show();
+
 function triggerGameOver() {
   if (gameOver) return;
 
@@ -168,6 +178,26 @@ function triggerGameOver() {
     rating: getClearRating(clearSystem.score),
     artworkCanvas
   });
+}
+
+function resetHomeDemoWorld() {
+  clearEffects.clear();
+  rewardAudio.stop();
+  grid.clear();
+  simulation.reset();
+  clearSystem.reset();
+  rules.reset();
+  settlementGate.reset();
+  fruitManager.reset();
+
+  gameOver = false;
+  lastFruitState = fruitManager.current?.state ?? null;
+
+  const now = performance.now();
+  lastSimulation = now;
+  lastFrame = now;
+
+  renderGameCanvas(true);
 }
 
 function restartGame() {
@@ -197,9 +227,8 @@ function returnHome() {
   clearEffects.clear();
   effectPanel.close();
   gameOverArtwork.hide();
-  fruitManager.setEnabled(false);
-  homeDemo.show();
   homeScreen.show();
+  homeDemo.show();
 }
 
 function canResolveConnectivity(fruitState) {
@@ -215,12 +244,19 @@ function loop(time) {
   const deltaMs = Math.min(50, time - lastFrame);
   lastFrame = time;
 
-  if (!gameOver && !effectPanel.isOpen() && !homeScreen.isOpen()) {
+  const demoActive = homeDemo.isRunning();
+  const simulationActive = !homeScreen.isOpen() || demoActive;
+
+  if (!gameOver && !effectPanel.isOpen() && simulationActive) {
     if (clearEffects.isBusy()) {
       // Hold the board still while the currently equipped clear effect plays.
       lastSimulation = time;
     } else {
       const previousFruitState = lastFruitState;
+
+      if (demoActive) {
+        homeDemo.update(time);
+      }
 
       fruitManager.update(deltaMs);
 
@@ -236,7 +272,7 @@ function loop(time) {
 
       lastFruitState = fruitState;
 
-      if (rules.checkDeathLine()) {
+      if (!demoActive && rules.checkDeathLine()) {
         triggerGameOver();
       }
 
@@ -250,7 +286,7 @@ function loop(time) {
 
         if (clearedBeforePhysics === 0 && !gameOver) {
           simulation.update(() => {
-            if (rules.checkDeathLine()) {
+            if (!demoActive && rules.checkDeathLine()) {
               triggerGameOver();
               return false;
             }

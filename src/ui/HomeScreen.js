@@ -54,14 +54,7 @@ function ensureStyles() {
     }
 
     .caisha-home::after {
-      bottom: 0;
-      height: 26%;
-      background: linear-gradient(
-        0deg,
-        rgba(255,248,234,.98) 0%,
-        rgba(255,248,234,.82) 50%,
-        rgba(255,248,234,0) 100%
-      );
+      display: none;
     }
 
     .caisha-home__top {
@@ -214,27 +207,27 @@ function ensureStyles() {
 
     .caisha-home__spacer {
       flex: 1 1 auto;
-      min-height: 190px;
+      min-height: 40px;
       pointer-events: none;
     }
 
     .caisha-home__actions {
       flex: 0 0 auto;
-      width: min(100%, 330px);
-      margin: 0 auto;
+      width: min(100%, 250px);
+      margin: 12px auto 0;
     }
 
     .caisha-home__play {
       position: relative;
       width: 100%;
-      min-height: 64px;
+      min-height: 50px;
       overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 12px;
       border: 1px solid rgba(255,255,255,.55);
-      border-radius: 24px;
+      border-radius: 20px;
       color: #fff;
       background:
         radial-gradient(circle at 18% 34%, rgba(255,255,255,.42) 0 1px, transparent 1.6px),
@@ -293,7 +286,7 @@ function ensureStyles() {
     }
 
     .caisha-home__play-title {
-      font-size: 19px;
+      font-size: 17px;
       line-height: 1;
       font-weight: 1000;
       letter-spacing: .04em;
@@ -350,7 +343,7 @@ function ensureStyles() {
       }
 
       .caisha-home__spacer {
-        min-height: 155px;
+        min-height: 34px;
       }
 
       .caisha-home__play {
@@ -374,7 +367,7 @@ function ensureStyles() {
       }
 
       .caisha-home__spacer {
-        min-height: 130px;
+        min-height: 28px;
       }
     }
 
@@ -462,7 +455,7 @@ export class HomeScreen {
       '左右拖动 · 松手下落 · 下滑加速'
     );
 
-    this.root.append(top, brand, demoTip, spacer, actions, footer);
+    this.root.append(top, brand, demoTip, actions, spacer, footer);
     this.container.appendChild(this.root);
 
     this.playButton.addEventListener('click', () => {
