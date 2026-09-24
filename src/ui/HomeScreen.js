@@ -400,7 +400,7 @@ export class HomeScreen {
     this.opened = true;
 
     this.root = el('section', 'caisha-home');
-    this.root.setAttribute('aria-label', '梦幻沙画消除首页');
+    this.root.setAttribute('aria-label', '七彩沙画消除首页');
 
     const top = el('div', 'caisha-home__top');
     this.best = el('div', 'caisha-home__best');
@@ -416,11 +416,11 @@ export class HomeScreen {
     top.append(this.best, this.effectsButton);
 
     const brand = el('div', 'caisha-home__brand');
-    const eyebrow = el('div', 'caisha-home__eyebrow', 'DREAM SAND ART');
+    const eyebrow = el('div', 'caisha-home__eyebrow', 'RAINBOW SAND ART');
     const title = el('h1', 'caisha-home__title');
     title.append(
-      el('span', 'caisha-home__title-dark', '梦幻'),
-      el('span', 'caisha-home__title-rainbow', '沙画'),
+      el('span', 'caisha-home__title-rainbow', '七彩'),
+      el('span', 'caisha-home__title-dark', '沙画'),
       el('span', 'caisha-home__title-dark', '消除')
     );
 
