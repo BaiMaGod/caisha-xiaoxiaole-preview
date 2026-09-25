@@ -241,8 +241,8 @@ function returnHome() {
 
 function canResolveConnectivity(fruitState) {
   // During IMPACT/BREAKING the fruit is still writing grains into SandGrid.
-  // Once that write is finished, connectivity should be checked every physics
-  // tick instead of waiting for the whole board to become completely still.
+  // Connectivity is resolved only after SettlementGate confirms the board has
+  // stayed motionless for the required number of physics ticks.
   return fruitState !== 'IMPACT' && fruitState !== 'BREAKING';
 }
 
@@ -285,46 +285,31 @@ function loop(time) {
       }
 
       if (!gameOver && time - lastSimulation >= CONFIG.UPDATE_INTERVAL) {
-        const settling = settlementGate.isBlocking();
-        let clearedBeforePhysics = 0;
+        simulation.update(() => {
+          if (!demoActive && rules.checkDeathLine()) {
+            triggerGameOver();
+            return false;
+          }
 
-        if (!settling && canResolveConnectivity(fruitState)) {
-          clearedBeforePhysics = clearSystem.resolve();
-        }
+          return !gameOver;
+        });
 
-        if (clearedBeforePhysics === 0 && !gameOver) {
-          simulation.update(() => {
-            if (!demoActive && rules.checkDeathLine()) {
-              triggerGameOver();
-              return false;
-            }
+        // Every connectivity check must pass through the same settlement gate.
+        // This applies both to the first clear after a fruit turns into sand and
+        // to every later cascade caused by grains falling into the cleared space.
+        if (!gameOver && settlementGate.isBlocking()) {
+          const justSettled = settlementGate.observe(simulation.movedCount);
 
-            if (
-              !gameOver &&
-              !settlementGate.isBlocking() &&
-              canResolveConnectivity(fruitState)
-            ) {
-              const cleared = clearSystem.resolve();
+          if (
+            justSettled &&
+            canResolveConnectivity(fruitState)
+          ) {
+            const cleared = clearSystem.resolve();
 
-              if (cleared > 0) {
-                return false;
-              }
-            }
-
-            return !gameOver;
-          });
-
-          // A freshly sandified fruit must finish falling before it can trigger
-          // a clear. Three consecutive motionless physics ticks are required.
-          if (settlementGate.isBlocking()) {
-            const justSettled = settlementGate.observe(simulation.movedCount);
-
-            if (
-              justSettled &&
-              !gameOver &&
-              canResolveConnectivity(fruitState)
-            ) {
-              clearSystem.resolve();
+            // A clear changes the board and wakes nearby grains, so lock
+            // connectivity again until the resulting sand flow fully settles.
+            if (cleared > 0) {
+              settlementGate.begin();
             }
           }
         }
