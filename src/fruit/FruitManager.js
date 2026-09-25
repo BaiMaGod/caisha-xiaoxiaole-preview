@@ -2,6 +2,10 @@ import { FruitTemplate } from './FruitTemplate.js';
 import { FruitPiece } from './FruitPiece.js';
 import { APPLE_TEMPLATE } from './templates/apple.js';
 import { BANANA_TEMPLATE } from './templates/banana.js';
+import { HEART_TEMPLATE } from './templates/heart.js';
+import { STAR_TEMPLATE } from './templates/star.js';
+import { CLOVER_TEMPLATE } from './templates/clover.js';
+import { SWORD_TEMPLATE } from './templates/sword.js';
 
 const EXISTING_COLOR_BIAS = 0.78;
 
@@ -37,7 +41,11 @@ export class FruitManager {
 
     this.templates = [
       new FruitTemplate(APPLE_TEMPLATE),
-      new FruitTemplate(BANANA_TEMPLATE)
+      new FruitTemplate(BANANA_TEMPLATE),
+      new FruitTemplate(HEART_TEMPLATE),
+      new FruitTemplate(STAR_TEMPLATE),
+      new FruitTemplate(CLOVER_TEMPLATE),
+      new FruitTemplate(SWORD_TEMPLATE)
     ];
 
     this.current = null;
