@@ -10,12 +10,18 @@ export class ConnectivityClear {
     this.onClear = null;
   }
 
-  resolve() {
+  resolve({ maxGroups = Infinity } = {}) {
     let totalCleared = 0;
     const groups = [];
+    const groupLimit = Number.isFinite(maxGroups)
+      ? Math.max(1, Math.floor(maxGroups))
+      : Infinity;
 
-    // First collect every spanning component without mutating the grid.
-    // This gives rendering code one exact pre-clear frame to snapshot.
+    // First collect spanning components without mutating the grid.
+    // Normal gameplay keeps the default unlimited behavior. The scripted home
+    // demo can request one group at a time so each settled cascade stage gets
+    // its own clear animation instead of merging multiple colors together.
+    search:
     for (let color = 1; color <= 7; color++) {
       this.visited.fill(0);
 
@@ -33,6 +39,10 @@ export class ConnectivityClear {
         if (cells.length > 0) {
           totalCleared += cells.length;
           groups.push({ color, cells });
+
+          if (groups.length >= groupLimit) {
+            break search;
+          }
         }
       }
     }
