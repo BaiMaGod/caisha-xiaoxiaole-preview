@@ -252,7 +252,11 @@ export class HomeDemoController {
     if (!this.running) return;
 
     if (this.awaitingCascade) {
-      this.cascadeClears += 1;
+      const clearedGroups = Math.max(
+        1,
+        payload?.groups?.length ?? 1
+      );
+      this.cascadeClears += clearedGroups;
 
       if (this.cascadeClears >= 3) {
         this.cleanupChainResidue();
