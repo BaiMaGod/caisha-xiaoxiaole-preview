@@ -304,7 +304,9 @@ function loop(time) {
             justSettled &&
             canResolveConnectivity(fruitState)
           ) {
-            const cleared = clearSystem.resolve();
+            const cleared = clearSystem.resolve({
+              maxGroups: demoActive ? 1 : Infinity
+            });
 
             // A clear changes the board and wakes nearby grains, so lock
             // connectivity again until the resulting sand flow fully settles.
