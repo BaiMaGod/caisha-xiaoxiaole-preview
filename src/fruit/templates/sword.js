@@ -1,44 +1,53 @@
-const WIDTH = 25;
-const HEIGHT = 50;
+const WIDTH = 52;
+const HEIGHT = 23;
 
 function buildSwordRows() {
   const rows = [];
-  const centerX = (WIDTH - 1) / 2;
+  const centerY = (HEIGHT - 1) / 2;
 
   for (let y = 0; y < HEIGHT; y++) {
     let row = '';
 
     for (let x = 0; x < WIDTH; x++) {
-      const dx = Math.abs(x - centerX);
+      const dy = Math.abs(y - centerY);
 
-      let blade = false;
-
-      if (y <= 6) {
-        blade = dx <= Math.max(0.5, y * 0.75);
-      } else if (y <= 32) {
-        blade = dx <= 3;
-      } else if (y <= 34) {
-        blade = dx <= 4;
-      }
-
-      const guard =
-        y >= 33 &&
-        y <= 36 &&
-        dx <= 11;
+      // Left-side pommel and grip.
+      const pommel =
+        ((x - 3) / 3.1) ** 2 +
+          ((y - centerY) / 4) ** 2 <=
+        1;
 
       const grip =
-        y >= 36 &&
-        y <= 46 &&
-        dx <= 2;
+        x >= 5 &&
+        x <= 13 &&
+        dy <= 2.2;
 
-      const pommel =
-        y >= 46 &&
-        y <= 49 &&
-        (dx / 4) ** 2 +
-          ((y - 47.5) / 2.1) ** 2 <=
-          1;
+      // Tall crossguard makes the horizontal orientation unmistakable.
+      const guard =
+        x >= 13 &&
+        x <= 17 &&
+        dy <= 9;
 
-      row += blade || guard || grip || pommel
+      // Long horizontal blade.
+      const blade =
+        x >= 17 &&
+        x <= 44 &&
+        dy <= 3.2;
+
+      // Taper only the final section so the sword has a clear right tip
+      // without making the whole silhouette look needle-thin.
+      let tip = false;
+
+      if (x >= 44 && x <= 51) {
+        const halfHeight = Math.max(
+          0.4,
+          3.2 - (x - 44) * (2.8 / 7)
+        );
+
+        tip = dy <= halfHeight;
+      }
+
+      row += pommel || grip || guard || blade || tip
         ? '1'
         : '0';
     }
