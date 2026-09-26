@@ -411,7 +411,7 @@ export class HomeScreen {
     this.playButton.type = 'button';
 
     const playImage = el('img', 'caisha-home__play-image');
-    playImage.src = homeAsset('start_game_button_v2.png');
+    playImage.src = homeAsset('start_game_button_v3.png');
     playImage.alt = '开始游戏';
     playImage.width = 260;
     playImage.height = 44;
