@@ -3,69 +3,57 @@ const HEIGHT = 40;
 
 function buildCloverRows() {
   const rows = [];
-
-  // Four large circular leaves arranged diagonally produce a softer,
-  // friendlier clover silhouette than the previous cardinal cross shape.
-  const leaves = [
-    [11.5, 11.5],
-    [26.5, 11.5],
-    [11.5, 26.5],
-    [26.5, 26.5]
-  ];
+  const centerX = 19;
+  const centerY = 17.5;
 
   for (let y = 0; y < HEIGHT; y++) {
     let row = '';
 
     for (let x = 0; x < WIDTH; x++) {
-      const leaf = leaves.some(
-        ([centerX, centerY]) =>
-          ((x - centerX) / 8.7) ** 2 +
-            ((y - centerY) / 8.7) ** 2 <=
-          1
-      );
+      const dx = x - centerX;
+      const dy = (y - centerY) * 1.02;
+      const radius = Math.hypot(dx, dy);
+      const angle = Math.atan2(dy, dx);
 
+      // Four smooth diagonal lobes reproduce the reference clover's
+      // heart-like leaves. The polar curve naturally creates soft notches at
+      // the top, left, right and bottom without the old "four circles" look.
+      const lobeStrength = Math.abs(Math.sin(angle * 2));
+      const leafBoundary =
+        9.4 +
+        8.2 * lobeStrength ** 0.58;
+
+      const leaves = radius <= leafBoundary;
+
+      // Keep the leaves joined through a full, rounded center so the piece
+      // reads as one soft clover while falling and crumbling.
       const center =
-        ((x - 19) / 4.6) ** 2 +
-          ((y - 19) / 4.6) ** 2 <=
+        ((x - centerX) / 6.2) ** 2 +
+          ((y - centerY) / 5.8) ** 2 <=
         1;
 
-      // Small inward cuts keep all four leaves readable while preserving
-      // the rounded outer contour.
-      const topNotch =
-        y <= 8 &&
-        Math.abs(x - 19) <= 2.2;
+      // Short, subtly curved stem like the supplied reference.
+      let stem = false;
 
-      const leftNotch =
-        x <= 8 &&
-        Math.abs(y - 19) <= 2.2;
+      if (y >= 30 && y <= 38) {
+        const stemCenter =
+          centerX - (y - 30) * 0.16;
+        const halfWidth =
+          2.2 - (y - 30) * 0.06;
 
-      const rightNotch =
-        x >= 30 &&
-        Math.abs(y - 19) <= 2.2;
+        stem =
+          Math.abs(x - stemCenter) <= halfWidth;
+      }
 
-      const bottomNotch =
-        y >= 30 &&
-        y <= 32 &&
-        Math.abs(x - 19) <= 2;
+      const stemTipCenterX =
+        centerX - 8 * 0.16;
 
-      const stemCenter =
-        19 - Math.max(0, y - 31) * 0.25;
+      const roundedStemTip =
+        ((x - stemTipCenterX) / 2.1) ** 2 +
+          ((y - 37.4) / 1.8) ** 2 <=
+        1;
 
-      const stem =
-        y >= 31 &&
-        y <= 39 &&
-        Math.abs(x - stemCenter) <= 1.5;
-
-      const body =
-        (leaf || center) &&
-        !(
-          topNotch ||
-          leftNotch ||
-          rightNotch ||
-          bottomNotch
-        );
-
-      row += body || stem ? '1' : '0';
+      row += leaves || center || stem || roundedStemTip ? '1' : '0';
     }
 
     rows.push(row);
