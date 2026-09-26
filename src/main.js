@@ -81,6 +81,8 @@ const gameOverArtwork = new GameOverArtwork(gameShell, {
   onHome: () => returnHome()
 });
 
+hud.setGameVisible(false);
+
 new FruitController(sandRenderer.canvas, fruitManager, grid, {
   onRelease: () => hud.notifyDropReleased()
 });
@@ -210,6 +212,7 @@ function resetHomeDemoWorld(baselineCells = null) {
 
 function restartGame() {
   gameOverArtwork.hide();
+  hud.setGameVisible(true);
   grid.clear();
   simulation.reset();
   clearSystem.reset();
@@ -231,6 +234,7 @@ function restartGame() {
 }
 
 function returnHome() {
+  hud.setGameVisible(false);
   rewardAudio.stop();
   clearEffects.clear();
   effectPanel.close();
