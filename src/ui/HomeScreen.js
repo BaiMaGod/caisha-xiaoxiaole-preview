@@ -231,16 +231,16 @@ function ensureStyles() {
 
     .caisha-home__play {
       position: relative;
+      display: block;
       width: 100%;
-      min-height: 44px;
       aspect-ratio: 260 / 44;
-      overflow: hidden;
+      min-height: 44px;
+      overflow: visible;
       padding: 0;
       border: 0;
-      border-radius: 999px;
-      color: #c94c43;
-      background: linear-gradient(180deg, #fff3de 0%, #ffd8cd 100%);
-      box-shadow: 0 6px 14px rgba(173,91,69,.12);
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       transition: transform 120ms ease, filter 120ms ease;
@@ -255,28 +255,14 @@ function ensureStyles() {
       display: none;
     }
 
-    .caisha-home__play-fallback {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      font-size: 17px;
-      font-weight: 900;
-      letter-spacing: .04em;
-      pointer-events: none;
-    }
-
     .caisha-home__play-image {
       position: absolute;
       inset: 0;
-      z-index: 1;
       display: block;
       width: 100%;
       height: 100%;
       object-fit: contain;
+      object-position: center;
       pointer-events: none;
       user-select: none;
     }
@@ -424,15 +410,14 @@ export class HomeScreen {
     this.playButton = el('button', 'caisha-home__play');
     this.playButton.type = 'button';
 
-    const playFallback = el('span', 'caisha-home__play-fallback', '▶  开始游戏');
     const playImage = el('img', 'caisha-home__play-image');
-    playImage.src = homeAsset('start_game_button_mobile.png');
-    playImage.alt = '';
+    playImage.src = homeAsset('start_game_button_v2.png');
+    playImage.alt = '开始游戏';
     playImage.width = 260;
     playImage.height = 44;
     playImage.draggable = false;
     this.playButton.setAttribute('aria-label', '开始游戏');
-    this.playButton.append(playFallback, playImage);
+    this.playButton.append(playImage);
     actions.append(this.playButton);
 
     this.root.append(top, brand, actions);
