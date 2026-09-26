@@ -224,7 +224,7 @@ function ensureStyles() {
       left: 50%;
       top: 50%;
       z-index: 2;
-      width: min(calc(100% - 32px), 260px);
+      width: min(calc(100% - 32px), 280px);
       margin: 0;
       transform: translate(-50%, -50%);
     }
@@ -233,9 +233,9 @@ function ensureStyles() {
       position: relative;
       display: block;
       width: 100%;
-      aspect-ratio: 262 / 83;
-      min-height: 82px;
-      overflow: visible;
+      height: 88px;
+      min-height: 88px;
+      overflow: hidden;
       padding: 0;
       border: 0;
       border-radius: 0;
@@ -257,12 +257,14 @@ function ensureStyles() {
 
     .caisha-home__play-image {
       position: absolute;
-      inset: 0;
+      top: 0;
+      left: 50%;
       display: block;
-      width: 100%;
-      height: 100%;
+      width: 520px;
+      max-width: none;
+      height: 88px;
       object-fit: contain;
-      object-position: center;
+      transform: translateX(-50%);
       pointer-events: none;
       user-select: none;
     }
@@ -338,7 +340,8 @@ function ensureStyles() {
       }
 
       .caisha-home__play {
-        min-height: 44px;
+        height: 88px;
+        min-height: 88px;
       }
 
       .caisha-home__footer {
@@ -411,10 +414,10 @@ export class HomeScreen {
     this.playButton.type = 'button';
 
     const playImage = el('img', 'caisha-home__play-image');
-    playImage.src = homeAsset('start_game_button_v4.png');
+    playImage.src = homeAsset('start_game_button_v3.png');
     playImage.alt = '开始游戏';
-    playImage.width = 262;
-    playImage.height = 83;
+    playImage.width = 520;
+    playImage.height = 88;
     playImage.draggable = false;
     this.playButton.setAttribute('aria-label', '开始游戏');
     this.playButton.append(playImage);
