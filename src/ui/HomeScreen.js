@@ -131,14 +131,6 @@ function ensureStyles() {
       pointer-events: none;
     }
 
-    .caisha-home__eyebrow {
-      color: rgba(103,77,55,.48);
-      font-size: 8px;
-      font-weight: 900;
-      letter-spacing: .28em;
-      text-transform: uppercase;
-    }
-
     .caisha-home__title {
       margin: 6px 0 0;
       font-size: clamp(38px, 10.6vw, 52px);
@@ -360,7 +352,6 @@ function ensureStyles() {
     }
 
     @media (max-height: 590px) {
-      .caisha-home__eyebrow,
       .caisha-home__subtitle,
       .caisha-home__footer {
         display: none;
@@ -413,7 +404,6 @@ export class HomeScreen {
     top.append(this.best, this.effectsButton);
 
     const brand = el('div', 'caisha-home__brand');
-    const eyebrow = el('div', 'caisha-home__eyebrow', 'RAINBOW SAND ART');
     const title = el('h1', 'caisha-home__title');
     title.append(
       el('span', 'caisha-home__title-rainbow', '七彩'),
@@ -421,7 +411,7 @@ export class HomeScreen {
       el('span', 'caisha-home__title-dark', '消除')
     );
 
-    brand.append(eyebrow, title);
+    brand.append(title);
 
     const actions = el('div', 'caisha-home__actions');
     this.playButton = el('button', 'caisha-home__play');
