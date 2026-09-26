@@ -1,5 +1,10 @@
 const HOME_STYLE_ID = 'dream-sand-home-screen-styles';
 
+function homeAsset(filename) {
+  const base = import.meta.env?.BASE_URL || '/';
+  return `${base}images/${filename}`;
+}
+
 function el(tag, className, text = '') {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -131,6 +136,17 @@ function ensureStyles() {
       pointer-events: none;
     }
 
+    .caisha-home__title-image {
+      display: block;
+      width: min(86vw, 340px);
+      max-width: 100%;
+      height: auto;
+      margin: 0 auto;
+      filter: drop-shadow(0 5px 12px rgba(89,58,34,.08));
+      pointer-events: none;
+      user-select: none;
+    }
+
     .caisha-home__title {
       margin: 6px 0 0;
       font-size: clamp(38px, 10.6vw, 52px);
@@ -208,68 +224,38 @@ function ensureStyles() {
       left: 50%;
       top: 50%;
       z-index: 2;
-      width: min(calc(100% - 32px), 250px);
+      width: min(calc(100% - 32px), 260px);
       margin: 0;
       transform: translate(-50%, -50%);
     }
 
     .caisha-home__play {
-      position: relative;
       width: 100%;
-      min-height: 50px;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      border: 1px solid rgba(255,255,255,.55);
-      border-radius: 20px;
-      color: #fff;
-      background:
-        radial-gradient(circle at 18% 34%, rgba(255,255,255,.42) 0 1px, transparent 1.6px),
-        radial-gradient(circle at 75% 67%, rgba(255,255,255,.28) 0 1px, transparent 1.5px),
-        linear-gradient(135deg, #ff9a60 0%, #f27758 58%, #e95f57 100%);
-      background-size: 10px 10px, 14px 14px, auto;
-      box-shadow:
-        0 9px 0 #c84e45,
-        0 17px 28px rgba(176,74,60,.25),
-        inset 0 2px 0 rgba(255,255,255,.32);
+      min-height: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      transition: transform 120ms ease, box-shadow 120ms ease;
+      transition: transform 120ms ease, filter 120ms ease;
     }
 
     .caisha-home__play:active {
-      transform: translateY(5px) scale(.985);
-      box-shadow:
-        0 4px 0 #c84e45,
-        0 10px 20px rgba(176,74,60,.20),
-        inset 0 2px 0 rgba(255,255,255,.32);
+      transform: scale(.97);
+      filter: brightness(.97);
     }
 
     .caisha-home__play::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      transform: translateX(-130%) skewX(-22deg);
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.34), transparent);
-      animation: caisha-home-shine 3.2s ease-in-out infinite;
-      pointer-events: none;
+      display: none;
     }
 
-    .caisha-home__play-icon {
-      position: relative;
-      z-index: 1;
-      width: 34px;
-      height: 34px;
-      display: grid;
-      place-items: center;
-      border-radius: 50%;
-      color: #ef6f55;
-      background: rgba(255,255,255,.92);
-      box-shadow: 0 4px 10px rgba(124,54,44,.14);
-      font-size: 15px;
-      padding-left: 2px;
+    .caisha-home__play-image {
+      display: block;
+      width: 100%;
+      height: auto;
+      pointer-events: none;
+      user-select: none;
     }
 
     .caisha-home__play-copy {
@@ -343,7 +329,7 @@ function ensureStyles() {
       }
 
       .caisha-home__play {
-        min-height: 57px;
+        min-height: 0;
       }
 
       .caisha-home__footer {
@@ -404,12 +390,10 @@ export class HomeScreen {
     top.append(this.best, this.effectsButton);
 
     const brand = el('div', 'caisha-home__brand');
-    const title = el('h1', 'caisha-home__title');
-    title.append(
-      el('span', 'caisha-home__title-rainbow', '七彩'),
-      el('span', 'caisha-home__title-dark', '沙画'),
-      el('span', 'caisha-home__title-dark', '消除')
-    );
+    const title = el('img', 'caisha-home__title-image');
+    title.src = homeAsset('qicai_title_mobile.png');
+    title.alt = '七彩沙画消除';
+    title.draggable = false;
 
     brand.append(title);
 
@@ -417,15 +401,12 @@ export class HomeScreen {
     this.playButton = el('button', 'caisha-home__play');
     this.playButton.type = 'button';
 
-    const playCopy = el('span', 'caisha-home__play-copy');
-    playCopy.append(
-      el('span', 'caisha-home__play-title', '开始游戏')
-    );
-
-    this.playButton.append(
-      el('span', 'caisha-home__play-icon', '▶'),
-      playCopy
-    );
+    const playImage = el('img', 'caisha-home__play-image');
+    playImage.src = homeAsset('start_game_button_mobile.png');
+    playImage.alt = '';
+    playImage.draggable = false;
+    this.playButton.setAttribute('aria-label', '开始游戏');
+    this.playButton.append(playImage);
     actions.append(this.playButton);
 
     this.root.append(top, brand, actions);
