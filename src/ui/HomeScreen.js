@@ -212,9 +212,13 @@ function ensureStyles() {
     }
 
     .caisha-home__actions {
-      flex: 0 0 auto;
-      width: min(100%, 250px);
-      margin: 12px auto 0;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      z-index: 2;
+      width: min(calc(100% - 32px), 250px);
+      margin: 0;
+      transform: translate(-50%, -50%);
     }
 
     .caisha-home__play {
@@ -417,21 +421,7 @@ export class HomeScreen {
       el('span', 'caisha-home__title-dark', '消除')
     );
 
-    const subtitle = el(
-      'div',
-      'caisha-home__subtitle',
-      '沙块落下 · 碎成流沙 · 同色贯通消除'
-    );
-
-    brand.append(eyebrow, title, subtitle);
-
-    const demoTip = el('div', 'caisha-home__demo-tip');
-    demoTip.append(
-      el('span', 'caisha-home__demo-dot'),
-      el('span', '', '正在自动演示真实玩法')
-    );
-
-    const spacer = el('div', 'caisha-home__spacer');
+    brand.append(eyebrow, title);
 
     const actions = el('div', 'caisha-home__actions');
     this.playButton = el('button', 'caisha-home__play');
@@ -439,8 +429,7 @@ export class HomeScreen {
 
     const playCopy = el('span', 'caisha-home__play-copy');
     playCopy.append(
-      el('span', 'caisha-home__play-title', '开始游戏'),
-      el('span', 'caisha-home__play-subtitle', '轮到你来控制沙块')
+      el('span', 'caisha-home__play-title', '开始游戏')
     );
 
     this.playButton.append(
@@ -449,13 +438,7 @@ export class HomeScreen {
     );
     actions.append(this.playButton);
 
-    const footer = el(
-      'div',
-      'caisha-home__footer',
-      '左右拖动 · 松手下落 · 下滑加速'
-    );
-
-    this.root.append(top, brand, demoTip, actions, spacer, footer);
+    this.root.append(top, brand, actions);
     this.container.appendChild(this.root);
 
     this.playButton.addEventListener('click', () => {
