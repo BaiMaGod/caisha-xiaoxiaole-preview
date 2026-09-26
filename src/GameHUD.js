@@ -8,6 +8,7 @@ export class GameHUD {
     this.homeHandler = null;
     this.container = container;
     this.dropHintCount = 0;
+    this.gameVisible = true;
 
     this.root = document.createElement('div');
     this.root.style.position = 'absolute';
@@ -138,12 +139,28 @@ export class GameHUD {
     }
   }
 
+  setGameVisible(visible) {
+    this.gameVisible = Boolean(visible);
+    this.root.style.display = this.gameVisible ? 'block' : 'none';
+
+    if (!this.gameVisible) {
+      this.tip.style.display = 'none';
+      return;
+    }
+
+    if (this.dropHintCount < 3) {
+      this.tip.style.display = 'block';
+      this.tip.style.opacity = '1';
+      this.tip.style.transform = 'translateX(-50%)';
+    }
+  }
+
   resetHint() {
     clearTimeout(this.tipHideTimer);
     this.dropHintCount = 0;
-    this.tip.style.display = 'block';
     this.tip.style.opacity = '1';
     this.tip.style.transform = 'translateX(-50%)';
+    this.tip.style.display = this.gameVisible ? 'block' : 'none';
   }
 
   setScore(score) {
