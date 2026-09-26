@@ -233,8 +233,8 @@ function ensureStyles() {
       position: relative;
       display: block;
       width: 100%;
-      aspect-ratio: 260 / 44;
-      min-height: 44px;
+      aspect-ratio: 262 / 83;
+      min-height: 82px;
       overflow: visible;
       padding: 0;
       border: 0;
@@ -411,10 +411,10 @@ export class HomeScreen {
     this.playButton.type = 'button';
 
     const playImage = el('img', 'caisha-home__play-image');
-    playImage.src = homeAsset('start_game_button_v3.png');
+    playImage.src = homeAsset('start_game_button_v4.png');
     playImage.alt = '开始游戏';
-    playImage.width = 260;
-    playImage.height = 44;
+    playImage.width = 262;
+    playImage.height = 83;
     playImage.draggable = false;
     this.playButton.setAttribute('aria-label', '开始游戏');
     this.playButton.append(playImage);
