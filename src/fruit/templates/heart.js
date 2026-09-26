@@ -3,42 +3,53 @@ const HEIGHT = 30;
 
 function buildHeartRows() {
   const rows = [];
+  const centerX = 19;
 
   for (let y = 0; y < HEIGHT; y++) {
     let row = '';
 
     for (let x = 0; x < WIDTH; x++) {
-      // Wider, fuller lobes keep the heart cute instead of tall and sharp.
+      // Match the softer reference heart: two plump round lobes with a
+      // shallow central cleft, instead of the previous blocky top edge.
       const leftLobe =
-        ((x - 11.5) / 9.8) ** 2 +
-          ((y - 9.5) / 8.3) ** 2 <=
+        ((x - 11) / 9.7) ** 2 +
+          ((y - 8.5) / 8.2) ** 2 <=
         1;
 
       const rightLobe =
-        ((x - 27.5) / 9.8) ** 2 +
-          ((y - 9.5) / 8.3) ** 2 <=
+        ((x - 27) / 9.7) ** 2 +
+          ((y - 8.5) / 8.2) ** 2 <=
         1;
 
-      // The lower body tapers gently and ends with a broad rounded tip.
-      const lowerDepth = Math.max(0, y - 9);
-      const lowerHalfWidth = Math.max(
-        2.5,
-        18 - lowerDepth * 0.78
-      );
+      // A rounded superellipse-style lower body keeps the heart full through
+      // the middle, then tapers smoothly rather than collapsing into a long
+      // sharp triangle.
+      let lowerBody = false;
 
-      const lowerBody =
-        y >= 8 &&
-        y <= 28 &&
-        Math.abs(x - 19.5) <= lowerHalfWidth;
+      if (y >= 7 && y <= 26) {
+        const normalizedX = Math.abs(x - centerX) / 18;
+        const normalizedY = Math.max(0, (y - 7) / 20.5);
 
-      // Keep a soft, shallow cleft between the two upper lobes.
+        lowerBody =
+          normalizedX ** 1.75 +
+            normalizedY ** 1.52 <=
+          1;
+      }
+
+      // Give the tip a small rounded cap so the silhouette reads like the
+      // supplied sand-heart reference even at the game's coarse grain scale.
+      const roundedTip =
+        ((x - centerX) / 3.4) ** 2 +
+          ((y - 26.7) / 2.5) ** 2 <=
+        1;
+
       const topNotch =
-        y < 7 &&
-        Math.abs(x - 19.5) <
-          Math.max(0.8, 3.4 - y * 0.4);
+        y <= 5 &&
+        Math.abs(x - centerX) <
+          Math.max(0, 2.9 - y * 0.38);
 
       const body =
-        (leftLobe || rightLobe || lowerBody) &&
+        (leftLobe || rightLobe || lowerBody || roundedTip) &&
         !topNotch;
 
       row += body ? '1' : '0';
