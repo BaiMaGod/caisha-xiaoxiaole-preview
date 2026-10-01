@@ -11,6 +11,7 @@ import { SettlementGate } from './SettlementGate.js';
 import { FruitManager } from './fruit/FruitManager.js';
 import { FruitController } from './fruit/FruitController.js';
 import { CONFIG } from './config.js';
+import { buildFirstDropGuide } from './FirstDropGuide.js';
 import { PlayerProgress } from './progress/PlayerProgress.js';
 import { UnlockManager } from './progress/UnlockManager.js';
 import { EffectCollectionPanel } from './ui/EffectCollectionPanel.js';
@@ -210,10 +211,35 @@ function resetHomeDemoWorld(baselineCells = null) {
   renderGameCanvas(true);
 }
 
+function prepareFirstDropGuide() {
+  fruitManager.setSpawnProvider(null);
+
+  if (!CONFIG.FIRST_DROP_GUIDE_ENABLED) {
+    return;
+  }
+
+  const guide = buildFirstDropGuide(grid);
+  let pending = true;
+
+  fruitManager.setSpawnProvider(() => {
+    if (!pending) return null;
+
+    pending = false;
+    fruitManager.setSpawnProvider(null);
+
+    return {
+      templateId: guide.templateId,
+      color: guide.color,
+      centerX: guide.centerX
+    };
+  });
+}
+
 function restartGame() {
   gameOverArtwork.hide();
   hud.setGameVisible(true);
   grid.clear();
+  prepareFirstDropGuide();
   simulation.reset();
   clearSystem.reset();
   rules.reset();

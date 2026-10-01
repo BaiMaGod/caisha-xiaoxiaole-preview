@@ -21,6 +21,12 @@ export const CONFIG = {
   FRUIT_IMPACT_DURATION_MS: 90,
   FRUIT_BREAK_DURATION_MS: 300,
 
+  // onboarding
+  // Start each normal run with a same-color split sand pile and a matching
+  // centered first piece so the first drop can immediately demonstrate the
+  // left-to-right clear rule. Disable this for the old empty-board opening.
+  FIRST_DROP_GUIDE_ENABLED: true,
+
   // debug
   // Keep this enabled during effect development so every registered clear
   // effect is immediately available. Set to false before production release.
