@@ -237,9 +237,13 @@ function prepareFirstDropGuide() {
 
 function restartGame() {
   gameOverArtwork.hide();
-  hud.setGameVisible(true);
+  hud.setGameVisible(false);
   grid.clear();
+
+  // Pre-simulate the onboarding terrain while the previous screen is still
+  // covering the playfield. The player only sees the final settled piles.
   prepareFirstDropGuide();
+
   simulation.reset();
   clearSystem.reset();
   rules.reset();
@@ -248,6 +252,7 @@ function restartGame() {
   clearEffects.clear();
   rewardAudio.stop();
   settlementGate.reset();
+  hud.setGameVisible(true);
 
   gameOver = false;
   lastFruitState = fruitManager.current?.state ?? null;
