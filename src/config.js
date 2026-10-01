@@ -15,8 +15,9 @@ export const CONFIG = {
   SAND_SUBSTEPS: 3,
 
   // falling fruit
-  // 8ms per logical row is 50% faster than the previous 12ms setting.
-  FRUIT_FALL_STEP_MS: 8,
+  // Increase falling speed by another 50% from the previous 8ms/row setting.
+  // Speed is inverse to step time: 8ms / 1.5 = 16/3ms per logical row.
+  FRUIT_FALL_STEP_MS: 16 / 3,
   FRUIT_FAST_DROP_MULTIPLIER: 3,
   FRUIT_IMPACT_DURATION_MS: 90,
   FRUIT_BREAK_DURATION_MS: 300,
