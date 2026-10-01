@@ -22,9 +22,10 @@ export const CONFIG = {
   FRUIT_BREAK_DURATION_MS: 300,
 
   // onboarding
-  // Start each normal run with a same-color split sand pile and a matching
-  // centered first piece so the first drop can immediately demonstrate the
-  // left-to-right clear rule. Disable this for the old empty-board opening.
+  // Before the playfield is shown, pre-simulate several real falling pieces
+  // into two same-color piles with a center gap. The first controllable piece
+  // matches that color and is verified to complete a left-to-right clear.
+  // Disable this for the old empty-board opening.
   FIRST_DROP_GUIDE_ENABLED: true,
 
   // debug
