@@ -32,7 +32,7 @@ export const CONFIG = {
   // debug
   // Keep this enabled during effect development so every registered clear
   // effect is immediately available. Set to false before production release.
-  DEBUG_UNLOCK_ALL_CLEAR_EFFECTS: true,
+  DEBUG_UNLOCK_ALL_CLEAR_EFFECTS: false,
 
   // clear effects
   // Keep the highlight implementation available, but disable it by default

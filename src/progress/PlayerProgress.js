@@ -43,9 +43,33 @@ export class PlayerProgress {
       if (!raw) return fallback;
 
       const parsed = JSON.parse(raw);
-      const unlocked = Array.isArray(parsed.unlockedClearEffects)
+      const stats = {
+        bestScore: safeNumber(parsed.stats?.bestScore),
+        totalClearedParticles: safeNumber(parsed.stats?.totalClearedParticles),
+        maxSingleClear: safeNumber(parsed.stats?.maxSingleClear),
+        maxCombo: safeNumber(parsed.stats?.maxCombo),
+        playCount: safeNumber(parsed.stats?.playCount)
+      };
+      const adUnlockProgress = {
+        ...fallback.adUnlockProgress,
+        ...(parsed.adUnlockProgress ?? {})
+      };
+      const storedUnlocked = Array.isArray(parsed.unlockedClearEffects)
         ? [...new Set(parsed.unlockedClearEffects)]
         : [];
+      const unlocked = storedUnlocked.filter((id) => {
+        if (id === CLEAR_EFFECT_IDS.DEFAULT) return true;
+        const effect = getClearEffectDefinition(id);
+        if (effect.id !== id) return false;
+        const { type, value } = effect.unlock ?? {};
+        if (type === 'ad') return safeNumber(adUnlockProgress[id]) >= value;
+        if (type === 'score') return stats.bestScore >= value;
+        if (type === 'total_clear') return stats.totalClearedParticles >= value;
+        if (type === 'single_clear') return stats.maxSingleClear >= value;
+        if (type === 'combo') return stats.maxCombo >= value;
+        if (type === 'play_count') return stats.playCount >= value;
+        return false;
+      });
 
       if (!unlocked.includes(CLEAR_EFFECT_IDS.DEFAULT)) {
         unlocked.unshift(CLEAR_EFFECT_IDS.DEFAULT);
@@ -67,19 +91,8 @@ export class PlayerProgress {
         newClearEffects: Array.isArray(parsed.newClearEffects)
           ? parsed.newClearEffects.filter((id) => unlocked.includes(id))
           : [],
-        adUnlockProgress: {
-          ...fallback.adUnlockProgress,
-          ...(parsed.adUnlockProgress ?? {})
-        },
-        stats: {
-          bestScore: safeNumber(parsed.stats?.bestScore),
-          totalClearedParticles: safeNumber(
-            parsed.stats?.totalClearedParticles
-          ),
-          maxSingleClear: safeNumber(parsed.stats?.maxSingleClear),
-          maxCombo: safeNumber(parsed.stats?.maxCombo),
-          playCount: safeNumber(parsed.stats?.playCount)
-        }
+        adUnlockProgress,
+        stats
       };
     } catch {
       return fallback;

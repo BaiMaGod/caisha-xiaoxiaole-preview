@@ -26,12 +26,21 @@ export function getDisplayBackingSize(
 }
 
 export class SandRenderer {
-  constructor(grid) {
+  constructor(
+    grid,
+    {
+      displayCanvas = null,
+      createCanvas = () => document.createElement('canvas'),
+      getDisplayMetrics = null
+    } = {}
+  ) {
     this.grid = grid;
+    this.createCanvas = createCanvas;
+    this.getDisplayMetrics = getDisplayMetrics;
 
     // 180x320 remains the fixed gameplay/physics raster. Clear effects read
     // from this canvas so gameplay never depends on screen resolution.
-    this.logicalCanvas = document.createElement('canvas');
+    this.logicalCanvas = createCanvas();
     this.logicalCanvas.width = grid.width;
     this.logicalCanvas.height = grid.height;
     this.logicalCtx = this.logicalCanvas.getContext('2d', {
@@ -42,7 +51,7 @@ export class SandRenderer {
     // The DOM canvas is only the presentation surface. Its backing store is
     // resized to CSS pixels x DPR so a high-density phone does not simply
     // stretch the 180x320 gameplay raster as a low-resolution bitmap.
-    this.canvas = document.createElement('canvas');
+    this.canvas = displayCanvas ?? createCanvas();
     this.canvas.width = grid.width;
     this.canvas.height = grid.height;
     this.displayCtx = this.canvas.getContext('2d', {
@@ -63,7 +72,7 @@ export class SandRenderer {
     this.cssHeight = grid.height;
     this.displayDpr = 1;
 
-    if (typeof ResizeObserver !== 'undefined') {
+    if (!getDisplayMetrics && typeof ResizeObserver !== 'undefined') {
       this.resizeObserver = new ResizeObserver(() => {
         this.present(true);
       });
@@ -71,7 +80,7 @@ export class SandRenderer {
     }
   }
 
-  update(fruit = null) {
+  update(fruit = null, presentNow = true, showDeathLine = true) {
     this.logicalCtx.clearRect(
       0,
       0,
@@ -87,23 +96,36 @@ export class SandRenderer {
       }
     }
 
-    this.drawDeathLine();
+    if (showDeathLine) this.drawDeathLine();
 
     if (fruit && fruit.state !== 'SAND') {
       this.drawFruit(fruit);
     }
 
-    this.present();
+    if (presentNow) this.present();
   }
 
   present(force = false) {
-    const rect = this.canvas.getBoundingClientRect();
-    const cssWidth = Math.max(1, rect.width || this.grid.width);
-    const cssHeight = Math.max(1, rect.height || this.grid.height);
+    const metrics = this.getDisplayMetrics?.() ?? (() => {
+      const rect = this.canvas.getBoundingClientRect();
+      return {
+        width: rect.width || this.grid.width,
+        height: rect.height || this.grid.height,
+        dpr: typeof window !== 'undefined' ? window.devicePixelRatio : 1
+      };
+    })();
+    const cssWidth = Math.max(1, metrics.width);
+    const cssHeight = Math.max(1, metrics.height);
+    const viewport = metrics.viewport ?? {
+      x: 0,
+      y: 0,
+      width: cssWidth,
+      height: cssHeight
+    };
     const backing = getDisplayBackingSize(
       cssWidth,
       cssHeight,
-      typeof window !== 'undefined' ? window.devicePixelRatio : 1
+      metrics.dpr
     );
 
     if (
@@ -118,6 +140,7 @@ export class SandRenderer {
     this.cssWidth = cssWidth;
     this.cssHeight = cssHeight;
     this.displayDpr = backing.dpr;
+    this.viewport = viewport;
 
     const ctx = this.displayCtx;
     ctx.setTransform(backing.dpr, 0, 0, backing.dpr, 0, 0);
@@ -130,16 +153,18 @@ export class SandRenderer {
     // then linearly scale/composite the transparent logical sand texture.
     ctx.fillStyle = DISPLAY_BACKGROUND;
     ctx.fillRect(0, 0, cssWidth, cssHeight);
+    ctx.fillStyle = DISPLAY_BACKGROUND;
+    ctx.fillRect(viewport.x, viewport.y, viewport.width, viewport.height);
     ctx.drawImage(
       this.logicalCanvas,
       0,
       0,
       this.logicalCanvas.width,
       this.logicalCanvas.height,
-      0,
-      0,
-      cssWidth,
-      cssHeight
+      viewport.x,
+      viewport.y,
+      viewport.width,
+      viewport.height
     );
   }
 
@@ -204,7 +229,7 @@ export class SandRenderer {
 
   createArtworkCanvas({ scale = 3, background = DISPLAY_BACKGROUND } = {}) {
     const safeScale = Math.max(1, Math.min(4, Math.round(scale)));
-    const canvas = document.createElement('canvas');
+    const canvas = this.createCanvas();
     canvas.width = this.grid.width * safeScale;
     canvas.height = this.grid.height * safeScale;
 

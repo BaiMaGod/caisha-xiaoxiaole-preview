@@ -53,15 +53,17 @@ export class HomeDemoController {
     fruitManager,
     grid,
     simulation,
-    onResetWorld
+    onResetWorld,
+    onCombo
   }) {
-    ensureStyles();
+    if (container) ensureStyles();
 
     this.container = container;
     this.fruitManager = fruitManager;
     this.grid = grid;
     this.simulation = simulation;
     this.onResetWorld = onResetWorld;
+    this.onCombo = onCombo;
 
     this.running = false;
     this.roleColors = createDemoRoleColors();
@@ -78,9 +80,12 @@ export class HomeDemoController {
     this.rescueCount = 0;
     this.rescueStableSince = 0;
 
-    this.comboChip = document.createElement('div');
-    this.comboChip.className = 'home-demo-combo';
-    this.container.appendChild(this.comboChip);
+    this.comboChip = null;
+    if (container) {
+      this.comboChip = document.createElement('div');
+      this.comboChip.className = 'home-demo-combo';
+      this.container.appendChild(this.comboChip);
+    }
   }
 
   show() {
@@ -98,7 +103,7 @@ export class HomeDemoController {
     this.rescueCount = 0;
     this.rescueStableSince = 0;
 
-    this.container.classList.add('home-demo-active');
+    this.container?.classList.add('home-demo-active');
 
     this.fruitManager.setSpawnProvider(
       () => this.provideSpawn()
@@ -124,11 +129,11 @@ export class HomeDemoController {
     this.fruitManager.setSpawnProvider(null);
     this.simulation.setRandom(Math.random);
 
-    this.container.classList.remove('home-demo-active');
-    this.comboChip.getAnimations().forEach(
+    this.container?.classList.remove('home-demo-active');
+    this.comboChip?.getAnimations().forEach(
       (animation) => animation.cancel()
     );
-    this.comboChip.style.opacity = '0';
+    if (this.comboChip) this.comboChip.style.opacity = '0';
   }
 
   isRunning() {
@@ -605,6 +610,10 @@ export class HomeDemoController {
       this.awaitingCascade
         ? Math.min(3, Math.max(1, this.cascadeClears))
         : (payload?.combo ?? 1);
+
+    this.onCombo?.(combo);
+
+    if (!this.comboChip) return;
 
     this.comboChip.textContent =
       combo >= 3

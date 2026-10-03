@@ -7,6 +7,7 @@ import {
 } from '../../colors.js';
 import { CONFIG } from '../../config.js';
 import { BaseClearEffect } from '../BaseClearEffect.js';
+export { getClearRating } from '../../ClearRating.js';
 
 export const CLEAR_FLASH_MS = 110;
 export const CLEAR_RESTORE_MS = 90;
@@ -49,13 +50,6 @@ function baseColorToCss(type, alpha = 1) {
     getDisplayColorRgb(type) ?? [255, 255, 255],
     alpha
   );
-}
-
-export function getClearRating(cleared) {
-  if (cleared >= 3000) return 'UNBELIEVABLE';
-  if (cleared >= 2000) return 'PERFECT';
-  if (cleared >= 1000) return 'GREAT';
-  return 'GOOD';
 }
 
 export function getParticleClearRandom(

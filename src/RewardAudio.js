@@ -1,67 +1,70 @@
+import { VOICE_CLIPS } from './RewardVoicePaths.js';
+export { getRewardVoicePath } from './RewardVoicePaths.js';
+
 const RATING_STYLES = {
   GOOD: {
     notes: [659.25, 783.99, 987.77],
     gaps: [0, 0.075, 0.155],
-    voiceRate: 1.08,
-    detune: 120,
-    sparkle: 1567.98
+    voiceRate: 1.02,
+    detune: 40,
+    sparkle: 1400
   },
   GREAT: {
-    notes: [659.25, 830.61, 987.77, 1318.51],
+    notes: [659.25, 830.61, 987.77, 1244.51],
     gaps: [0, 0.065, 0.135, 0.215],
-    voiceRate: 1.1,
-    detune: 165,
-    sparkle: 1760
+    voiceRate: 1.035,
+    detune: 65,
+    sparkle: 1580
   },
   PERFECT: {
-    notes: [698.46, 880, 1046.5, 1318.51, 1567.98],
+    notes: [698.46, 880, 1046.5, 1244.51, 1396.91],
     gaps: [0, 0.06, 0.125, 0.195, 0.275],
-    voiceRate: 1.12,
-    detune: 205,
-    sparkle: 2093
+    voiceRate: 1.05,
+    detune: 90,
+    sparkle: 1820
   },
   UNBELIEVABLE: {
-    notes: [783.99, 987.77, 1174.66, 1567.98, 1975.53, 2349.32],
+    notes: [783.99, 987.77, 1174.66, 1396.91, 1661.22, 1975.53],
     gaps: [0, 0.055, 0.115, 0.18, 0.255, 0.345],
-    voiceRate: 1.14,
-    detune: 250,
-    sparkle: 2637.02
+    voiceRate: 1.065,
+    detune: 115,
+    sparkle: 2100
   }
 };
-
-const VOICE_CLIPS = {
-  GOOD: 'audio/reward-good.mp3',
-  GREAT: 'audio/reward-great.mp3',
-  PERFECT: 'audio/reward-perfect.mp3',
-  UNBELIEVABLE: 'audio/reward-unbelievable.mp3'
-};
-
-export function getRewardVoicePath(rating) {
-  return VOICE_CLIPS[rating] ?? VOICE_CLIPS.GOOD;
-}
 
 export function getRewardSoundStyle(rating) {
   return RATING_STYLES[rating] ?? RATING_STYLES.GOOD;
 }
 
 export class RewardAudio {
-  constructor(element) {
-    this.context = null;
+  constructor(
+    element,
+    {
+      context = null,
+      destination = null,
+      autoUnlock = true
+    } = {}
+  ) {
+    this.context = context;
+    this.destination = destination;
     this.voiceBuffers = new Map();
-    this.voiceLoadPromise = null;
+    this.voiceLoadPromises = new Map();
     this.activeVoiceSources = new Set();
     this.activeOscillators = new Set();
 
     this.ensureContext();
     this.preloadVoices();
 
-    const unlock = () => this.unlock();
-    element.addEventListener('pointerdown', unlock, { passive: true });
-    element.addEventListener('touchstart', unlock, { passive: true });
+    if (autoUnlock && element) {
+      const unlock = () => this.unlock();
+      element.addEventListener('pointerdown', unlock, { passive: true });
+      element.addEventListener('touchstart', unlock, { passive: true });
+    }
   }
 
   ensureContext() {
     if (this.context) return this.context;
+    if (typeof window === 'undefined') return null;
 
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return null;
@@ -70,37 +73,67 @@ export class RewardAudio {
     return this.context;
   }
 
+  getDestination() {
+    const context = this.ensureContext();
+    return this.destination ?? context?.destination ?? null;
+  }
+
   unlock() {
     const context = this.ensureContext();
     context?.resume?.();
     this.preloadVoices();
   }
 
-  preloadVoices() {
+  loadVoice(rating, relativePath) {
     const context = this.ensureContext();
 
-    if (!context || this.voiceLoadPromise) {
-      return this.voiceLoadPromise;
+    if (!context) {
+      return Promise.resolve(null);
     }
 
-    this.voiceLoadPromise = Promise.all(
-      Object.entries(VOICE_CLIPS).map(async ([rating, relativePath]) => {
-        const url = `${import.meta.env.BASE_URL}${relativePath}`;
-        const response = await fetch(url);
+    if (this.voiceBuffers.has(rating)) {
+      return Promise.resolve(this.voiceBuffers.get(rating));
+    }
 
-        if (!response.ok) {
-          throw new Error(`Failed to load reward voice: ${url}`);
-        }
+    if (this.voiceLoadPromises.has(rating)) {
+      return this.voiceLoadPromises.get(rating);
+    }
 
-        const bytes = await response.arrayBuffer();
-        const buffer = await context.decodeAudioData(bytes.slice(0));
-        this.voiceBuffers.set(rating, buffer);
+    const promise = (async () => {
+      const baseUrl =
+        typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL
+          ? import.meta.env.BASE_URL
+          : '/';
+      const url = `${baseUrl}${relativePath}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Failed to load reward voice: ${url}`);
+      }
+
+      const bytes = await response.arrayBuffer();
+      const buffer = await context.decodeAudioData(bytes.slice(0));
+      this.voiceBuffers.set(rating, buffer);
+      return buffer;
+    })()
+      .catch((error) => {
+        console.warn('Reward voice preload failed', rating, error);
+        return null;
       })
-    ).catch((error) => {
-      console.warn('Reward voice preload failed', error);
-    });
+      .finally(() => {
+        this.voiceLoadPromises.delete(rating);
+      });
 
-    return this.voiceLoadPromise;
+    this.voiceLoadPromises.set(rating, promise);
+    return promise;
+  }
+
+  preloadVoices() {
+    return Promise.allSettled(
+      Object.entries(VOICE_CLIPS).map(([rating, relativePath]) =>
+        this.loadVoice(rating, relativePath)
+      )
+    );
   }
 
   play(rating, intensity = 1) {
@@ -141,61 +174,56 @@ export class RewardAudio {
 
   playCuteVoice(rating) {
     const context = this.ensureContext();
+    const destination = this.getDestination();
 
-    if (!context) {
+    if (!context || !destination) {
+      return Promise.resolve();
+    }
+
+    const buffer =
+      this.voiceBuffers.get(rating) ??
+      this.voiceBuffers.get('GOOD');
+
+    // Do not start a voice late after the visual reward has already finished.
+    // Missing voices keep loading for the next clear and the synth reward still plays.
+    if (!buffer) {
+      this.preloadVoices();
       return Promise.resolve();
     }
 
     const style = getRewardSoundStyle(rating);
 
-    const startBuffer = () => {
-      const buffer =
-        this.voiceBuffers.get(rating) ??
-        this.voiceBuffers.get('GOOD');
+    return new Promise((resolve) => {
+      const source = context.createBufferSource();
+      const voiceGain = context.createGain();
+      const filter = context.createBiquadFilter();
 
-      if (!buffer) {
-        return Promise.resolve();
+      source.buffer = buffer;
+      source.playbackRate.value = style.voiceRate;
+
+      if ('detune' in source) {
+        source.detune.value = style.detune;
       }
 
-      return new Promise((resolve) => {
-        const source = context.createBufferSource();
-        const voiceGain = context.createGain();
-        const filter = context.createBiquadFilter();
+      filter.type = 'highshelf';
+      filter.frequency.value = 3200;
+      filter.gain.value = -3;
 
-        source.buffer = buffer;
-        source.playbackRate.value = style.voiceRate;
+      voiceGain.gain.value = 0.48;
 
-        if ('detune' in source) {
-          source.detune.value = style.detune;
-        }
+      source.connect(filter);
+      filter.connect(voiceGain);
+      voiceGain.connect(destination);
 
-        filter.type = 'highshelf';
-        filter.frequency.value = 2500;
-        filter.gain.value = 2.5;
+      this.activeVoiceSources.add(source);
 
-        voiceGain.gain.value = 0.72;
+      source.onended = () => {
+        this.activeVoiceSources.delete(source);
+        resolve();
+      };
 
-        source.connect(filter);
-        filter.connect(voiceGain);
-        voiceGain.connect(context.destination);
-
-        this.activeVoiceSources.add(source);
-
-        source.onended = () => {
-          this.activeVoiceSources.delete(source);
-          resolve();
-        };
-
-        // Still starts on the exact frame that the final star completes.
-        source.start(0);
-      });
-    };
-
-    if (this.voiceBuffers.has(rating)) {
-      return startBuffer();
-    }
-
-    return Promise.resolve(this.preloadVoices()).then(startBuffer);
+      source.start(0);
+    });
   }
 
   playCuteArcadeFx(rating, intensity) {
@@ -207,26 +235,24 @@ export class RewardAudio {
 
     const style = getRewardSoundStyle(rating);
     const now = context.currentTime;
-    const scale = Math.min(1.15, 0.78 + intensity * 0.08);
+    const scale = Math.min(1.08, 0.7 + intensity * 0.07);
 
-    // Soft "pop" at the exact reward moment.
     this.scheduleTone({
       start: now,
-      frequency: 330,
-      endFrequency: 520,
-      duration: 0.11,
-      peak: 0.12 * scale,
+      frequency: 320,
+      endFrequency: 470,
+      duration: 0.1,
+      peak: 0.07 * scale,
       type: 'sine'
     });
 
-    // Rising, bouncy notes make the reward feel playful instead of formal.
     style.notes.forEach((frequency, index) => {
       this.scheduleTone({
         start: now + style.gaps[index],
         frequency,
-        endFrequency: frequency * 1.045,
-        duration: 0.19,
-        peak: (0.085 + index * 0.008) * scale,
+        endFrequency: Math.min(2200, frequency * 1.035),
+        duration: 0.18,
+        peak: (0.052 + index * 0.005) * scale,
         type: index % 2 === 0 ? 'sine' : 'triangle'
       });
     });
@@ -237,24 +263,24 @@ export class RewardAudio {
     this.scheduleTone({
       start: sparkleStart,
       frequency: style.sparkle,
-      endFrequency: style.sparkle * 1.18,
-      duration: 0.16,
-      peak: 0.075 * scale,
+      endFrequency: Math.min(2350, style.sparkle * 1.1),
+      duration: 0.15,
+      peak: 0.044 * scale,
       type: 'sine'
     });
 
     this.scheduleTone({
       start: sparkleStart + 0.045,
-      frequency: style.sparkle * 1.5,
-      endFrequency: style.sparkle * 1.62,
-      duration: 0.12,
-      peak: 0.045 * scale,
+      frequency: Math.min(2250, style.sparkle * 1.18),
+      endFrequency: Math.min(2400, style.sparkle * 1.24),
+      duration: 0.11,
+      peak: 0.026 * scale,
       type: 'sine'
     });
 
     const durationMs =
       Math.ceil(
-        (style.gaps[style.gaps.length - 1] + 0.32) * 1000
+        (style.gaps[style.gaps.length - 1] + 0.3) * 1000
       );
 
     return new Promise((resolve) => {
@@ -271,7 +297,9 @@ export class RewardAudio {
     type
   }) {
     const context = this.ensureContext();
-    if (!context) return;
+    const destination = this.getDestination();
+
+    if (!context || !destination) return;
 
     const oscillator = context.createOscillator();
     const gain = context.createGain();
@@ -294,7 +322,7 @@ export class RewardAudio {
     );
 
     oscillator.connect(gain);
-    gain.connect(context.destination);
+    gain.connect(destination);
 
     this.activeOscillators.add(oscillator);
     oscillator.onended = () => {

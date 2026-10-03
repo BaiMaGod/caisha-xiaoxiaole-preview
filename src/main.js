@@ -6,7 +6,7 @@ import { ConnectivityClear } from './ConnectivityClear.js';
 import { GameHUD } from './GameHUD.js';
 import { GameRules } from './GameRules.js';
 import { ClearEffectManager, getClearRating } from './ClearEffectManager.js';
-import { RewardAudio } from './RewardAudio.js';
+import { AudioManager } from './AudioManager.js';
 import { SettlementGate } from './SettlementGate.js';
 import { FruitManager } from './fruit/FruitManager.js';
 import { FruitController } from './fruit/FruitController.js';
@@ -52,7 +52,9 @@ const clearEffects = new ClearEffectManager(
     getEffectId: () => progress.getSelectedEffectId()
   }
 );
-const rewardAudio = new RewardAudio(gameShell);
+const audio = new AudioManager(gameShell);
+audio.mountMuteButton(gameShell);
+
 const settlementGate = new SettlementGate(3);
 const effectPanel = new EffectCollectionPanel(gameShell, {
   progress,
@@ -85,7 +87,18 @@ const gameOverArtwork = new GameOverArtwork(gameShell, {
 hud.setGameVisible(false);
 
 new FruitController(sandRenderer.canvas, fruitManager, grid, {
-  onRelease: () => hud.notifyDropReleased()
+  onRelease: () => {
+    hud.notifyDropReleased();
+
+    if (!homeDemo.isRunning() && !homeScreen.isOpen()) {
+      audio.playRelease();
+    }
+  },
+  onFastDrop: () => {
+    if (!homeDemo.isRunning() && !homeScreen.isOpen()) {
+      audio.playFastDrop();
+    }
+  }
 });
 
 // ConnectivityClear calls this while every target grain still exists.
@@ -111,10 +124,14 @@ clearSystem.onClear = (payload) => {
 
   hud.showCombo(combo);
 
+  // The sand sweep starts with the visual clear so sound and motion feel like
+  // one event. The larger reward cue remains at visual completion.
+  audio.playClearSweep(payload);
+
   clearEffects.play(payload, () => {
     hud.setScore(score);
 
-    return rewardAudio.play(
+    return audio.playReward(
       rating,
       Math.min(4, cleared / 1000 + combo * 0.25)
     );
@@ -171,6 +188,7 @@ function triggerGameOver() {
 
   gameOver = true;
   fruitManager.setEnabled(false);
+  audio.playGameOver();
   progress.recordGameOver(clearSystem.score);
   unlockManager.checkAll();
 
@@ -185,9 +203,19 @@ function triggerGameOver() {
   });
 }
 
+if (import.meta.env.DEV) {
+  globalThis.__legacyGame = {
+    grid,
+    triggerGameOver,
+    progress,
+    clearSystem,
+    audio
+  };
+}
+
 function resetHomeDemoWorld(baselineCells = null) {
   clearEffects.clear();
-  rewardAudio.stop();
+  audio.stopTransient();
   grid.clear();
 
   if (baselineCells) {
@@ -250,7 +278,7 @@ function restartGame() {
   fruitManager.reset();
   hud.reset();
   clearEffects.clear();
-  rewardAudio.stop();
+  audio.stopTransient();
   settlementGate.reset();
   hud.setGameVisible(true);
 
@@ -266,7 +294,7 @@ function restartGame() {
 
 function returnHome() {
   hud.setGameVisible(false);
-  rewardAudio.stop();
+  audio.stopTransient();
   clearEffects.clear();
   effectPanel.close();
   gameOverArtwork.hide();
@@ -293,6 +321,7 @@ function loop(time) {
   if (!gameOver && !effectPanel.isOpen() && simulationActive) {
     if (clearEffects.isBusy()) {
       // Hold the board still while the currently equipped clear effect plays.
+      audio.updateSandFlow(0);
       lastSimulation = time;
     } else {
       const previousFruitState = lastFruitState;
@@ -307,6 +336,14 @@ function loop(time) {
 
       if (fruitState !== previousFruitState && fruitState === 'FALLING') {
         clearSystem.resetCombo();
+      }
+
+      if (!demoActive && previousFruitState === 'FALLING' && fruitState === 'IMPACT') {
+        audio.playImpact();
+      }
+
+      if (!demoActive && previousFruitState === 'IMPACT' && fruitState === 'BREAKING') {
+        audio.playCrumble();
       }
 
       if (previousFruitState === 'BREAKING' && fruitState === null) {
@@ -328,6 +365,10 @@ function loop(time) {
 
           return !gameOver;
         });
+
+        audio.updateSandFlow(
+          !demoActive && !gameOver ? simulation.movedCount : 0
+        );
 
         // Every connectivity check must pass through the same settlement gate.
         // This applies both to the first clear after a fruit turns into sand and
@@ -354,6 +395,8 @@ function loop(time) {
         lastSimulation = time;
       }
     }
+  } else {
+    audio.updateSandFlow(0);
   }
 
   stats.update();
@@ -361,7 +404,12 @@ function loop(time) {
 }
 
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) return;
+  if (document.hidden) {
+    audio.suspendForVisibility();
+    return;
+  }
+
+  audio.resumeFromVisibility();
 
   const now = performance.now();
   lastFrame = now;

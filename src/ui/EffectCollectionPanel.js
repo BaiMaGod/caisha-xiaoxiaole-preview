@@ -246,20 +246,6 @@ export class EffectCollectionPanel {
           this.render();
         });
         actions.appendChild(equip);
-      } else if (
-        !unlocked &&
-        effect.implemented &&
-        effect.unlock?.type === 'ad'
-      ) {
-        const ad = createButton('模拟广告解锁');
-        ad.style.color = '#fff';
-        ad.style.background = '#4d9bd8';
-        ad.addEventListener('click', () => {
-          this.unlockManager?.completeAd(effect.id);
-          this.progress.markSeen(effect.id);
-          this.render();
-        });
-        actions.appendChild(ad);
       }
 
       if (unlocked && isNew) {

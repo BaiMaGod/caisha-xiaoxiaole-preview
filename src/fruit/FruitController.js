@@ -1,9 +1,18 @@
 export class FruitController {
-  constructor(element, fruitManager, grid, { onRelease = null } = {}) {
+  constructor(
+    element,
+    fruitManager,
+    grid,
+    {
+      onRelease = null,
+      onFastDrop = null
+    } = {}
+  ) {
     this.element = element;
     this.fruitManager = fruitManager;
     this.grid = grid;
     this.onRelease = onRelease;
+    this.onFastDrop = onFastDrop;
     this.dragging = false;
     this.dragStartX = 0;
     this.dragStartY = 0;
@@ -33,7 +42,7 @@ export class FruitController {
       this.dragging = false;
 
       // Fast drop is latched to the current fruit. Releasing the finger only
-      // ends gesture tracking; the fruit keeps falling at 2x speed until impact.
+      // ends gesture tracking; the fruit keeps its speed boost until impact.
       this.fastDropActive = false;
 
       const released = this.fruitManager.releaseCurrent();
@@ -78,6 +87,8 @@ export class FruitController {
     if (result.released) {
       this.onRelease?.();
     }
+
+    this.onFastDrop?.();
   }
 
   updatePointer(event) {
