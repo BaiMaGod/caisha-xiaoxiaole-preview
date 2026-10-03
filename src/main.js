@@ -326,7 +326,6 @@ function loop(time) {
     if (clearEffects.isBusy()) {
       // Hold the board still while the currently equipped clear effect plays.
       audio.updateSandFlow(0);
-      audio.updateFruitFall(false, false);
       lastSimulation = time;
     } else {
       const previousFruitState = lastFruitState;
@@ -339,13 +338,12 @@ function loop(time) {
 
       const fruitState = fruitManager.current?.state ?? null;
 
-      audio.updateFruitFall(
-        !demoActive && fruitState === 'FALLING',
-        fruitManager.current?.fastDrop ?? false
-      );
-
       if (fruitState !== previousFruitState && fruitState === 'FALLING') {
         clearSystem.resetCombo();
+
+        if (!demoActive) {
+          audio.playFallStart();
+        }
       }
 
       if (!demoActive && previousFruitState === 'FALLING' && fruitState === 'IMPACT') {
@@ -407,7 +405,6 @@ function loop(time) {
     }
   } else {
     audio.updateSandFlow(0);
-    audio.updateFruitFall(false, false);
   }
 
   stats.update();

@@ -65,16 +65,9 @@ export class AudioManager {
     this.sandFilter = null;
     this.sandGain = null;
 
-    this.fallSource = null;
-    this.fallFilter = null;
-    this.fallGain = null;
-
-    this.clearSweepSource = null;
-    this.clearSweepFilter = null;
-    this.clearSweepGain = null;
-    this.clearSweepPanner = null;
     this.clearSweepIntensity = 0;
     this.clearSweepLastBucket = -1;
+    this.clearSweepCombo = 1;
 
     this.lastUiSoundAt = -Infinity;
     this.muteButton = null;
@@ -170,7 +163,6 @@ export class AudioManager {
 
     this.suspendedByVisibility = true;
     this.setSandFlow(0);
-    this.updateFruitFall(false, false);
     this.endClearSweep({ immediate: true });
     this.context.suspend?.();
   }
@@ -292,26 +284,57 @@ export class AudioManager {
     const context = this.ensureContext();
     if (!context || context.state === 'suspended') return;
 
-    // A dry, soft granular release instead of the old electronic chirp.
-    // It should feel like fingers letting go of a small packet of sand.
-    this.playNoiseBurst({
+    const now = context.currentTime;
+
+    // Light, cheerful confirmation: a tiny two-note "pop" instead of material noise.
+    this.scheduleTone({
       destination: this.sfxGain,
-      duration: 0.065,
-      peak: 0.018,
-      filterType: 'bandpass',
-      startFrequency: 1050,
-      endFrequency: 720,
-      q: 0.55
+      start: now,
+      frequency: 880,
+      endFrequency: 932,
+      duration: 0.055,
+      peak: 0.032,
+      type: 'sine'
     });
 
-    this.playNoiseBurst({
+    this.scheduleTone({
       destination: this.sfxGain,
-      duration: 0.045,
-      peak: 0.011,
-      filterType: 'lowpass',
-      startFrequency: 520,
-      endFrequency: 360,
-      q: 0.45
+      start: now + 0.045,
+      frequency: 1046.5,
+      endFrequency: 1174.7,
+      duration: 0.075,
+      peak: 0.035,
+      type: 'triangle'
+    });
+  }
+
+  playFallStart() {
+    if (this.muted) return;
+
+    const context = this.ensureContext();
+    if (!context || context.state === 'suspended') return;
+
+    const now = context.currentTime;
+
+    // A short playful "drop" cue. It stays tonal and game-like, not realistic.
+    this.scheduleTone({
+      destination: this.sfxGain,
+      start: now,
+      frequency: 659.25,
+      endFrequency: 587.33,
+      duration: 0.085,
+      peak: 0.026,
+      type: 'triangle'
+    });
+
+    this.scheduleTone({
+      destination: this.sfxGain,
+      start: now + 0.065,
+      frequency: 783.99,
+      endFrequency: 698.46,
+      duration: 0.09,
+      peak: 0.022,
+      type: 'sine'
     });
   }
 
@@ -321,86 +344,20 @@ export class AudioManager {
     const context = this.ensureContext();
     if (!context || context.state === 'suspended') return;
 
-    // Fast drop is a short granular swell, not a bright arcade whoosh.
-    // The continuing sense of speed comes from updateFruitFall().
-    this.playNoiseBurst({
-      destination: this.sfxGain,
-      duration: 0.14,
-      peak: 0.026,
-      filterType: 'bandpass',
-      startFrequency: 680,
-      endFrequency: 980,
-      q: 0.52
-    });
-  }
-
-  updateFruitFall(isFalling, fastDrop = false) {
-    const context = this.ensureContext();
-    if (!context) return;
-
-    this.ensureFruitFallLoop();
-
-    if (!this.fallGain || !this.fallFilter) return;
-
-    const active =
-      Boolean(isFalling) &&
-      !this.muted &&
-      this.userUnlocked &&
-      !this.suspendedByVisibility;
-
-    const targetGain = active
-      ? (fastDrop ? 0.021 : 0.0085)
-      : 0;
-    const targetFrequency = fastDrop ? 930 : 560;
     const now = context.currentTime;
+    const notes = [1046.5, 1318.5, 1568];
 
-    this.fallGain.gain.cancelScheduledValues(now);
-    this.fallGain.gain.setTargetAtTime(
-      targetGain,
-      now,
-      active ? 0.045 : 0.065
-    );
-
-    this.fallFilter.frequency.cancelScheduledValues(now);
-    this.fallFilter.frequency.setTargetAtTime(
-      targetFrequency,
-      now,
-      0.05
-    );
-  }
-
-  ensureFruitFallLoop() {
-    const context = this.ensureContext();
-    if (!context || this.fallSource) return;
-
-    const source = context.createBufferSource();
-    const filter = context.createBiquadFilter();
-    const gain = context.createGain();
-
-    source.buffer = this.getNoiseBuffer();
-    source.loop = true;
-
-    filter.type = 'bandpass';
-    filter.frequency.value = 560;
-    filter.Q.value = 0.38;
-    gain.gain.value = 0;
-
-    source.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.sfxGain);
-    source.start();
-
-    this.fallSource = source;
-    this.fallFilter = filter;
-    this.fallGain = gain;
-
-    source.onended = () => {
-      if (this.fallSource === source) {
-        this.fallSource = null;
-        this.fallFilter = null;
-        this.fallGain = null;
-      }
-    };
+    notes.forEach((frequency, index) => {
+      this.scheduleTone({
+        destination: this.sfxGain,
+        start: now + index * 0.045,
+        frequency,
+        endFrequency: frequency * 1.035,
+        duration: 0.075,
+        peak: 0.029 + index * 0.003,
+        type: index === 1 ? 'triangle' : 'sine'
+      });
+    });
   }
 
   playImpact(intensity = 1) {
@@ -456,146 +413,89 @@ export class AudioManager {
     const context = this.ensureContext();
     if (!context || context.state === 'suspended') return;
 
-    this.endClearSweep({ immediate: true });
-
-    const source = context.createBufferSource();
-    const filter = context.createBiquadFilter();
-    const gain = context.createGain();
-    const panner = context.createStereoPanner?.() ?? null;
-
-    source.buffer = this.getNoiseBuffer();
-    source.loop = true;
-
-    filter.type = 'bandpass';
-    filter.frequency.value = 720;
-    filter.Q.value = 0.48;
-    gain.gain.value = 0;
-
-    source.connect(filter);
-
-    if (panner) {
-      filter.connect(panner);
-      panner.connect(gain);
-      panner.pan.value = -0.72;
-    } else {
-      filter.connect(gain);
-    }
-
-    gain.connect(this.sfxGain);
-    source.start();
-
-    this.clearSweepSource = source;
-    this.clearSweepFilter = filter;
-    this.clearSweepGain = gain;
-    this.clearSweepPanner = panner;
     this.clearSweepIntensity = getClearSoundIntensity(cleared, combo);
     this.clearSweepLastBucket = -1;
+    this.clearSweepCombo = Math.max(1, Number(combo) || 1);
 
-    source.onended = () => {
-      if (this.clearSweepSource === source) {
-        this.clearSweepSource = null;
-        this.clearSweepFilter = null;
-        this.clearSweepGain = null;
-        this.clearSweepPanner = null;
-      }
-    };
+    const now = context.currentTime;
+    const comboLift = Math.min(5, this.clearSweepCombo - 1) * 24;
+
+    // Opening chime announces that a rewarding clear has begun.
+    this.scheduleTone({
+      destination: this.sfxGain,
+      start: now,
+      frequency: 659.25 + comboLift,
+      endFrequency: 783.99 + comboLift,
+      duration: 0.1,
+      peak: 0.026 * this.clearSweepIntensity,
+      type: 'triangle'
+    });
   }
 
   updateClearSweep({ progress = 0, clearedVisual = 0, total = 1 } = {}) {
     const context = this.ensureContext();
 
-    if (
-      !context ||
-      !this.clearSweepSource ||
-      !this.clearSweepGain ||
-      !this.clearSweepFilter
-    ) {
+    if (!context || this.muted || context.state === 'suspended') {
       return;
     }
 
     const p = clamp(Number(progress) || 0, 0, 1);
+    if (p <= 0.01 || p >= 0.995) return;
+
+    // One musical step for each section of the actual left-to-right visual wave.
+    // The notes rise as the clear travels right, so the player hears progress.
+    const bucketCount = 12;
+    const bucket = Math.floor(p * bucketCount);
+
+    if (bucket <= this.clearSweepLastBucket) return;
+    this.clearSweepLastBucket = bucket;
+
+    const scale = [
+      659.25, 783.99, 880, 987.77,
+      1046.5, 1174.66, 1318.51
+    ];
+    const intensity = this.clearSweepIntensity || 0.7;
+    const comboLift = Math.min(5, this.clearSweepCombo - 1) * 22;
+    const note = scale[bucket % scale.length] +
+      (bucket >= scale.length ? 130.81 : 0) +
+      comboLift;
     const visualRatio = clamp(
       (Number(clearedVisual) || 0) / Math.max(1, Number(total) || 1),
       0,
       1
     );
-    const body = Math.sin(Math.PI * p) ** 0.6;
-    const active = p > 0.002 && p < 0.998;
-    const intensity = this.clearSweepIntensity || 0.7;
     const now = context.currentTime;
 
-    this.clearSweepGain.gain.cancelScheduledValues(now);
-    this.clearSweepGain.gain.setTargetAtTime(
-      active ? (0.012 + body * 0.052) * intensity : 0,
-      now,
-      0.018
-    );
+    this.scheduleTone({
+      destination: this.sfxGain,
+      start: now,
+      frequency: note,
+      endFrequency: note * (1.025 + visualRatio * 0.018),
+      duration: 0.085,
+      peak: (0.024 + visualRatio * 0.01) * intensity,
+      type: bucket % 3 === 1 ? 'triangle' : 'sine',
+      pan: -0.72 + p * 1.44
+    });
 
-    this.clearSweepFilter.frequency.cancelScheduledValues(now);
-    this.clearSweepFilter.frequency.setTargetAtTime(
-      680 + p * 980 + visualRatio * 240,
-      now,
-      0.022
-    );
-
-    if (this.clearSweepPanner) {
-      this.clearSweepPanner.pan.cancelScheduledValues(now);
-      this.clearSweepPanner.pan.setTargetAtTime(
-        -0.74 + p * 1.48,
-        now,
-        0.018
-      );
-    }
-
-    // Tiny grain accents are tied to the actual visual wave position. They
-    // create audible texture while columns disappear without turning into clicks.
-    const bucket = Math.floor(p * 18);
-
-    if (bucket > this.clearSweepLastBucket && p > 0.015 && p < 0.985) {
-      this.clearSweepLastBucket = bucket;
-
-      this.playNoiseBurst({
+    // Every third step adds a quiet harmony so large clears feel more rewarding.
+    if (bucket > 0 && bucket % 3 === 0) {
+      this.scheduleTone({
         destination: this.sfxGain,
-        duration: 0.032,
-        peak: 0.0085 * intensity,
-        filterType: 'bandpass',
-        startFrequency: 1350 + p * 550,
-        endFrequency: 980 + p * 620,
-        q: 0.62
+        start: now + 0.012,
+        frequency: note * 1.25,
+        endFrequency: note * 1.28,
+        duration: 0.09,
+        peak: 0.012 * intensity,
+        type: 'sine',
+        pan: -0.68 + p * 1.36
       });
     }
   }
 
   endClearSweep({ immediate = false } = {}) {
-    const context = this.context;
-    const source = this.clearSweepSource;
-    const gain = this.clearSweepGain;
-
-    if (!source) return;
-
-    this.clearSweepSource = null;
-    this.clearSweepFilter = null;
-    this.clearSweepGain = null;
-    this.clearSweepPanner = null;
     this.clearSweepIntensity = 0;
     this.clearSweepLastBucket = -1;
-
-    try {
-      if (context && gain && !immediate) {
-        const now = context.currentTime;
-        gain.gain.cancelScheduledValues(now);
-        gain.gain.setValueAtTime(
-          Math.max(0.0001, gain.gain.value),
-          now
-        );
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.07);
-        source.stop(now + 0.08);
-      } else {
-        source.stop();
-      }
-    } catch {
-      // Source already stopped.
-    }
+    this.clearSweepCombo = 1;
   }
 
   playReward(rating, intensity = 1) {
@@ -790,7 +690,8 @@ export class AudioManager {
     endFrequency,
     duration,
     peak,
-    type = 'sine'
+    type = 'sine',
+    pan = 0
   }) {
     const context = this.ensureContext();
     if (!context || !destination) return;
@@ -818,8 +719,17 @@ export class AudioManager {
       start + duration
     );
 
+    const panner = context.createStereoPanner?.() ?? null;
+
     oscillator.connect(gain);
-    gain.connect(destination);
+
+    if (panner) {
+      panner.pan.value = clamp(Number(pan) || 0, -1, 1);
+      gain.connect(panner);
+      panner.connect(destination);
+    } else {
+      gain.connect(destination);
+    }
 
     this.activeOscillators.add(oscillator);
 
@@ -860,7 +770,6 @@ export class AudioManager {
     this.activeOscillators.clear();
     this.rewardAudio?.stop();
     this.setSandFlow(0);
-    this.updateFruitFall(false, false);
     this.endClearSweep({ immediate: true });
   }
 }
