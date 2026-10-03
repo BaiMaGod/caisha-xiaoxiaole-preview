@@ -158,11 +158,26 @@ export class WindDissolveEffect extends BaseClearEffect {
     this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
   }
 
-  play(payload, startRewardAudio = null) {
+  play(payload, audioHooks = null) {
     this.clear();
     this.current = this.buildEffect(payload);
-    this.current.startRewardAudio = startRewardAudio;
+
+    const hooks =
+      typeof audioHooks === 'function'
+        ? { onComplete: audioHooks }
+        : (audioHooks ?? {});
+
+    this.current.onAudioStart = hooks.onStart ?? null;
+    this.current.onAudioProgress = hooks.onProgress ?? null;
+    this.current.startRewardAudio = hooks.onComplete ?? null;
     this.current.startedAt = performance.now();
+
+    try {
+      this.current.onAudioStart?.();
+    } catch {
+      // Audio hooks must never block the clear animation.
+    }
+
     this.scheduleFrame();
   }
 
@@ -370,6 +385,8 @@ export class WindDissolveEffect extends BaseClearEffect {
       logicalFrameCanvas,
       logicalFrameCtx: logicalFrameCanvas.getContext('2d'),
       startedAt: 0,
+      onAudioStart: null,
+      onAudioProgress: null,
       startRewardAudio: null,
       clearedVisual: 0
     };
@@ -386,6 +403,18 @@ export class WindDissolveEffect extends BaseClearEffect {
 
     this.drawWindStreaks(progress);
     this.drawErodedSnapshot(progress);
+
+    try {
+      this.current.onAudioProgress?.({
+        progress: getWindSweepProgress(progress),
+        clearedVisual: this.current.clearedVisual,
+        total: this.current.particles.length,
+        elapsedMs: elapsed
+      });
+    } catch {
+      // Audio hooks must never block the clear animation.
+    }
+
     this.drawFlyingParticles(progress, this.current.flyers, false);
     this.drawFlyingParticles(progress, this.current.dust, true);
     this.drawScore(progress);

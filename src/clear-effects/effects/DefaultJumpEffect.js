@@ -293,14 +293,21 @@ export class DefaultJumpEffect extends BaseClearEffect {
     this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
   }
 
-  play(payload, startRewardAudio = null) {
+  play(payload, audioHooks = null) {
     if (this.scoreLingerTimer) {
       clearTimeout(this.scoreLingerTimer);
       this.scoreLingerTimer = 0;
     }
 
     const effect = this.buildEffect(payload);
-    effect.startRewardAudio = startRewardAudio;
+    const hooks =
+      typeof audioHooks === 'function'
+        ? { onComplete: audioHooks }
+        : (audioHooks ?? {});
+
+    effect.onAudioStart = hooks.onStart ?? null;
+    effect.onAudioProgress = hooks.onProgress ?? null;
+    effect.startRewardAudio = hooks.onComplete ?? null;
 
     this.queue.push(effect);
 
@@ -359,6 +366,8 @@ export class DefaultJumpEffect extends BaseClearEffect {
       logicalFrameCanvas,
       logicalFrameCtx: logicalFrameCanvas?.getContext('2d') ?? null,
       startedAt: 0,
+      onAudioStart: null,
+      onAudioProgress: null,
       startRewardAudio: null
     };
   }
@@ -572,6 +581,12 @@ export class DefaultJumpEffect extends BaseClearEffect {
 
     this.current = this.queue.shift();
     this.current.startedAt = performance.now();
+
+    try {
+      this.current.onAudioStart?.();
+    } catch {
+      // Audio hooks must never block the clear animation.
+    }
   }
 
   finishCurrent() {
@@ -614,6 +629,23 @@ export class DefaultJumpEffect extends BaseClearEffect {
     }
 
     const elapsed = Math.max(0, time - this.current.startedAt);
+    const audioProgress = getClearWaveProgress(elapsed);
+    const clearedVisual = getClearedParticleCount(
+      elapsed,
+      this.current.particles,
+      this.current.bounds
+    );
+
+    try {
+      this.current.onAudioProgress?.({
+        progress: audioProgress,
+        clearedVisual,
+        total: this.current.particles.length,
+        elapsedMs: elapsed
+      });
+    } catch {
+      // Audio hooks must never block the clear animation.
+    }
 
     this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
 

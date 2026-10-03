@@ -54,7 +54,7 @@ export class ClearEffectManager {
     return getImplementedClearEffect(this.getEffectId?.()).id;
   }
 
-  play(payload, startRewardAudio = null) {
+  play(payload, audioHooks = null) {
     const effectId = this.resolveEffectId();
     const renderer =
       this.effects.get(effectId) ??
@@ -65,7 +65,7 @@ export class ClearEffectManager {
     }
 
     this.activeEffectId = effectId;
-    renderer.play(payload, startRewardAudio);
+    renderer.play(payload, audioHooks);
   }
 
   isBusy() {

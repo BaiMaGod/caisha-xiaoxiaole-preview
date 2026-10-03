@@ -124,17 +124,21 @@ clearSystem.onClear = (payload) => {
 
   hud.showCombo(combo);
 
-  // The sand sweep starts with the visual clear so sound and motion feel like
-  // one event. The larger reward cue remains at visual completion.
-  audio.playClearSweep(payload);
+  clearEffects.play(payload, {
+    // Start the continuous granular clear layer on the exact visual frame.
+    onStart: () => audio.beginClearSweep(payload),
+    // Follow the real left-to-right wave every frame instead of playing a
+    // detached one-shot sound over the animation.
+    onProgress: (state) => audio.updateClearSweep(state),
+    onComplete: () => {
+      audio.endClearSweep();
+      hud.setScore(score);
 
-  clearEffects.play(payload, () => {
-    hud.setScore(score);
-
-    return audio.playReward(
-      rating,
-      Math.min(4, cleared / 1000 + combo * 0.25)
-    );
+      return audio.playReward(
+        rating,
+        Math.min(4, cleared / 1000 + combo * 0.25)
+      );
+    }
   });
 };
 
@@ -322,6 +326,7 @@ function loop(time) {
     if (clearEffects.isBusy()) {
       // Hold the board still while the currently equipped clear effect plays.
       audio.updateSandFlow(0);
+      audio.updateFruitFall(false, false);
       lastSimulation = time;
     } else {
       const previousFruitState = lastFruitState;
@@ -333,6 +338,11 @@ function loop(time) {
       fruitManager.update(deltaMs);
 
       const fruitState = fruitManager.current?.state ?? null;
+
+      audio.updateFruitFall(
+        !demoActive && fruitState === 'FALLING',
+        fruitManager.current?.fastDrop ?? false
+      );
 
       if (fruitState !== previousFruitState && fruitState === 'FALLING') {
         clearSystem.resetCombo();
@@ -397,6 +407,7 @@ function loop(time) {
     }
   } else {
     audio.updateSandFlow(0);
+    audio.updateFruitFall(false, false);
   }
 
   stats.update();

@@ -64,6 +64,18 @@ export class AudioManager {
     this.sandSource = null;
     this.sandFilter = null;
     this.sandGain = null;
+
+    this.fallSource = null;
+    this.fallFilter = null;
+    this.fallGain = null;
+
+    this.clearSweepSource = null;
+    this.clearSweepFilter = null;
+    this.clearSweepGain = null;
+    this.clearSweepPanner = null;
+    this.clearSweepIntensity = 0;
+    this.clearSweepLastBucket = -1;
+
     this.lastUiSoundAt = -Infinity;
     this.muteButton = null;
 
@@ -158,6 +170,8 @@ export class AudioManager {
 
     this.suspendedByVisibility = true;
     this.setSandFlow(0);
+    this.updateFruitFall(false, false);
+    this.endClearSweep({ immediate: true });
     this.context.suspend?.();
   }
 
@@ -278,15 +292,26 @@ export class AudioManager {
     const context = this.ensureContext();
     if (!context || context.state === 'suspended') return;
 
-    const now = context.currentTime;
-    this.scheduleTone({
+    // A dry, soft granular release instead of the old electronic chirp.
+    // It should feel like fingers letting go of a small packet of sand.
+    this.playNoiseBurst({
       destination: this.sfxGain,
-      start: now,
-      frequency: 230,
-      endFrequency: 315,
-      duration: 0.075,
-      peak: 0.035,
-      type: 'sine'
+      duration: 0.065,
+      peak: 0.018,
+      filterType: 'bandpass',
+      startFrequency: 1050,
+      endFrequency: 720,
+      q: 0.55
+    });
+
+    this.playNoiseBurst({
+      destination: this.sfxGain,
+      duration: 0.045,
+      peak: 0.011,
+      filterType: 'lowpass',
+      startFrequency: 520,
+      endFrequency: 360,
+      q: 0.45
     });
   }
 
@@ -296,15 +321,86 @@ export class AudioManager {
     const context = this.ensureContext();
     if (!context || context.state === 'suspended') return;
 
+    // Fast drop is a short granular swell, not a bright arcade whoosh.
+    // The continuing sense of speed comes from updateFruitFall().
     this.playNoiseBurst({
       destination: this.sfxGain,
-      duration: 0.18,
-      peak: 0.055,
+      duration: 0.14,
+      peak: 0.026,
       filterType: 'bandpass',
-      startFrequency: 520,
-      endFrequency: 1850,
-      q: 0.9
+      startFrequency: 680,
+      endFrequency: 980,
+      q: 0.52
     });
+  }
+
+  updateFruitFall(isFalling, fastDrop = false) {
+    const context = this.ensureContext();
+    if (!context) return;
+
+    this.ensureFruitFallLoop();
+
+    if (!this.fallGain || !this.fallFilter) return;
+
+    const active =
+      Boolean(isFalling) &&
+      !this.muted &&
+      this.userUnlocked &&
+      !this.suspendedByVisibility;
+
+    const targetGain = active
+      ? (fastDrop ? 0.021 : 0.0085)
+      : 0;
+    const targetFrequency = fastDrop ? 930 : 560;
+    const now = context.currentTime;
+
+    this.fallGain.gain.cancelScheduledValues(now);
+    this.fallGain.gain.setTargetAtTime(
+      targetGain,
+      now,
+      active ? 0.045 : 0.065
+    );
+
+    this.fallFilter.frequency.cancelScheduledValues(now);
+    this.fallFilter.frequency.setTargetAtTime(
+      targetFrequency,
+      now,
+      0.05
+    );
+  }
+
+  ensureFruitFallLoop() {
+    const context = this.ensureContext();
+    if (!context || this.fallSource) return;
+
+    const source = context.createBufferSource();
+    const filter = context.createBiquadFilter();
+    const gain = context.createGain();
+
+    source.buffer = this.getNoiseBuffer();
+    source.loop = true;
+
+    filter.type = 'bandpass';
+    filter.frequency.value = 560;
+    filter.Q.value = 0.38;
+    gain.gain.value = 0;
+
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+    source.start();
+
+    this.fallSource = source;
+    this.fallFilter = filter;
+    this.fallGain = gain;
+
+    source.onended = () => {
+      if (this.fallSource === source) {
+        this.fallSource = null;
+        this.fallFilter = null;
+        this.fallGain = null;
+      }
+    };
   }
 
   playImpact(intensity = 1) {
@@ -354,34 +450,152 @@ export class AudioManager {
     });
   }
 
-  playClearSweep({ cleared = 0, combo = 1 } = {}) {
+  beginClearSweep({ cleared = 0, combo = 1 } = {}) {
     if (this.muted) return;
 
     const context = this.ensureContext();
     if (!context || context.state === 'suspended') return;
 
-    const intensity = getClearSoundIntensity(cleared, combo);
+    this.endClearSweep({ immediate: true });
+
+    const source = context.createBufferSource();
+    const filter = context.createBiquadFilter();
+    const gain = context.createGain();
+    const panner = context.createStereoPanner?.() ?? null;
+
+    source.buffer = this.getNoiseBuffer();
+    source.loop = true;
+
+    filter.type = 'bandpass';
+    filter.frequency.value = 720;
+    filter.Q.value = 0.48;
+    gain.gain.value = 0;
+
+    source.connect(filter);
+
+    if (panner) {
+      filter.connect(panner);
+      panner.connect(gain);
+      panner.pan.value = -0.72;
+    } else {
+      filter.connect(gain);
+    }
+
+    gain.connect(this.sfxGain);
+    source.start();
+
+    this.clearSweepSource = source;
+    this.clearSweepFilter = filter;
+    this.clearSweepGain = gain;
+    this.clearSweepPanner = panner;
+    this.clearSweepIntensity = getClearSoundIntensity(cleared, combo);
+    this.clearSweepLastBucket = -1;
+
+    source.onended = () => {
+      if (this.clearSweepSource === source) {
+        this.clearSweepSource = null;
+        this.clearSweepFilter = null;
+        this.clearSweepGain = null;
+        this.clearSweepPanner = null;
+      }
+    };
+  }
+
+  updateClearSweep({ progress = 0, clearedVisual = 0, total = 1 } = {}) {
+    const context = this.ensureContext();
+
+    if (
+      !context ||
+      !this.clearSweepSource ||
+      !this.clearSweepGain ||
+      !this.clearSweepFilter
+    ) {
+      return;
+    }
+
+    const p = clamp(Number(progress) || 0, 0, 1);
+    const visualRatio = clamp(
+      (Number(clearedVisual) || 0) / Math.max(1, Number(total) || 1),
+      0,
+      1
+    );
+    const body = Math.sin(Math.PI * p) ** 0.6;
+    const active = p > 0.002 && p < 0.998;
+    const intensity = this.clearSweepIntensity || 0.7;
     const now = context.currentTime;
 
-    this.scheduleTone({
-      destination: this.sfxGain,
-      start: now,
-      frequency: 330 + combo * 18,
-      endFrequency: 470 + combo * 24,
-      duration: 0.11,
-      peak: 0.035 * intensity,
-      type: 'sine'
-    });
+    this.clearSweepGain.gain.cancelScheduledValues(now);
+    this.clearSweepGain.gain.setTargetAtTime(
+      active ? (0.012 + body * 0.052) * intensity : 0,
+      now,
+      0.018
+    );
 
-    this.playNoiseBurst({
-      destination: this.sfxGain,
-      duration: 1.22,
-      peak: 0.045 * intensity,
-      filterType: 'bandpass',
-      startFrequency: 520,
-      endFrequency: 2150,
-      q: 0.75
-    });
+    this.clearSweepFilter.frequency.cancelScheduledValues(now);
+    this.clearSweepFilter.frequency.setTargetAtTime(
+      680 + p * 980 + visualRatio * 240,
+      now,
+      0.022
+    );
+
+    if (this.clearSweepPanner) {
+      this.clearSweepPanner.pan.cancelScheduledValues(now);
+      this.clearSweepPanner.pan.setTargetAtTime(
+        -0.74 + p * 1.48,
+        now,
+        0.018
+      );
+    }
+
+    // Tiny grain accents are tied to the actual visual wave position. They
+    // create audible texture while columns disappear without turning into clicks.
+    const bucket = Math.floor(p * 18);
+
+    if (bucket > this.clearSweepLastBucket && p > 0.015 && p < 0.985) {
+      this.clearSweepLastBucket = bucket;
+
+      this.playNoiseBurst({
+        destination: this.sfxGain,
+        duration: 0.032,
+        peak: 0.0085 * intensity,
+        filterType: 'bandpass',
+        startFrequency: 1350 + p * 550,
+        endFrequency: 980 + p * 620,
+        q: 0.62
+      });
+    }
+  }
+
+  endClearSweep({ immediate = false } = {}) {
+    const context = this.context;
+    const source = this.clearSweepSource;
+    const gain = this.clearSweepGain;
+
+    if (!source) return;
+
+    this.clearSweepSource = null;
+    this.clearSweepFilter = null;
+    this.clearSweepGain = null;
+    this.clearSweepPanner = null;
+    this.clearSweepIntensity = 0;
+    this.clearSweepLastBucket = -1;
+
+    try {
+      if (context && gain && !immediate) {
+        const now = context.currentTime;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(
+          Math.max(0.0001, gain.gain.value),
+          now
+        );
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.07);
+        source.stop(now + 0.08);
+      } else {
+        source.stop();
+      }
+    } catch {
+      // Source already stopped.
+    }
   }
 
   playReward(rating, intensity = 1) {
@@ -646,5 +860,7 @@ export class AudioManager {
     this.activeOscillators.clear();
     this.rewardAudio?.stop();
     this.setSandFlow(0);
+    this.updateFruitFall(false, false);
+    this.endClearSweep({ immediate: true });
   }
 }
