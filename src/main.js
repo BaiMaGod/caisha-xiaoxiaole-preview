@@ -126,8 +126,8 @@ clearSystem.onClear = (payload) => {
 
   clearEffects.play(payload, {
     // Start the selected dense roulette rhythm on the exact visual clear frame.
-    // The source is stopped with the 1.5s clear animation, so reward audio
-    // never trails behind the visual effect.
+    // The clear animation is timed to the full roulette sample. The source
+    // ends naturally, then reward audio starts without truncating the tail.
     onStart: () => audio.beginClearSweep(payload),
     onComplete: () => {
       audio.endClearSweep();

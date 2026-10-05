@@ -11,7 +11,7 @@ export { getClearRating } from '../../ClearRating.js';
 
 export const CLEAR_FLASH_MS = 110;
 export const CLEAR_RESTORE_MS = 90;
-export const CLEAR_FADE_MS = 1500;
+export const CLEAR_FADE_MS = 1680;
 
 export function getClearEffectTiming(
   highlightEnabled = CONFIG.CLEAR_HIGHLIGHT_ENABLED

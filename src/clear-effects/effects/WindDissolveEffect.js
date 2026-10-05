@@ -13,7 +13,7 @@ import {
   getScoreAnchor
 } from './DefaultJumpEffect.js';
 
-export const WIND_EFFECT_TOTAL_MS = 1500;
+export const WIND_EFFECT_TOTAL_MS = 1680;
 export const WIND_FLYER_LIMIT = 240;
 export const WIND_DUST_LIMIT = 120;
 

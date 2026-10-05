@@ -530,7 +530,13 @@ export class AudioManager {
   }
 
   endClearSweep({ immediate = false } = {}) {
-    this.stopClearSweepSource({ immediate });
+    // Normal clear completion must never truncate the roulette clip. The clear
+    // animation is timed to the full sample, so let the source end naturally.
+    // Only explicit interruption (home/restart/visibility) stops it immediately.
+    if (immediate) {
+      this.stopClearSweepSource({ immediate: true });
+    }
+
     this.clearSweepIntensity = 0;
     this.clearSweepLastBucket = -1;
     this.clearSweepCombo = 1;
