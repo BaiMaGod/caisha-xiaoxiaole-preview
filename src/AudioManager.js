@@ -1,6 +1,7 @@
 import { RewardAudio } from './RewardAudio.js';
 
 const AUDIO_MUTED_STORAGE_KEY = 'caisha.audio.muted.v1';
+const CLEAR_SWEEP_AUDIO_PATH = 'audio/clear-roulette-fast.mp3';
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -68,6 +69,10 @@ export class AudioManager {
     this.clearSweepIntensity = 0;
     this.clearSweepLastBucket = -1;
     this.clearSweepCombo = 1;
+    this.clearSweepBuffer = null;
+    this.clearSweepLoadPromise = null;
+    this.clearSweepSource = null;
+    this.clearSweepGain = null;
 
     this.lastUiSoundAt = -Infinity;
     this.muteButton = null;
@@ -144,6 +149,7 @@ export class AudioManager {
     });
 
     this.rewardAudio.preloadVoices();
+    this.preloadClearSweep();
     return context;
   }
 
@@ -407,92 +413,124 @@ export class AudioManager {
     });
   }
 
+  loadClearSweep() {
+    const context = this.ensureContext();
+
+    if (!context) return Promise.resolve(null);
+    if (this.clearSweepBuffer) return Promise.resolve(this.clearSweepBuffer);
+    if (this.clearSweepLoadPromise) return this.clearSweepLoadPromise;
+
+    const promise = (async () => {
+      const baseUrl =
+        typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL
+          ? import.meta.env.BASE_URL
+          : '/';
+      const url = `${baseUrl}${CLEAR_SWEEP_AUDIO_PATH}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Failed to load clear sweep audio: ${url}`);
+      }
+
+      const bytes = await response.arrayBuffer();
+      const buffer = await context.decodeAudioData(bytes.slice(0));
+      this.clearSweepBuffer = buffer;
+
+      return buffer;
+    })()
+      .catch((error) => {
+        console.warn('Clear sweep audio preload failed', error);
+        return null;
+      })
+      .finally(() => {
+        this.clearSweepLoadPromise = null;
+      });
+
+    this.clearSweepLoadPromise = promise;
+    return promise;
+  }
+
+  preloadClearSweep() {
+    return this.loadClearSweep();
+  }
+
+  stopClearSweepSource({ immediate = false } = {}) {
+    const context = this.context;
+    const source = this.clearSweepSource;
+    const gain = this.clearSweepGain;
+
+    this.clearSweepSource = null;
+    this.clearSweepGain = null;
+
+    if (!source) return;
+
+    try {
+      if (!immediate && context && gain) {
+        const now = context.currentTime;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.02);
+        source.stop(now + 0.025);
+      } else {
+        source.stop();
+      }
+    } catch {
+      // Source may already have ended naturally.
+    }
+  }
+
   beginClearSweep({ cleared = 0, combo = 1 } = {}) {
     if (this.muted) return;
 
     const context = this.ensureContext();
     if (!context || context.state === 'suspended') return;
 
+    this.stopClearSweepSource({ immediate: true });
+
     this.clearSweepIntensity = getClearSoundIntensity(cleared, combo);
     this.clearSweepLastBucket = -1;
     this.clearSweepCombo = Math.max(1, Number(combo) || 1);
 
-    const now = context.currentTime;
-    const comboLift = Math.min(5, this.clearSweepCombo - 1) * 24;
+    const buffer = this.clearSweepBuffer;
 
-    // Opening chime announces that a rewarding clear has begun.
-    this.scheduleTone({
-      destination: this.sfxGain,
-      start: now,
-      frequency: 659.25 + comboLift,
-      endFrequency: 783.99 + comboLift,
-      duration: 0.1,
-      peak: 0.026 * this.clearSweepIntensity,
-      type: 'triangle'
-    });
-  }
-
-  updateClearSweep({ progress = 0, clearedVisual = 0, total = 1 } = {}) {
-    const context = this.ensureContext();
-
-    if (!context || this.muted || context.state === 'suspended') {
+    if (!buffer) {
+      // The asset is preloaded at startup. If the first clear beats the network,
+      // keep loading it for the next clear rather than starting the rhythm late.
+      this.preloadClearSweep();
       return;
     }
 
-    const p = clamp(Number(progress) || 0, 0, 1);
-    if (p <= 0.01 || p >= 0.995) return;
+    const source = context.createBufferSource();
+    const gain = context.createGain();
+    const intensity = clamp(this.clearSweepIntensity, 0.55, 1.08);
 
-    // One musical step for each section of the actual left-to-right visual wave.
-    // The notes rise as the clear travels right, so the player hears progress.
-    const bucketCount = 12;
-    const bucket = Math.floor(p * bucketCount);
+    source.buffer = buffer;
+    gain.gain.value = 0.34 * intensity;
 
-    if (bucket <= this.clearSweepLastBucket) return;
-    this.clearSweepLastBucket = bucket;
+    source.connect(gain);
+    gain.connect(this.sfxGain);
 
-    const scale = [
-      659.25, 783.99, 880, 987.77,
-      1046.5, 1174.66, 1318.51
-    ];
-    const intensity = this.clearSweepIntensity || 0.7;
-    const comboLift = Math.min(5, this.clearSweepCombo - 1) * 22;
-    const note = scale[bucket % scale.length] +
-      (bucket >= scale.length ? 130.81 : 0) +
-      comboLift;
-    const visualRatio = clamp(
-      (Number(clearedVisual) || 0) / Math.max(1, Number(total) || 1),
-      0,
-      1
-    );
-    const now = context.currentTime;
+    this.clearSweepSource = source;
+    this.clearSweepGain = gain;
 
-    this.scheduleTone({
-      destination: this.sfxGain,
-      start: now,
-      frequency: note,
-      endFrequency: note * (1.025 + visualRatio * 0.018),
-      duration: 0.085,
-      peak: (0.024 + visualRatio * 0.01) * intensity,
-      type: bucket % 3 === 1 ? 'triangle' : 'sine',
-      pan: -0.72 + p * 1.44
-    });
+    source.onended = () => {
+      if (this.clearSweepSource === source) {
+        this.clearSweepSource = null;
+        this.clearSweepGain = null;
+      }
+    };
 
-    // Every third step adds a quiet harmony so large clears feel more rewarding.
-    if (bucket > 0 && bucket % 3 === 0) {
-      this.scheduleTone({
-        destination: this.sfxGain,
-        start: now + 0.012,
-        frequency: note * 1.25,
-        endFrequency: note * 1.28,
-        duration: 0.09,
-        peak: 0.012 * intensity,
-        type: 'sine',
-        pan: -0.68 + p * 1.36
-      });
-    }
+    source.start(context.currentTime);
+  }
+
+  updateClearSweep() {
+    // The selected roulette clip already contains the dense rhythmic texture.
+    // Keep this hook as a no-op so visual effects can continue reporting progress
+    // without layering the old synthesized melody over the sample.
   }
 
   endClearSweep({ immediate = false } = {}) {
+    this.stopClearSweepSource({ immediate });
     this.clearSweepIntensity = 0;
     this.clearSweepLastBucket = -1;
     this.clearSweepCombo = 1;

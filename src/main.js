@@ -125,11 +125,10 @@ clearSystem.onClear = (payload) => {
   hud.showCombo(combo);
 
   clearEffects.play(payload, {
-    // Start the continuous granular clear layer on the exact visual frame.
+    // Start the selected dense roulette rhythm on the exact visual clear frame.
+    // The source is stopped with the 1.5s clear animation, so reward audio
+    // never trails behind the visual effect.
     onStart: () => audio.beginClearSweep(payload),
-    // Follow the real left-to-right wave every frame instead of playing a
-    // detached one-shot sound over the animation.
-    onProgress: (state) => audio.updateClearSweep(state),
     onComplete: () => {
       audio.endClearSweep();
       hud.setScore(score);
