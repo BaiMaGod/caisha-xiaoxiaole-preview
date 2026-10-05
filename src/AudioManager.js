@@ -1,7 +1,7 @@
 import { RewardAudio } from './RewardAudio.js';
 
 const AUDIO_MUTED_STORAGE_KEY = 'caisha.audio.muted.v1';
-const CLEAR_SWEEP_AUDIO_PATH = 'audio/clear-roulette-fast.mp3';
+const CLEAR_SWEEP_AUDIO_PATH = 'audio/clear-roulette-fast-v2.mp3';
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
