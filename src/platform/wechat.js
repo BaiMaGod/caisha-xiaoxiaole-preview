@@ -47,6 +47,7 @@ export function createWechatPlatform({ rewardedAdUnitId = '', debugPerformance =
 
   return {
     kind: 'wechat',
+    debugMode: Boolean(debugPerformance),
     debugPerformance,
     rewardedAdAvailable: Boolean(rewardedAdUnitId && wx.createRewardedVideoAd),
     canvas,
