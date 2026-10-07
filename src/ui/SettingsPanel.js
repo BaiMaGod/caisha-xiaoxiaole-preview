@@ -48,7 +48,7 @@ export class SettingsPanel {
       WebkitTapHighlightColor: 'transparent'
     });
 
-    const gearImage = createAssetImage('setting_gear.png', '');
+    const gearImage = createAssetImage('setting_gear_rainbow.png', '');
     Object.assign(gearImage.style, {
       width: '100%',
       height: '100%',
