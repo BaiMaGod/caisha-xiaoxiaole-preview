@@ -36,7 +36,7 @@ export class SettingsPanel {
     Object.assign(this.gearButton.style, {
       position: 'absolute',
       right: 'max(12px, env(safe-area-inset-right))',
-      bottom: 'max(12px, env(safe-area-inset-bottom))',
+      top: 'max(12px, env(safe-area-inset-top))',
       zIndex: '45',
       width: '52px',
       height: '54px',
@@ -246,9 +246,22 @@ export class SettingsPanel {
       right: '0',
       top: '50%',
       width: '100%',
-      height: 'auto',
+      height: '16px',
       transform: 'translateY(-50%)',
       objectFit: 'fill',
+      pointerEvents: 'none'
+    });
+
+    const fillMask = document.createElement('div');
+    Object.assign(fillMask.style, {
+      position: 'absolute',
+      left: '0',
+      top: '50%',
+      width: '0%',
+      height: '16px',
+      transform: 'translateY(-50%)',
+      overflow: 'hidden',
+      borderRadius: '999px',
       pointerEvents: 'none'
     });
 
@@ -256,15 +269,13 @@ export class SettingsPanel {
     Object.assign(fillImage.style, {
       position: 'absolute',
       left: '0',
-      right: '0',
-      top: '50%',
+      top: '0',
       width: '100%',
-      height: 'auto',
-      transform: 'translateY(-50%)',
+      height: '100%',
       objectFit: 'fill',
-      clipPath: 'inset(0 100% 0 0 round 999px)',
       pointerEvents: 'none'
     });
+    fillMask.appendChild(fillImage);
 
     const knobImage = createAssetImage(knob, '');
     Object.assign(knobImage.style, {
@@ -296,7 +307,7 @@ export class SettingsPanel {
       touchAction: 'none'
     });
 
-    track.append(trackImage, fillImage, knobImage, input);
+    track.append(trackImage, fillMask, knobImage, input);
 
     const badge = document.createElement('div');
     Object.assign(badge.style, {
@@ -338,7 +349,7 @@ export class SettingsPanel {
 
     this.rows.set(key, {
       input,
-      fillImage,
+      fillMask,
       knobImage,
       badge
     });
@@ -364,8 +375,7 @@ export class SettingsPanel {
     const knobPercent = clamp(percent, 2, 98);
 
     row.input.value = String(percent);
-    row.fillImage.style.clipPath =
-      `inset(0 ${100 - percent}% 0 0 round 999px)`;
+    row.fillMask.style.width = `${percent}%`;
     row.knobImage.style.left = `${knobPercent}%`;
     row.badge.textContent = `${percent}%`;
   }
