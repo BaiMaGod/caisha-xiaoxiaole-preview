@@ -64,6 +64,9 @@ function fruitKey(fruit) {
 export class CanvasGame {
   constructor(platform) {
     this.platform = platform;
+    this.debugEffectUiEnabled = Boolean(
+      platform.debugMode && CONFIG.DEBUG_SHOW_CLEAR_EFFECT_BUTTON
+    );
     this.screen = 'home';
     this.returnScreen = 'home';
     this.hidden = false;
@@ -261,8 +264,10 @@ export class CanvasGame {
 
     rounded(ctx, 18, topY, 88, 40, 20, 'rgba(255,255,255,0.9)', 'rgba(105,78,55,.10)');
     label(ctx, `🏆 最高  ${this.session.progress.state.stats.bestScore}`, 62, topY + 20, 11, '#664c37');
-    this.button('effects', '✨ 消除特效', 289, topY, 98, 40,
-      () => this.openEffects(), false);
+    if (this.debugEffectUiEnabled) {
+      this.button('effects', '✨ 消除特效', 289, topY, 98, 40,
+        () => this.openEffects(), false);
+    }
 
     const titleY = Math.max(96, topY + 36);
     if (this.titleImage?.width > 0) {
@@ -293,8 +298,10 @@ export class CanvasGame {
     rounded(ctx, 12, topY, 112, 58, 15, 'rgba(255,255,255,0.91)');
     label(ctx, 'SCORE', 25, topY + 16, 11, '#a48771', 'left');
     label(ctx, this.displayScore, 25, topY + 39, 22, '#5b3e2d', 'left');
-    this.button('effects', '特效', 331, topY + 5, 62, 38,
-      () => this.openEffects(), false);
+    if (this.debugEffectUiEnabled) {
+      this.button('effects', '特效', 331, topY + 5, 62, 38,
+        () => this.openEffects(), false);
+    }
     this.button('pause', '暂停', 257, topY + 5, 66, 38,
       () => this.pauseGame(), false);
     if (this.session.dropCount < 3) {
@@ -562,6 +569,7 @@ export class CanvasGame {
   }
 
   openEffects() {
+    if (!this.debugEffectUiEnabled) return;
     this.returnScreen = this.screen;
     this.screen = 'effects';
     this.effectScroll = 0;
