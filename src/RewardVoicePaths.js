@@ -1,4 +1,4 @@
-const VOICE_ASSET_VERSION = '20261007b';
+const VOICE_ASSET_VERSION = '20261007c';
 
 const VOICE_CLIPS = {
   GOOD: `audio/reward-good.mp3?v=${VOICE_ASSET_VERSION}`,
