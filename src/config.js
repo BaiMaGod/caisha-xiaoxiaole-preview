@@ -30,6 +30,10 @@ export const CONFIG = {
   FIRST_DROP_GUIDE_ENABLED: true,
 
   // debug
+  // The clear-effect entry stays hidden by default. Even when this switch is
+  // enabled, callers must also be running in a debug/development runtime.
+  DEBUG_SHOW_CLEAR_EFFECT_BUTTON: false,
+
   // Keep this enabled during effect development so every registered clear
   // effect is immediately available. Set to false before production release.
   DEBUG_UNLOCK_ALL_CLEAR_EFFECTS: false,
