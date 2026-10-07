@@ -53,13 +53,15 @@ function getProgressText(effect, snapshot) {
 }
 
 export class EffectCollectionPanel {
-  constructor(container, { progress, unlockManager } = {}) {
+  constructor(container, { progress, unlockManager, enabled = false } = {}) {
     this.container = container;
     this.progress = progress;
     this.unlockManager = unlockManager;
+    this.enabled = Boolean(enabled);
     this.opened = false;
 
     this.entryButton = createButton('✨ 特效');
+    this.entryButton.style.display = this.enabled ? 'inline-block' : 'none';
     this.entryButton.style.position = 'absolute';
     this.entryButton.style.top = '14px';
     this.entryButton.style.right = '14px';
@@ -135,6 +137,7 @@ export class EffectCollectionPanel {
   }
 
   open() {
+    if (!this.enabled) return;
     this.opened = true;
     this.overlay.style.display = 'block';
     this.render();
