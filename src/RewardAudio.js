@@ -16,6 +16,13 @@ const RATING_STYLES = {
     detune: 65,
     sparkle: 1580
   },
+  AMAZING: {
+    notes: [698.46, 830.61, 987.77, 1174.66, 1318.51],
+    gaps: [0, 0.062, 0.13, 0.2, 0.265],
+    voiceRate: 1.042,
+    detune: 78,
+    sparkle: 1700
+  },
   PERFECT: {
     notes: [698.46, 880, 1046.5, 1244.51, 1396.91],
     gaps: [0, 0.06, 0.125, 0.195, 0.275],
