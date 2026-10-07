@@ -18,6 +18,7 @@ import { EffectCollectionPanel } from './ui/EffectCollectionPanel.js';
 import { HomeScreen } from './ui/HomeScreen.js';
 import { HomeDemoController } from './ui/HomeDemoController.js';
 import { GameOverArtwork } from './ui/GameOverArtwork.js';
+import { SettingsPanel } from './ui/SettingsPanel.js';
 
 const gameShell = document.getElementById('game-shell');
 const gameRoot = document.getElementById('game-root');
@@ -53,7 +54,7 @@ const clearEffects = new ClearEffectManager(
   }
 );
 const audio = new AudioManager(gameShell);
-audio.mountMuteButton(gameShell);
+const settingsPanel = new SettingsPanel(gameShell, { audio });
 
 const settlementGate = new SettlementGate(3);
 const debugEffectUiEnabled = Boolean(
@@ -217,7 +218,8 @@ if (import.meta.env.DEV) {
     triggerGameOver,
     progress,
     clearSystem,
-    audio
+    audio,
+    settingsPanel
   };
 }
 
@@ -272,6 +274,7 @@ function prepareFirstDropGuide() {
 }
 
 function restartGame() {
+  settingsPanel.close({ silent: true });
   gameOverArtwork.hide();
   hud.setGameVisible(false);
   grid.clear();
@@ -305,6 +308,7 @@ function returnHome() {
   audio.stopTransient();
   clearEffects.clear();
   effectPanel.close();
+  settingsPanel.close({ silent: true });
   gameOverArtwork.hide();
   homeScreen.show();
   homeDemo.show();
@@ -326,7 +330,12 @@ function loop(time) {
   const demoActive = homeDemo.isRunning();
   const simulationActive = !homeScreen.isOpen() || demoActive;
 
-  if (!gameOver && !effectPanel.isOpen() && simulationActive) {
+  if (
+    !gameOver &&
+    !effectPanel.isOpen() &&
+    !settingsPanel.isOpen() &&
+    simulationActive
+  ) {
     if (clearEffects.isBusy()) {
       // Hold the board still while the currently equipped clear effect plays.
       audio.updateSandFlow(0);

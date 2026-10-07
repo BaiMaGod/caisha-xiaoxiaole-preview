@@ -1,7 +1,18 @@
 import { RewardAudio } from './RewardAudio.js';
 
 const AUDIO_MUTED_STORAGE_KEY = 'caisha.audio.muted.v1';
+const AUDIO_MUSIC_VOLUME_STORAGE_KEY = 'caisha.audio.musicVolume.v1';
+const AUDIO_SFX_VOLUME_STORAGE_KEY = 'caisha.audio.sfxVolume.v1';
 const CLEAR_SWEEP_AUDIO_PATH = 'audio/clear-roulette-fast-v2.mp3';
+
+export const DEFAULT_MUSIC_VOLUME = 0.7;
+export const DEFAULT_SFX_VOLUME = 0.8;
+
+const BASE_MASTER_GAIN = 0.9;
+const BASE_SFX_GAIN = 0.9;
+const BASE_UI_GAIN = 0.62;
+const BASE_AMBIENCE_GAIN = 0.72;
+const BASE_REWARD_GAIN = 0.82;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -42,10 +53,58 @@ function safeWriteMuted(storage, muted) {
   }
 }
 
+function safeReadVolume(storage, key) {
+  try {
+    const raw = storage?.getItem?.(key);
+
+    if (raw === null || raw === undefined || raw === '') {
+      return null;
+    }
+
+    const value = Number(raw);
+    return Number.isFinite(value) ? clamp(value, 0, 1) : null;
+  } catch {
+    return null;
+  }
+}
+
+function safeWriteVolume(storage, key, value) {
+  try {
+    storage?.setItem?.(key, String(clamp(Number(value) || 0, 0, 1)));
+  } catch {
+    // Storage can be unavailable in private browsing or embedded webviews.
+  }
+}
+
+function scaledGain(baseGain, volume, defaultVolume) {
+  if (volume <= 0) return 0;
+  return baseGain * (volume / defaultVolume);
+}
+
 export class AudioManager {
   constructor(element, { storage = globalThis.localStorage } = {}) {
     this.element = element;
     this.storage = storage;
+
+    const legacyMuted = safeReadMuted(storage);
+    const storedMusicVolume = safeReadVolume(
+      storage,
+      AUDIO_MUSIC_VOLUME_STORAGE_KEY
+    );
+    const storedSfxVolume = safeReadVolume(
+      storage,
+      AUDIO_SFX_VOLUME_STORAGE_KEY
+    );
+
+    this.musicVolume =
+      storedMusicVolume ?? (legacyMuted ? 0 : DEFAULT_MUSIC_VOLUME);
+    this.sfxVolume =
+      storedSfxVolume ?? (legacyMuted ? 0 : DEFAULT_SFX_VOLUME);
+    this.lastNonZeroMusicVolume =
+      this.musicVolume > 0 ? this.musicVolume : DEFAULT_MUSIC_VOLUME;
+    this.lastNonZeroSfxVolume =
+      this.sfxVolume > 0 ? this.sfxVolume : DEFAULT_SFX_VOLUME;
+
     this.context = null;
     this.masterGain = null;
     this.sfxGain = null;
@@ -55,7 +114,7 @@ export class AudioManager {
     this.compressor = null;
     this.rewardAudio = null;
 
-    this.muted = safeReadMuted(storage);
+    this.muted = this.musicVolume <= 0 && this.sfxVolume <= 0;
     this.userUnlocked = false;
     this.suspendedByVisibility = false;
 
@@ -116,11 +175,27 @@ export class AudioManager {
     this.ambienceGain = context.createGain();
     this.rewardGain = context.createGain();
 
-    this.masterGain.gain.value = this.muted ? 0 : 0.9;
-    this.sfxGain.gain.value = 0.9;
-    this.uiGain.gain.value = 0.62;
-    this.ambienceGain.gain.value = 0.72;
-    this.rewardGain.gain.value = 0.82;
+    this.masterGain.gain.value = BASE_MASTER_GAIN;
+    this.sfxGain.gain.value = scaledGain(
+      BASE_SFX_GAIN,
+      this.sfxVolume,
+      DEFAULT_SFX_VOLUME
+    );
+    this.uiGain.gain.value = scaledGain(
+      BASE_UI_GAIN,
+      this.sfxVolume,
+      DEFAULT_SFX_VOLUME
+    );
+    this.ambienceGain.gain.value = scaledGain(
+      BASE_AMBIENCE_GAIN,
+      this.musicVolume,
+      DEFAULT_MUSIC_VOLUME
+    );
+    this.rewardGain.gain.value = scaledGain(
+      BASE_REWARD_GAIN,
+      this.sfxVolume,
+      DEFAULT_SFX_VOLUME
+    );
 
     this.compressor = context.createDynamicsCompressor?.() ?? null;
 
@@ -185,27 +260,140 @@ export class AudioManager {
     return this.muted;
   }
 
-  setMuted(muted) {
-    this.muted = Boolean(muted);
+  getMusicVolume() {
+    return this.musicVolume;
+  }
+
+  getSfxVolume() {
+    return this.sfxVolume;
+  }
+
+  syncMutedState() {
+    this.muted = this.musicVolume <= 0 && this.sfxVolume <= 0;
     safeWriteMuted(this.storage, this.muted);
-
-    const context = this.ensureContext();
-
-    if (context && this.masterGain) {
-      const now = context.currentTime;
-      const target = this.muted ? 0 : 0.9;
-
-      this.masterGain.gain.cancelScheduledValues(now);
-      this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
-      this.masterGain.gain.linearRampToValueAtTime(target, now + 0.045);
-    }
-
     this.refreshMuteButton();
     return this.muted;
   }
 
+  applyVolumeGains({ immediate = false } = {}) {
+    const context = this.ensureContext();
+    if (!context) return;
+
+    const now = context.currentTime;
+    const duration = immediate ? 0 : 0.045;
+    const targets = [
+      [
+        this.sfxGain,
+        scaledGain(BASE_SFX_GAIN, this.sfxVolume, DEFAULT_SFX_VOLUME)
+      ],
+      [
+        this.uiGain,
+        scaledGain(BASE_UI_GAIN, this.sfxVolume, DEFAULT_SFX_VOLUME)
+      ],
+      [
+        this.ambienceGain,
+        scaledGain(
+          BASE_AMBIENCE_GAIN,
+          this.musicVolume,
+          DEFAULT_MUSIC_VOLUME
+        )
+      ],
+      [
+        this.rewardGain,
+        scaledGain(BASE_REWARD_GAIN, this.sfxVolume, DEFAULT_SFX_VOLUME)
+      ]
+    ];
+
+    for (const [node, target] of targets) {
+      if (!node?.gain) continue;
+
+      node.gain.cancelScheduledValues(now);
+
+      if (duration <= 0) {
+        node.gain.setValueAtTime(target, now);
+        continue;
+      }
+
+      node.gain.setValueAtTime(node.gain.value, now);
+      node.gain.linearRampToValueAtTime(target, now + duration);
+    }
+  }
+
+  setMusicVolume(value) {
+    this.musicVolume = clamp(Number(value) || 0, 0, 1);
+
+    if (this.musicVolume > 0) {
+      this.lastNonZeroMusicVolume = this.musicVolume;
+    }
+
+    safeWriteVolume(
+      this.storage,
+      AUDIO_MUSIC_VOLUME_STORAGE_KEY,
+      this.musicVolume
+    );
+    this.syncMutedState();
+    this.applyVolumeGains();
+
+    return this.musicVolume;
+  }
+
+  setSfxVolume(value) {
+    this.sfxVolume = clamp(Number(value) || 0, 0, 1);
+
+    if (this.sfxVolume > 0) {
+      this.lastNonZeroSfxVolume = this.sfxVolume;
+    }
+
+    safeWriteVolume(
+      this.storage,
+      AUDIO_SFX_VOLUME_STORAGE_KEY,
+      this.sfxVolume
+    );
+    this.syncMutedState();
+    this.applyVolumeGains();
+
+    return this.sfxVolume;
+  }
+
+  setMuted(muted) {
+    const shouldMute = Boolean(muted);
+
+    if (shouldMute) {
+      if (this.musicVolume > 0) {
+        this.lastNonZeroMusicVolume = this.musicVolume;
+      }
+
+      if (this.sfxVolume > 0) {
+        this.lastNonZeroSfxVolume = this.sfxVolume;
+      }
+
+      this.musicVolume = 0;
+      this.sfxVolume = 0;
+    } else if (this.musicVolume <= 0 && this.sfxVolume <= 0) {
+      this.musicVolume =
+        this.lastNonZeroMusicVolume || DEFAULT_MUSIC_VOLUME;
+      this.sfxVolume =
+        this.lastNonZeroSfxVolume || DEFAULT_SFX_VOLUME;
+    }
+
+    safeWriteVolume(
+      this.storage,
+      AUDIO_MUSIC_VOLUME_STORAGE_KEY,
+      this.musicVolume
+    );
+    safeWriteVolume(
+      this.storage,
+      AUDIO_SFX_VOLUME_STORAGE_KEY,
+      this.sfxVolume
+    );
+    this.syncMutedState();
+    this.applyVolumeGains();
+
+    return this.muted;
+  }
+
   toggleMuted() {
-    return this.setMuted(!this.muted);
+    return this.setMuted(!this.isMuted());
   }
 
   mountMuteButton(container) {
@@ -256,8 +444,8 @@ export class AudioManager {
   refreshMuteButton() {
     if (!this.muteButton) return;
 
-    this.muteButton.textContent = this.muted ? '🔇' : '🔊';
-    this.muteButton.title = this.muted ? '开启声音' : '关闭声音';
+    this.muteButton.textContent = this.isMuted() ? '🔇' : '🔊';
+    this.muteButton.title = this.isMuted() ? '开启声音' : '关闭声音';
   }
 
   playUiClick({ force = false } = {}) {
