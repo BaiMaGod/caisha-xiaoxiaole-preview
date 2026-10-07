@@ -56,9 +56,13 @@ const audio = new AudioManager(gameShell);
 audio.mountMuteButton(gameShell);
 
 const settlementGate = new SettlementGate(3);
+const debugEffectUiEnabled = Boolean(
+  import.meta.env.DEV && CONFIG.DEBUG_SHOW_CLEAR_EFFECT_BUTTON
+);
 const effectPanel = new EffectCollectionPanel(gameShell, {
   progress,
-  unlockManager
+  unlockManager,
+  enabled: debugEffectUiEnabled
 });
 
 const homeDemo = new HomeDemoController({
@@ -72,6 +76,7 @@ const homeDemo = new HomeDemoController({
 
 const homeScreen = new HomeScreen(gameShell, {
   progress,
+  showEffectsButton: debugEffectUiEnabled,
   onStart: () => {
     homeDemo.hide();
     restartGame();
