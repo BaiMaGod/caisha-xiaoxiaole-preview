@@ -374,13 +374,17 @@ function ensureStyles() {
 }
 
 export class HomeScreen {
-  constructor(container, { progress, onStart, onEffects } = {}) {
+  constructor(
+    container,
+    { progress, onStart, onEffects, showEffectsButton = false } = {}
+  ) {
     ensureStyles();
 
     this.container = container;
     this.progress = progress;
     this.onStart = onStart;
     this.onEffects = onEffects;
+    this.showEffectsButton = Boolean(showEffectsButton);
     this.opened = true;
 
     this.root = el('section', 'caisha-home');
@@ -391,6 +395,9 @@ export class HomeScreen {
 
     this.effectsButton = el('button', 'caisha-home__effects');
     this.effectsButton.type = 'button';
+    this.effectsButton.style.display = this.showEffectsButton
+      ? 'inline-flex'
+      : 'none';
     this.effectsBadge = el('span', 'caisha-home__effects-badge');
     this.effectsButton.append(
       el('span', '', '✨'),
@@ -430,7 +437,7 @@ export class HomeScreen {
     });
 
     this.effectsButton.addEventListener('click', () => {
-      this.onEffects?.();
+      if (this.showEffectsButton) this.onEffects?.();
     });
 
     this.unsubscribe = this.progress?.subscribe((snapshot) => {
@@ -453,7 +460,7 @@ export class HomeScreen {
       el('strong', '', Number(bestScore).toLocaleString())
     );
 
-    if (newCount > 0) {
+    if (this.showEffectsButton && newCount > 0) {
       this.effectsBadge.style.display = 'inline-flex';
       this.effectsBadge.textContent = String(newCount);
     } else {
