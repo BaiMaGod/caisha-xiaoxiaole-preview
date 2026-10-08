@@ -10,12 +10,12 @@ export const PROTOTYPE_LEVEL_COUNT = 12;
 const cached = new Map();
 // Each playable stage has its own physical sand recipe, not just a recolored
 // copy of the opening guide. Later stages add new colors and distinct mounds.
-const names = [
+export const LEVEL_NAMES = Object.freeze([
   '彩虹初遇', '两岸小桥', '交错双坡',
   '三色接力', '双岛挑战', '偏心沙谷',
   '爱心花坡', '星星叠山', '高低沙丘',
   '四色初探', '彩虹回廊', '终极彩沙'
-];
+]);
 const plans = [
   // level 2: introduce a second color on two shallow banks
   { base: 1, bShape: 'banana', pairs: 1 },
@@ -27,8 +27,8 @@ const plans = [
   { base: 3, bShape: 'banana', pairs: 1, cCenters: [40] },
   // levels 7–9: change both the color obstacles and initial mound silhouette
   { base: 2, bShape: 'heart', pairs: 1, cCenters: [60] },
-  { base: 1, bShape: 'star', pairs: 2, cCenters: [40, 140] },
-  { base: 3, bShape: 'apple', pairs: 3, cCenters: [40] },
+  { base: 1, bShape: 'banana', pairs: 1, cCenters: [40, 140] },
+  { base: 1, bShape: 'banana', pairs: 1, cCenters: [40] },
   // levels 10–12: an additional color changes the intended clear order
   { base: 3, bShape: 'banana', pairs: 1, cCenters: [60], dCenters: [90] },
   { base: 2, bShape: 'clover', pairs: 2, cCenters: [40, 140], dCenters: [90] },
@@ -112,7 +112,7 @@ function buildBase(id) {
     centerX: guide.centerX
   }];
   return {
-    id, name: names[id - 1], guide,
+    id, name: LEVEL_NAMES[id - 1], guide,
     cells: grid.cells.slice(),
     initialSand: countSand(grid),
     solution, palette: [guide.color], referenceDrops: 1,
@@ -201,7 +201,7 @@ function buildLayered(id) {
       ' (remaining ' + remaining + ')');
 
   return {
-    id, name: names[id - 1], guide: base.guide, cells, initialSand,
+    id, name: LEVEL_NAMES[id - 1], guide: base.guide, cells, initialSand,
     solution, palette: [base.guide.color, ...colorSteps.map(step => step.color)],
     referenceDrops: solution.length, runtimeSeed
   };
