@@ -69,7 +69,11 @@ const clearEffects = new ClearEffectManager(
   }
 );
 const audio = new AudioManager(gameShell);
-const settingsPanel = new SettingsPanel(gameShell, { audio });
+const settingsPanel = new SettingsPanel(gameShell, {
+  audio,
+  onHome: () => returnHome(),
+  canGoHome: () => !homeScreen.isOpen()
+});
 
 const settlementGate = new SettlementGate(3);
 const debugEffectUiEnabled = Boolean(
