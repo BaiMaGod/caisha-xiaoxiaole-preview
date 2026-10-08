@@ -1,3 +1,5 @@
+import { ensureRainbowScoreStyles } from './RainbowScore.js';
+
 const HOME_STYLE_ID = 'dream-sand-home-screen-styles';
 
 function homeAsset(filename) {
@@ -94,7 +96,7 @@ function ensureStyles() {
     }
 
     .caisha-home__best strong {
-      color: #ea7355;
+      color: #7d55ab;
       font-size: 14px;
       letter-spacing: 0;
     }
@@ -379,6 +381,7 @@ export class HomeScreen {
     { progress, onStart, onEffects, showEffectsButton = false } = {}
   ) {
     ensureStyles();
+    ensureRainbowScoreStyles();
 
     this.container = container;
     this.progress = progress;
@@ -457,7 +460,7 @@ export class HomeScreen {
 
     this.best.replaceChildren(
       el('span', '', '🏆 最高'),
-      el('strong', '', Number(bestScore).toLocaleString())
+      el('strong', 'caisha-rainbow-score', Number(bestScore).toLocaleString())
     );
 
     if (this.showEffectsButton && newCount > 0) {

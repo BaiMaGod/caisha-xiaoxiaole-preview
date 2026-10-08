@@ -1,3 +1,4 @@
+import { ensureRainbowScoreStyles } from './RainbowScore.js';
 import { renderArtworkPoster } from './PosterRenderer.js';
 
 const GAME_OVER_STYLE_ID = 'caisha-game-over-artwork-styles';
@@ -378,6 +379,7 @@ function ensureStyles() {
 export class GameOverArtwork {
   constructor(container, { onRestart, onHome } = {}) {
     ensureStyles();
+    ensureRainbowScoreStyles();
 
     this.container = container;
     this.onRestart = onRestart;
@@ -489,8 +491,10 @@ export class GameOverArtwork {
 
     this.score = Number(score) || 0;
     this.rating = String(rating || 'GOOD').toUpperCase();
-    this.scoreLine.textContent =
-      `${this.score.toLocaleString()} 分 · ${this.rating}`;
+    this.scoreLine.replaceChildren(
+      el('span', 'caisha-rainbow-score', this.score.toLocaleString()),
+      document.createTextNode(` 分 · ${this.rating}`)
+    );
 
     if (artworkCanvas) {
       this.setArtwork(artworkCanvas);

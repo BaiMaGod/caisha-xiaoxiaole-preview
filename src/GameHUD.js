@@ -1,7 +1,9 @@
 import { CONFIG } from './config.js';
+import { ensureRainbowScoreStyles } from './ui/RainbowScore.js';
 
 export class GameHUD {
   constructor(container = document.body) {
+    ensureRainbowScoreStyles();
     this.score = 0;
     this.combo = 0;
     this.restartHandler = null;
@@ -191,7 +193,13 @@ export class GameHUD {
   showGameOver(score) {
     clearTimeout(this.comboTimer);
     this.combo = 0;
-    this.finalScore.textContent = `最终得分：${score}`;
+    this.finalScore.replaceChildren(
+      document.createTextNode('最终得分：'),
+      Object.assign(document.createElement('span'), {
+        className: 'caisha-rainbow-score',
+        textContent: String(score)
+      })
+    );
     this.overlay.style.display = 'flex';
     this.render();
   }
@@ -217,7 +225,7 @@ export class GameHUD {
 
     this.root.innerHTML =
       `<div style="font-size:10px;opacity:.58;font-weight:700">SCORE</div>` +
-      `<div style="font-size:18px;line-height:1.1;margin-top:1px">${this.score}</div>` +
+      `<div style="font-size:18px;line-height:1.1;margin-top:1px"><span class="caisha-rainbow-score">${this.score}</span></div>` +
       comboText;
   }
 }

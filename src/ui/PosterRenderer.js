@@ -1,3 +1,5 @@
+import { RAINBOW_SCORE_COLORS } from './RainbowScore.js';
+
 // The browser and Mini Game export the same artwork composition.
 export function renderArtworkPoster({ createCanvas, artworkCanvas, score = 0, rating = 'GOOD' }) {
     const canvas = createCanvas();
@@ -121,13 +123,23 @@ export function renderArtworkPoster({ createCanvas, artworkCanvas, score = 0, ra
     ctx.font = '700 23px system-ui, sans-serif';
     ctx.fillText('分享给好友看看你的作品', 540, 1284);
 
-    ctx.fillStyle = '#d96e4d';
+    // Match the on-screen rainbow score in saved/shared artwork.
     ctx.font = '900 28px system-ui, sans-serif';
-    ctx.fillText(
-      `${score.toLocaleString()} 分 · ${rating}`,
-      540,
-      1339
-    );
+    const scoreText = Number(score).toLocaleString();
+    const suffix = ` 分 · ${rating}`;
+    const scoreWidth = ctx.measureText(scoreText).width;
+    const suffixWidth = ctx.measureText(suffix).width;
+    const startX = 540 - (scoreWidth + suffixWidth) / 2;
+    const rainbow = ctx.createLinearGradient(startX, 0, startX + Math.max(1, scoreWidth), 0);
+    RAINBOW_SCORE_COLORS.forEach((color, index) => {
+      rainbow.addColorStop(index / (RAINBOW_SCORE_COLORS.length - 1), color);
+    });
+    ctx.textAlign = 'left';
+    ctx.fillStyle = rainbow;
+    ctx.fillText(scoreText, startX, 1339);
+    ctx.fillStyle = '#78543a';
+    ctx.fillText(suffix, startX + scoreWidth, 1339);
+    ctx.textAlign = 'center';
 
     ctx.fillStyle = 'rgba(93,70,50,.42)';
     ctx.font = '700 18px system-ui, sans-serif';
