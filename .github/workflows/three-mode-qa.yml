@@ -134,8 +134,20 @@ jobs:
           await page.mouse.move(r.x+r.width*.55,r.y+r.height*.74,{steps:8});
           await page.waitForTimeout(200);
           await page.mouse.up();
+          const toolbar=await page.locator('section[aria-label="沙画创作工具栏"] > div').last().boundingBox();
+          assert(toolbar && r.y + r.height <= toolbar.y + 2,
+            'art palette must not cover playable sand board');
           await page.screenshot({path:'qa-shots/01-sand-art.png',fullPage:true});
-          await page.locator('section[aria-label="沙画创作工具栏"] button').first().click();
+          await page.evaluate(() => {
+            const {grid,art} = window.__legacyGame;
+            for(let y=48;y<320;y++){
+              grid.set(31,y,1);
+              art.fixed[grid.index(31,y)] = 1;
+            }
+          });
+          await page.locator('.caisha-result__headline').filter({hasText:'你的沙画完成啦！'}).waitFor({timeout:10000});
+          await page.screenshot({path:'qa-shots/05-art-finished.png',fullPage:true});
+          await page.locator('.caisha-result__home').click();
           await page.locator('.caisha-home__play').click();
           await page.locator('.caisha-mode-menu__item').filter({hasText:'关卡模式'}).click();
           const levels=page.locator('.caisha-mode-menu__levels button');
@@ -144,6 +156,12 @@ jobs:
           await levels.first().click();
           await page.waitForTimeout(500);
           await page.screenshot({path:'qa-shots/02-level-1.png',fullPage:true});
+          await page.evaluate(() => window.__legacyGame.triggerGameOver());
+          await page.getByText('第 1 关挑战失败').waitFor();
+          assert.equal(await page.locator('.caisha-result__headline:visible').count(),0,
+            'level failure must not display endless framed artwork');
+          await page.screenshot({path:'qa-shots/06-level-fail.png',fullPage:true});
+          await page.getByText('重试本关').click();
           const solution = await page.evaluate(() => window.__legacyGame.getLevelGuideCenter());
           assert(Number.isFinite(solution),'development guide center available');
           const dropRect = await canvas.boundingBox();
