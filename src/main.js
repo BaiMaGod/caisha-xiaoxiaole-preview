@@ -20,7 +20,7 @@ import { HomeDemoController } from './ui/HomeDemoController.js';
 import { GameOverArtwork } from './ui/GameOverArtwork.js';
 import { SettingsPanel } from './ui/SettingsPanel.js';
 import { GAME_MODES, ModeProgress, countSand } from './modes/ModeLogic.js';
-import { getPrototypeLevel } from './modes/Levels.js';
+import { getPrototypeLevel, createLevelRandom } from './modes/Levels.js';
 import { SandArtTools } from './modes/SandArtTools.js';
 import { ArtToolbar } from './ui/ArtToolbar.js';
 import { ModePanels } from './ui/ModePanels.js';
@@ -125,7 +125,7 @@ const modeHomeButton = document.createElement('button');
 modeHomeButton.type = 'button';
 modeHomeButton.textContent = '‹ 返回首页';
 modeHomeButton.style.cssText =
-  'display:none;position:absolute;top:max(14px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:15;'+
+  'display:none;position:absolute;top:max(68px,calc(env(safe-area-inset-top) + 58px));right:12px;z-index:15;'+
   'border:1px solid #ebdbc9;background:#fff9ed;color:#73513c;border-radius:14px;'+
   'padding:9px 11px;font:800 12px system-ui;';
 modeHomeButton.addEventListener('click', () => returnHome());
@@ -416,16 +416,14 @@ function restartGame(mode = currentMode, level = currentLevel) {
     levelData = getPrototypeLevel(level);
     grid.cells.set(levelData.cells);
     grid.revision++;
-    let first = true;
-    const guide = levelData.guide;
+    let nextStep = 0;
+    const queue = levelData.solution;
+    const fallback = levelData.palette[levelData.palette.length - 1];
     fruitManager.setSpawnProvider(() => {
-      if (first) {
-        first = false;
-        return { templateId: guide.templateId, color: guide.color,
-          centerX: guide.centerX };
-      }
-      return { color: guide.color };
+      const step = queue[nextStep++];
+      return step ? { ...step } : { templateId: 'banana', color: fallback };
     });
+    simulation.setRandom(createLevelRandom(levelData.runtimeSeed));
   } else {
     fruitManager.setSpawnProvider(null);
     art.reset();
@@ -501,7 +499,7 @@ function triggerLevelComplete() {
     levelData?.referenceDrops || 1);
   modePanels.showWin({
     level: currentLevel, stars, drops: hud.dropHintCount,
-    next: currentLevel < 3 ? () => restartGame(GAME_MODES.LEVEL, currentLevel+1) : null,
+    next: currentLevel < 12 ? () => restartGame(GAME_MODES.LEVEL, currentLevel+1) : null,
     retry: () => restartGame(GAME_MODES.LEVEL, currentLevel),
     home: () => returnHome()
   });

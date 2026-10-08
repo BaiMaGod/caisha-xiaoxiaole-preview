@@ -80,7 +80,7 @@ export class ModeProgress {
     this.key = 'qicai-modes-progress-v1';
     try {
       const parsed = JSON.parse(this.storage?.getItem(this.key) || '{}');
-      this.unlockedLevel = Math.min(3, Math.max(1, Number(parsed.unlockedLevel) || 1));
+      this.unlockedLevel = Math.min(12, Math.max(1, Number(parsed.unlockedLevel) || 1));
       this.levelRecords = parsed.levelRecords && typeof parsed.levelRecords === 'object'
         ? parsed.levelRecords : {};
       this.artworks = Array.isArray(parsed.artworks) ? parsed.artworks.slice(0, 10) : [];
@@ -106,14 +106,14 @@ export class ModeProgress {
   }
 
   winLevel(level, drops, referenceDrops = 1) {
-    if (!Number.isInteger(level) || level < 1 || level > 3) return;
+    if (!Number.isInteger(level) || level < 1 || level > 12) return;
     const stars = drops <= referenceDrops ? 3 : drops <= referenceDrops + 2 ? 2 : 1;
     const old = this.levelRecords[level] || {};
     this.levelRecords[level] = {
       stars: Math.max(stars, old.stars || 0),
       bestDrops: Math.min(drops, old.bestDrops ?? Infinity)
     };
-    this.unlockedLevel = Math.max(this.unlockedLevel, Math.min(3, level + 1));
+    this.unlockedLevel = Math.max(this.unlockedLevel, Math.min(12, level + 1));
     this.persist();
     return stars;
   }

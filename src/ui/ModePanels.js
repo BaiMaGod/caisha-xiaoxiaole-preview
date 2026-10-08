@@ -12,9 +12,9 @@ function button(text, action) {
 export class ModePanels {
   constructor(parent) {
     this.root = document.createElement('div');
-    this.root.style.cssText = style + 'display:none;';
+    this.root.style.cssText = style + 'display:none;align-items:center;justify-content:center;';
     this.card = document.createElement('div');
-    this.card.style.cssText = 'width:min(100%,380px);margin:8vh auto 0;padding:22px 16px;text-align:center;background:#fff9ec;border-radius:24px;box-shadow:0 16px 44px #35232380;';
+    this.card.style.cssText = 'width:min(100%,380px);margin:auto;padding:22px 16px;text-align:center;background:#fff9ec;border-radius:24px;box-shadow:0 16px 44px #35232380;';
     this.root.appendChild(this.card);
     parent.appendChild(this.root);
   }
@@ -30,7 +30,7 @@ export class ModePanels {
     if (next) this.card.appendChild(button('下一关', () => { this.hide(); next(); }));
     this.card.appendChild(button('再玩一次', () => { this.hide(); retry(); }));
     this.card.appendChild(button('返回首页', () => { this.hide(); home(); }));
-    this.root.style.display='block';
+    this.root.style.display='flex';
   }
   showGallery(artworks, { onClose, onView }) {
     this.card.replaceChildren();
@@ -64,6 +64,6 @@ export class ModePanels {
       }catch{}
     }
     this.card.appendChild(button('关闭',()=>{this.hide();onClose?.();}));
-    this.root.style.display='block';
+    this.root.style.display='flex';
   }
 }

@@ -55,18 +55,33 @@ jobs:
           assert.equal(resumed.grid.get(19,300),4,'draft must restore color');
           assert.equal(resumed.art.fixed[resumed.grid.index(19,300)],1,
             'draft must restore fixed grain');
-          for(let id=1;id<=3;id++){
+          for(let id=1;id<=12;id++){
             const level = getPrototypeLevel(id);
             const s = new GameSession();
             s.start(GAME_MODES.LEVEL,id);
-            s.setPointerX(level.guide.centerX);
-            assert.equal(s.releaseFruit(),true);
-            for(let frame=0;frame<1200 && s.mode==='playing';frame++)
-              s.update(50,frame*50);
+            let frame=0;
+            for(const action of level.solution){
+              for(let k=0;k<1000 && s.mode==='playing';k++){
+                if(s.fruitManager.current?.state==='CONTROL' &&
+                   !s.settlementGate.isBlocking())break;
+                s.update(50,++frame*50);
+              }
+              if(s.mode!=='playing')break;
+              assert.equal(s.fruitManager.current.color,action.color,'level color');
+              assert.equal(s.fruitManager.current.template.id,action.templateId,'level shape');
+              s.setPointerX(action.centerX);
+              assert.equal(s.releaseFruit(),true);
+              for(let k=0;k<1000 && s.mode==='playing';k++){
+                s.update(50,++frame*50);
+                if(s.fruitManager.current?.state==='CONTROL' &&
+                   !s.settlementGate.isBlocking())break;
+              }
+            }
+            for(let k=0;k<1000 && s.mode==='playing';k++)s.update(50,++frame*50);
             assert.equal(s.mode,'over','level '+id+' must complete');
             assert.equal(countSand(s.grid),0,'level '+id+' must be fully empty');
           }
-          console.log('Shared modes and all three verified level solutions passed');
+          console.log('Shared modes and all 12 verified level solutions passed');
           NODE
       - name: Build preview
         run: npm run build
@@ -104,7 +119,8 @@ jobs:
           await page.locator('.caisha-home__play').click();
           await page.locator('.caisha-mode-menu__item').filter({hasText:'关卡模式'}).click();
           const levels=page.locator('.caisha-mode-menu__levels button');
-          assert.equal(await levels.count(),3,'three prototype levels offered');
+          assert.equal(await levels.count(),12,'12 playable levels offered');
+          await page.screenshot({path:'qa-shots/04-level-select.png',fullPage:true});
           await levels.first().click();
           await page.waitForTimeout(500);
           await page.screenshot({path:'qa-shots/02-level-1.png',fullPage:true});

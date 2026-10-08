@@ -506,10 +506,10 @@ export class HomeScreen {
     };
 
     this.openLevelMenu = () => {
-      this.modeTitle.textContent = '选择关卡 · 首批 3 关';
+      this.modeTitle.textContent = '选择关卡 · 共 12 关';
       this.modeItems.replaceChildren();
       const levels = el('div', 'caisha-mode-menu__levels');
-      for (let n = 1; n <= 3; n++) {
+      for (let n = 1; n <= 12; n++) {
         const button = el('button', '', n > this.getUnlockedLevel() ? '🔒 第' + n + '关' : '第' + n + '关');
         button.type = 'button';
         button.disabled = n > this.getUnlockedLevel();

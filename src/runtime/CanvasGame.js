@@ -328,20 +328,25 @@ export class CanvasGame {
   }
 
   drawLevelSelect() {
-    const ctx = this.ctx, top = Math.max(135,this.metrics.stageHeight/2-165);
-    ctx.fillStyle='rgba(49,34,42,.58)';
-    ctx.fillRect(0,0,DESIGN_W,this.metrics.stageHeight);
-    rounded(ctx,28,top-35,349,318,24,'#fff8ec');
-    label(ctx,'🏁 关卡挑战 · 首批 3 关',202,top,22,'#744d37');
-    for(let n=1;n<=3;n++){
-      const locked = n>this.session.modeProgress.unlockedLevel;
-      this.button('level-'+n,locked?'🔒 第'+n+'关':'第'+n+'关',
-        58+(n-1)*97,top+55,87,79,
-        () => { if(!locked)this.startGame(GAME_MODES.LEVEL,n); },!locked);
+    const ctx = this.ctx;
+    const top = Math.max(84, this.metrics.stageHeight / 2 - 270);
+    ctx.fillStyle = 'rgba(49,34,42,.58)';
+    ctx.fillRect(0, 0, DESIGN_W, this.metrics.stageHeight);
+    rounded(ctx, 28, top - 35, 349, 500, 24, '#fff8ec');
+    label(ctx, '🏁 关卡挑战 · 12 关', 202, top, 21, '#744d37');
+    for (let n = 1; n <= 12; n++) {
+      const locked = n > this.session.modeProgress.unlockedLevel;
+      const col = (n - 1) % 3;
+      const row = Math.floor((n - 1) / 3);
+      this.button('level-' + n,
+        locked ? '🔒 第' + n + '关' : '第' + n + '关',
+        49 + col * 105, top + 47 + row * 87, 97, 70,
+        () => { if (!locked) this.startGame(GAME_MODES.LEVEL, n); },
+        !locked);
     }
-    this.button('back','返回玩法',90,top+186,225,51,()=>{
-      this.screen='modes';this.needsDraw=true;
-    },false);
+    this.button('back', '返回玩法', 90, top + 408, 225, 45, () => {
+      this.screen = 'modes'; this.needsDraw = true;
+    }, false);
   }
 
   drawLevelWin() {
@@ -352,7 +357,7 @@ export class CanvasGame {
     label(ctx,'🎉 第 '+result.level+' 关挑战成功',202,mid-129,23,'#6b4938');
     label(ctx,'⭐'.repeat(result.stars),202,mid-62,30,'#e9a84a');
     label(ctx,'全清 · 使用沙块 '+result.drops+' 个',202,mid-15,16,'#74563d');
-    if(result.level<3)this.button('next','下一关',59,mid+24,286,49,
+    if(result.level<12)this.button('next','下一关',59,mid+24,286,49,
       ()=>this.startGame(GAME_MODES.LEVEL,result.level+1));
     this.button('retry','再玩一次',59,mid+83,139,44,
       ()=>this.startGame(GAME_MODES.LEVEL,result.level),false);

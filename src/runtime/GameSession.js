@@ -11,7 +11,7 @@ import { getClearRating } from '../ClearRating.js';
 import { HomeDemoController } from '../ui/HomeDemoController.js';
 import { GAME_MODES, MODE_SETTINGS, ModeProgress, countSand } from '../modes/ModeLogic.js';
 import { SandArtTools } from '../modes/SandArtTools.js';
-import { getPrototypeLevel } from '../modes/Levels.js';
+import { getPrototypeLevel, createLevelRandom } from '../modes/Levels.js';
 
 // Game rules and progression live here. The host only supplies storage and
 // presentation callbacks; no browser or mini-game API enters this module.
@@ -114,16 +114,14 @@ export class GameSession {
       this.levelData = getPrototypeLevel(level);
       this.grid.cells.set(this.levelData.cells);
       this.grid.revision++;
-      let first = true;
-      const guide = this.levelData.guide;
+      let nextStep = 0;
+      const queue = this.levelData.solution;
+      const fallback = this.levelData.palette[this.levelData.palette.length - 1];
       this.fruitManager.setSpawnProvider(() => {
-        if (first) {
-          first = false;
-          return { templateId: guide.templateId,
-            color: guide.color, centerX: guide.centerX };
-        }
-        return { color: guide.color };
+        const step = queue[nextStep++];
+        return step ? { ...step } : { templateId: 'banana', color: fallback };
       });
+      this.simulation.setRandom(createLevelRandom(this.levelData.runtimeSeed));
       this.fruitManager.reset();
     } else {
       this.fruitManager.reset();
