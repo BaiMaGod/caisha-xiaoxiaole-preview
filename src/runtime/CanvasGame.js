@@ -714,6 +714,7 @@ export class CanvasGame {
     this.selectedMode = mode;
     this.selectedLevel = level;
     this.session.start(mode, level);
+    this.renderer.lineMode = mode === GAME_MODES.ART ? 'finish' : 'failure';
     this.screen = 'playing';
     this.artwork = null;
     this.effect = null;
@@ -739,6 +740,7 @@ export class CanvasGame {
 
   goHome() {
     this.session.goHome();
+    this.renderer.lineMode = 'failure';
     this.screen = 'home';
     this.platform.stopSounds();
     this.lastRevision = -1;

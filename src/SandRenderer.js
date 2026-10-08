@@ -181,6 +181,13 @@ export class SandRenderer {
     this.logicalCtx.moveTo(0, y);
     this.logicalCtx.lineTo(this.grid.width, y);
     this.logicalCtx.stroke();
+    if (this.lineMode === 'finish') {
+      this.logicalCtx.setLineDash([]);
+      this.logicalCtx.font = 'bold 9px sans-serif';
+      this.logicalCtx.textAlign = 'right';
+      this.logicalCtx.fillStyle = 'rgba(58,148,112,.94)';
+      this.logicalCtx.fillText('完成线', this.grid.width - 6, y - 6);
+    }
     this.logicalCtx.restore();
   }
 

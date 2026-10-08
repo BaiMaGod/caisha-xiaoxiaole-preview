@@ -1,0 +1,109 @@
+name: three-mode-qa
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - '.github/workflows/three-mode-qa.yml'
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install runtime and browser test tools
+        run: |
+          npm install
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Check mode mechanics with actual shared session
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { GameSession } from './src/runtime/GameSession.js';
+          import { GAME_MODES, countSand, touchesSupportedFinishLine } from './src/modes/ModeLogic.js';
+          import { getPrototypeLevel } from './src/modes/Levels.js';
+          import { SandGrid } from './src/SandGrid.js';
+          import { CONFIG } from './src/config.js';
+          let grid = new SandGrid();
+          grid.set(10, CONFIG.DEATH_LINE_Y, 1);
+          assert.equal(touchesSupportedFinishLine(grid), false);
+          for (let y=CONFIG.DEATH_LINE_Y; y<grid.height; y++) grid.set(10,y,1);
+          assert.equal(touchesSupportedFinishLine(grid), true);
+          let artFinishes = 0;
+          const art = new GameSession({onArtComplete:()=>artFinishes++});
+          art.start(GAME_MODES.ART);
+          for(let y=CONFIG.DEATH_LINE_Y; y<art.grid.height; y++){
+            art.grid.set(25,y,2);
+            art.art.fixed[art.grid.index(25,y)] = 1;
+          }
+          for(let i=0; i<4; i++) art.update(50,i*50);
+          assert.equal(art.mode,'over');
+          assert.equal(artFinishes,1);
+          for(let id=1;id<=3;id++){
+            const level = getPrototypeLevel(id);
+            const s = new GameSession();
+            s.start(GAME_MODES.LEVEL,id);
+            s.setPointerX(level.guide.centerX);
+            assert.equal(s.releaseFruit(),true);
+            for(let frame=0;frame<1200 && s.mode==='playing';frame++)
+              s.update(50,frame*50);
+            assert.equal(s.mode,'over','level '+id+' must complete');
+            assert.equal(countSand(s.grid),0,'level '+id+' must be fully empty');
+          }
+          console.log('Shared modes and all three verified level solutions passed');
+          NODE
+      - name: Build preview
+        run: npm run build
+      - name: Start web preview
+        run: |
+          (npm run dev -- --host 127.0.0.1 > /tmp/preview.log 2>&1 &)
+          for n in $(seq 1 40); do curl -fsS http://127.0.0.1:5173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/preview.log
+          exit 1
+      - name: Test actual Chromium interface
+        run: |
+          mkdir -p qa-shots
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
+          const page = await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+          const errors=[];
+          page.on('pageerror',error=>errors.push(error.message));
+          await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'});
+          await page.locator('.caisha-home__play').click();
+          assert.equal(await page.locator('.caisha-mode-menu.is-open').count(),1,'mode chooser visible');
+          await page.locator('.caisha-mode-menu__item').filter({hasText:'沙画模式'}).click();
+          assert.equal(await page.locator('section[aria-label="沙画创作工具栏"]').isVisible(),true,'art toolbar visible');
+          const canvas=page.locator('.game-canvas');
+          const r=await canvas.boundingBox();
+          assert(r && r.width>150 && r.height>280,'full board is visible');
+          await page.mouse.move(r.x+r.width*.52,r.y+r.height*.75);
+          await page.mouse.down();
+          await page.mouse.move(r.x+r.width*.55,r.y+r.height*.74,{steps:8});
+          await page.waitForTimeout(200);
+          await page.mouse.up();
+          await page.screenshot({path:'qa-shots/01-sand-art.png',fullPage:true});
+          await page.locator('section[aria-label="沙画创作工具栏"] button').first().click();
+          await page.locator('.caisha-home__play').click();
+          await page.locator('.caisha-mode-menu__item').filter({hasText:'关卡模式'}).click();
+          const levels=page.locator('.caisha-mode-menu__levels button');
+          assert.equal(await levels.count(),3,'three prototype levels offered');
+          await levels.first().click();
+          await page.waitForTimeout(500);
+          await page.screenshot({path:'qa-shots/02-level-1.png',fullPage:true});
+          assert.deepEqual(errors,[],'browser must not throw JS errors');
+          await browser.close();
+          console.log('Chromium mode switch, sand drawing, level select and screenshots passed');
+          NODE
+      - name: Upload browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: three-mode-browser-screenshots
+          path: qa-shots/
+          if-no-files-found: ignore
