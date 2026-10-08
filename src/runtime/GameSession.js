@@ -106,6 +106,8 @@ export class GameSession {
 
     if (playMode === GAME_MODES.ART) {
       this.art.reset();
+      const draft = this.modeProgress.readDraft(this.grid.width, this.grid.height);
+      if (draft) this.art.restore(draft);
       this.fruitManager.setEnabled(false);
       this.fruitManager.current = null;
     } else if (playMode === GAME_MODES.LEVEL) {
@@ -161,6 +163,7 @@ export class GameSession {
     this.art.stop();
     this.fruitManager.setEnabled(false);
     const work = this.modeProgress.saveArtwork(this.grid, this.art.fixed, true);
+    this.modeProgress.clearDraft();
     this.onArtComplete?.({ artwork: work });
   }
 
@@ -175,6 +178,10 @@ export class GameSession {
   }
 
   goHome() {
+    if (this.mode === 'playing' && this.playMode === GAME_MODES.ART) {
+      if (countSand(this.grid) > 0) this.modeProgress.saveDraft(this.grid, this.art.fixed);
+      else this.modeProgress.clearDraft();
+    }
     this.art.stop();
     this.art.fixed.fill(0);
     this.fruitManager.setSpawnProvider(null);

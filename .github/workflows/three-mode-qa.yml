@@ -43,6 +43,18 @@ jobs:
           for(let i=0; i<4; i++) art.update(50,i*50);
           assert.equal(art.mode,'over');
           assert.equal(artFinishes,1);
+          const local = new Map();
+          const storage = {getItem:k=>local.get(k)||null,setItem:(k,v)=>local.set(k,v)};
+          const unfinished = new GameSession({storage});
+          unfinished.start(GAME_MODES.ART);
+          unfinished.grid.set(19, 300, 4);
+          unfinished.art.fixed[unfinished.grid.index(19,300)] = 1;
+          unfinished.goHome();
+          const resumed = new GameSession({storage});
+          resumed.start(GAME_MODES.ART);
+          assert.equal(resumed.grid.get(19,300),4,'draft must restore color');
+          assert.equal(resumed.art.fixed[resumed.grid.index(19,300)],1,
+            'draft must restore fixed grain');
           for(let id=1;id<=3;id++){
             const level = getPrototypeLevel(id);
             const s = new GameSession();

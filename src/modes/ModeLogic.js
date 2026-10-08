@@ -84,10 +84,12 @@ export class ModeProgress {
       this.levelRecords = parsed.levelRecords && typeof parsed.levelRecords === 'object'
         ? parsed.levelRecords : {};
       this.artworks = Array.isArray(parsed.artworks) ? parsed.artworks.slice(0, 10) : [];
+      this.draft = parsed.draft ?? null;
     } catch {
       this.unlockedLevel = 1;
       this.levelRecords = {};
       this.artworks = [];
+      this.draft = null;
     }
   }
 
@@ -96,7 +98,8 @@ export class ModeProgress {
       this.storage?.setItem(this.key, JSON.stringify({
         unlockedLevel: this.unlockedLevel,
         levelRecords: this.levelRecords,
-        artworks: this.artworks
+        artworks: this.artworks,
+        draft: this.draft
       }));
       return true;
     } catch { return false; }
@@ -113,6 +116,29 @@ export class ModeProgress {
     this.unlockedLevel = Math.max(this.unlockedLevel, Math.min(3, level + 1));
     this.persist();
     return stars;
+  }
+
+  saveDraft(grid, fixed) {
+    this.draft = {
+      version: 1, date: new Date().toISOString(),
+      width: grid.width, height: grid.height,
+      runs: encodeArtwork(grid.cells, fixed)
+    };
+    return this.persist();
+  }
+
+  readDraft(width, height) {
+    const d = this.draft;
+    if (!d || d.version !== 1 || d.width !== width || d.height !== height)
+      return null;
+    try { return decodeArtwork(d.runs, width * height); }
+    catch { return null; }
+  }
+
+  clearDraft() {
+    if (!this.draft) return;
+    this.draft = null;
+    this.persist();
   }
 
   saveArtwork(grid, fixed, completed = true) {

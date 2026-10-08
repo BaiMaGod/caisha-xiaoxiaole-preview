@@ -40,6 +40,7 @@ let currentMode = GAME_MODES.ENDLESS;
 let currentLevel = 1;
 let levelData = null;
 let levelVictoryPending = false;
+let lastDraftSaveTime = 0;
 const sandRenderer = new SandRenderer(grid);
 sandRenderer.canvas.className = 'game-canvas';
 sandRenderer.canvas.setAttribute('aria-label', '七彩沙画消除游戏画布');
@@ -385,6 +386,7 @@ function restartGame(mode = currentMode, level = currentLevel) {
   currentLevel = level;
   levelData = null;
   levelVictoryPending = false;
+  lastDraftSaveTime = 0;
   art.stop();
   art.fixed.fill(0);
   modePanels.hide();
@@ -417,6 +419,8 @@ function restartGame(mode = currentMode, level = currentLevel) {
   } else {
     fruitManager.setSpawnProvider(null);
     art.reset();
+    const draft = modeProgress.readDraft(grid.width, grid.height);
+    if (draft) art.restore(draft);
   }
 
   simulation.reset();
@@ -441,6 +445,10 @@ function restartGame(mode = currentMode, level = currentLevel) {
 }
 
 function returnHome() {
+  if (currentMode === GAME_MODES.ART && art.active && !gameOver) {
+    if (countSand(grid) > 0) modeProgress.saveDraft(grid, art.fixed);
+    else modeProgress.clearDraft();
+  }
   drawingArt = false;
   art.stop();
   art.fixed.fill(0);
@@ -468,6 +476,7 @@ function triggerArtComplete() {
   artToolbar.show(false);
   audio.stopTransient();
   modeProgress.saveArtwork(grid, art.fixed);
+  modeProgress.clearDraft();
   const artworkCanvas = sandRenderer.createArtworkCanvas({ scale: 3 });
   gameOverArtwork.show({ mode: 'sandArt', artworkCanvas });
 }
@@ -518,7 +527,14 @@ function loop(time) {
         homeDemo.update(time);
       }
 
-      if (!demoActive && currentMode === GAME_MODES.ART) art.update(deltaMs);
+      if (!demoActive && currentMode === GAME_MODES.ART) {
+        art.update(deltaMs);
+        if (lastDraftSaveTime === 0) lastDraftSaveTime = time;
+        if (time - lastDraftSaveTime > 7000 && countSand(grid) > 0) {
+          modeProgress.saveDraft(grid, art.fixed);
+          lastDraftSaveTime = time;
+        }
+      }
       fruitManager.update(deltaMs);
 
       const fruitState = fruitManager.current?.state ?? null;
