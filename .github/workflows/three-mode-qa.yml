@@ -138,20 +138,23 @@ jobs:
           page.on('pageerror',error=>errors.push(error.message));
           await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'});
           await page.getByRole('button',{name:'打开设置'}).click();
-          await page.locator('.caisha-settings-overlay.is-open').waitFor();
-          assert.equal(await page.locator('.caisha-settings-volume__track').count(),2,
-            'both image-independent volume tracks must render');
-          const hasPaintedRail = await page.locator('.caisha-settings-volume__fill').first()
-            .evaluate(el => getComputedStyle(el).backgroundImage.includes('linear-gradient'));
-          assert(hasPaintedRail,'volume rail must render without loading PNG track');
+          await page.getByRole('dialog',{name:'设置'}).waitFor({state:'visible'});
+          assert.equal(await page.locator('img[src*="settings-ui/panel_background.png"]').count(),1,
+            'original illustrated sand settings background is restored');
+          assert.equal(await page.getByRole('slider').count(),2,'both sound controls remain');
+          assert.equal(await page.getByRole('button',{name:'返回主页'}).isVisible(),false,
+            'no unnecessary return-home control on the home screen');
+          const fallbackRail = await page.locator('img[src*="settings-ui/slider_fill_orange.png"]')
+            .evaluate(el => getComputedStyle(el.parentElement).backgroundImage.includes('linear-gradient'));
+          assert(fallbackRail,'original orange rail has fallback when image is missing');
           const musicInput=page.getByRole('slider',{name:'音乐音量'});
           await musicInput.evaluate(el => {
             el.value='37';
             el.dispatchEvent(new Event('input',{bubbles:true}));
           });
-          assert.equal(await page.locator('.caisha-settings-volume__badge').first().textContent(),'37%',
+          assert.equal(await page.getByText('37%',{exact:true}).count(),1,
             'volume percentage tracks interactive changes');
-          await page.screenshot({path:'qa-shots/09-settings-redesign.png',fullPage:true});
+          await page.screenshot({path:'qa-shots/09-settings-original-restored.png',fullPage:true});
           await page.getByRole('button',{name:'关闭设置'}).click();
           await page.locator('.caisha-home__play').click();
           assert.equal(await page.locator('.caisha-mode-menu.is-open').count(),1,'mode chooser visible');
@@ -162,7 +165,7 @@ jobs:
           await page.screenshot({path:'qa-shots/08-mode-picker-redesign.png',fullPage:true});
           await page.locator('.caisha-mode-menu__item').filter({hasText:'无尽模式'}).click();
           await page.getByRole('button',{name:'打开设置'}).click();
-          await page.locator('.caisha-settings-overlay.is-open').waitFor();
+          await page.getByRole('dialog',{name:'设置'}).waitFor({state:'visible'});
           assert.equal(await page.getByRole('button',{name:'返回主页'}).isVisible(),true,
             'settings must offer return home while inside a game');
           await page.screenshot({path:'qa-shots/10-in-game-settings-home.png',fullPage:true});
