@@ -8,22 +8,31 @@ import { countSand } from './ModeLogic.js';
 
 export const PROTOTYPE_LEVEL_COUNT = 12;
 const cached = new Map();
+// Each playable stage has its own physical sand recipe, not just a recolored
+// copy of the opening guide. Later stages add new colors and distinct mounds.
 const names = [
-  '彩虹初遇', '双坡搭桥', '流沙连通',
-  '双色接力', '爱心沙丘', '层层铺展',
-  '叠沙通道', '四叶双坡', '加厚沙丘',
-  '三色流转', '叠层迷阵', '彩沙总动员'
+  '彩虹初遇', '两岸小桥', '交错双坡',
+  '三色接力', '双岛挑战', '偏心沙谷',
+  '爱心花坡', '星星叠山', '高低沙丘',
+  '四色初探', '彩虹回廊', '终极彩沙'
 ];
 const plans = [
-  { base: 1, bShape: 'banana', pairs: 1, offset: 0 },
-  { base: 2, bShape: 'heart', pairs: 1, offset: 0 },
-  { base: 3, bShape: 'apple', pairs: 1, offset: 0 },
-  { base: 1, bShape: 'star', pairs: 2, offset: 0 },
-  { base: 2, bShape: 'clover', pairs: 2, offset: 0 },
-  { base: 3, bShape: 'apple', pairs: 3, offset: 0 },
-  { base: 3, bShape: 'banana', pairs: 1, offset: 0, cCenters: [60] },
-  { base: 2, bShape: 'banana', pairs: 1, offset: 0, cCenters: [40, 140] },
-  { base: 3, bShape: 'banana', pairs: 1, offset: 0, cCenters: [40] }
+  // level 2: introduce a second color on two shallow banks
+  { base: 1, bShape: 'banana', pairs: 1 },
+  // level 3: a noticeably taller, wider two-color bank
+  { base: 2, bShape: 'star', pairs: 2 },
+  // levels 4–6: introduce distinct three-color terrain
+  { base: 3, bShape: 'banana', pairs: 1, cCenters: [60] },
+  { base: 2, bShape: 'banana', pairs: 1, cCenters: [40, 140] },
+  { base: 3, bShape: 'banana', pairs: 1, cCenters: [40] },
+  // levels 7–9: change both the color obstacles and initial mound silhouette
+  { base: 2, bShape: 'heart', pairs: 1, cCenters: [60] },
+  { base: 1, bShape: 'star', pairs: 2, cCenters: [40, 140] },
+  { base: 3, bShape: 'apple', pairs: 3, cCenters: [40] },
+  // levels 10–12: an additional color changes the intended clear order
+  { base: 3, bShape: 'banana', pairs: 1, cCenters: [60], dCenters: [90] },
+  { base: 2, bShape: 'clover', pairs: 2, cCenters: [40, 140], dCenters: [90] },
+  { base: 1, bShape: 'apple', pairs: 3, cCenters: [40, 90, 140], dCenters: [60, 120] }
 ];
 
 export function createLevelRandom(seed) {
@@ -112,36 +121,51 @@ function buildBase(id) {
 }
 
 function buildLayered(id) {
-  const p = plans[id - 4];
-  const base = getPrototypeLevel(p.base);
+  const p = plans[id - 2];
+  if (!p) throw new Error('Missing distinct level recipe ' + id);
+  // Use a separate verified one-color underlay even when its seed number is
+  // now a playable layered level. Avoid recursively cloning another level.
+  const base = buildBase(p.base);
   const grid = new SandGrid();
   grid.cells.set(base.cells);
   grid.revision++;
-  const prefillSeed = p.cCenters
-    ? 127 : 7241 + p.base * 333 + p.pairs * 5 + p.offset;
+
+  // The same seed is used to pre-simulate and replay the player's solution.
+  // Determinism prevents "solvable in test but not in the browser" boards.
+  const prefillSeed = p.cCenters ? 127 : 7241 + p.base * 333 + p.pairs * 5;
   const random = createLevelRandom(prefillSeed);
   const sim = new SandSimulation(grid, { random });
-  const [b, c] = [1, 2, 3, 4, 5, 6, 7]
+  const [b, c, d] = [1, 2, 3, 4, 5, 6, 7]
     .filter(color => color !== base.guide.color);
+  const colorSteps = [
+    { color: b, centers: [] },
+    ...(p.cCenters ? [{ color: c, centers: p.cCenters }] : []),
+    ...(p.dCenters ? [{ color: d, centers: p.dCenters }] : [])
+  ];
 
-  // Physically drop all starting layers and let them settle off-screen.
+  // Actual settled physics: varied shapes/pair counts make distinct slopes,
+  // and side-to-side color gaps are still genuine gameplay obstacles.
   for (let i = 0; i < p.pairs; i++) {
+    const spread = i === 0 ? 0 : (p.offset ?? 0);
     dropPiece(grid, sim, {
-      templateId: p.bShape, color: b, centerX: 18 + p.offset * i
+      templateId: p.bShape, color: b, centerX: 18 + spread * i
     });
     dropPiece(grid, sim, {
-      templateId: p.bShape, color: b, centerX: 162 - p.offset * i
+      templateId: p.bShape, color: b, centerX: 162 - spread * i
     });
   }
-  for (const centerX of p.cCenters ?? [])
-    dropPiece(grid, sim, { templateId: 'banana', color: c, centerX });
+  for (const layer of colorSteps.slice(1)) {
+    const shape = layer.color === d ? 'heart' : 'banana';
+    for (const centerX of layer.centers)
+      dropPiece(grid, sim, { templateId: shape, color: layer.color, centerX });
+  }
 
   const cells = grid.cells.slice();
   if (hasSpanningClear(cells))
     throw new Error('Prebuilt board auto-clears at level ' + id);
   const initialSand = countSand(grid);
   if (initialSand <= base.initialSand)
-    throw new Error('Missing colored prefill at level ' + id);
+    throw new Error('Missing colorful terrain at level ' + id);
 
   const runtimeSeed = p.cCenters ? random.state() : 919 * p.base + 17;
   sim.setRandom(createLevelRandom(runtimeSeed));
@@ -153,19 +177,19 @@ function buildLayered(id) {
     ? [90, 65, 115, 90, 65, 115, 50, 130, 30, 150, 20, 160]
     : [90, 65, 115, 50, 130, 30, 150, 90, 65, 115, 50, 130,
       30, 150, 18, 162, 90, 65, 115, 50, 130];
-  for (const centerX of bPositions) {
-    if (countColor(grid, b) === 0) break;
-    const action = { templateId: 'banana', color: b, centerX };
-    solution.push(action);
-    dropPiece(grid, sim, action);
-    resolveAll(grid, sim);
-  }
-  if (p.cCenters) {
-    const cPositions = [150, 110, 70, 30, 18, 90, 50, 130,
-      150, 110, 70, 30, 18, 90, 50, 130];
-    for (const centerX of cPositions) {
-      if (countSand(grid) === 0 || countColor(grid, c) === 0) break;
-      const action = { templateId: 'banana', color: c, centerX };
+  const cPositions = [150, 110, 70, 30, 18, 90, 50, 130,
+    150, 110, 70, 30, 18, 90, 50, 130];
+  const dPositions = [90, 50, 130, 30, 150, 65, 115, 18, 162,
+    90, 50, 130, 30, 150, 65, 115, 18, 162];
+
+  // A deterministic verified playthrough is part of every level definition.
+  // The game only exposes prebuilt boards that fully clear with these drops.
+  for (const [layer, positions] of colorSteps.map((part, i) => [
+    part, i === 0 ? bPositions : part.color === c ? cPositions : dPositions
+  ])) {
+    for (const centerX of positions) {
+      if (countSand(grid) === 0 || countColor(grid, layer.color) === 0) break;
+      const action = { templateId: 'banana', color: layer.color, centerX };
       solution.push(action);
       dropPiece(grid, sim, action);
       resolveAll(grid, sim);
@@ -175,10 +199,10 @@ function buildLayered(id) {
   if (remaining !== 0)
     throw new Error('No verified full-clear plan for level ' + id +
       ' (remaining ' + remaining + ')');
+
   return {
-    id, name: names[id - 1], guide: base.guide,
-    cells, initialSand, solution,
-    palette: p.cCenters ? [base.guide.color, b, c] : [base.guide.color, b],
+    id, name: names[id - 1], guide: base.guide, cells, initialSand,
+    solution, palette: [base.guide.color, ...colorSteps.map(step => step.color)],
     referenceDrops: solution.length, runtimeSeed
   };
 }
@@ -188,7 +212,7 @@ export function getPrototypeLevel(level) {
   if (!Number.isInteger(id) || id < 1 || id > PROTOTYPE_LEVEL_COUNT)
     throw new RangeError('Level not available');
   if (!cached.has(id))
-    cached.set(id, id <= 3 ? buildBase(id) : buildLayered(id));
+    cached.set(id, id === 1 ? buildBase(id) : buildLayered(id));
   const data = cached.get(id);
   return {
     ...data,
