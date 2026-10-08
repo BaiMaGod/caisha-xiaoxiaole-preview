@@ -1,4 +1,5 @@
 import { ensureRainbowScoreStyles } from './RainbowScore.js';
+import { LEVEL_NAMES } from '../modes/Levels.js';
 
 const HOME_STYLE_ID = 'dream-sand-home-screen-styles';
 
@@ -455,6 +456,13 @@ function ensureStyles() {
       color: #beaebc; background: #f4edf0; border-color: #eee6e9;
       box-shadow: none; cursor: not-allowed;
     }
+    .caisha-mode-menu__level-number {
+      display: block; font-size: 15px; font-weight: 900; line-height: 1.4;
+    }
+    .caisha-mode-menu__level-name {
+      display: block; margin-top: 2px; font-size: 10px;
+      line-height: 1.3; font-weight: 700; color: #a793a8;
+    }
     @keyframes caisha-dialog-pop {
       from { opacity: .6; transform: translateY(8px) scale(.97); }
       to { opacity: 1; transform: translateY(0) scale(1); }
@@ -648,9 +656,14 @@ export class HomeScreen {
       this.modeItems.replaceChildren();
       const levels = el('div', 'caisha-mode-menu__levels');
       for (let n = 1; n <= 12; n++) {
-        const button = el('button', '', n > this.getUnlockedLevel() ? '🔒 第' + n + '关' : '第' + n + '关');
+        const button = el('button');
+        const locked = n > this.getUnlockedLevel();
         button.type = 'button';
-        button.disabled = n > this.getUnlockedLevel();
+        button.disabled = locked;
+        button.append(
+          el('span', 'caisha-mode-menu__level-number', (locked ? '🔒 ' : '') + '第' + n + '关'),
+          el('span', 'caisha-mode-menu__level-name', LEVEL_NAMES[n - 1])
+        );
         button.addEventListener('click', () => this.selectMode('level', n));
         levels.appendChild(button);
       }
