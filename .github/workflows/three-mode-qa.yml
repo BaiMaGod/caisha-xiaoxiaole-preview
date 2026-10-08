@@ -181,7 +181,7 @@ jobs:
             'art gallery is independent from levels');
           await page.getByText('查看作品').first().waitFor();
           await page.screenshot({path:'qa-shots/07-art-gallery.png',fullPage:true});
-          await page.getByText('关闭',{exact:true}).click();
+          await page.getByText('关闭',{exact:true}).last().click();
           await page.locator('.caisha-home__play').click();
           await page.locator('.caisha-mode-menu__item').filter({hasText:'关卡模式'}).click();
           const levels=page.locator('.caisha-mode-menu__levels button');
