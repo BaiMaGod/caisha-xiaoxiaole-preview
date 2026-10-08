@@ -449,7 +449,10 @@ export class CanvasGame {
     rounded(ctx, 12, topY, 112, 58, 15, 'rgba(255,255,255,0.91)');
     label(ctx, this.session.playMode === GAME_MODES.LEVEL
       ? '第 ' + this.session.level + ' 关' : 'SCORE', 25, topY + 16, 11, '#a48771', 'left');
-    label(ctx, this.displayScore, 25, topY + 39, 22, '#5b3e2d', 'left');
+    label(ctx, this.session.playMode === GAME_MODES.LEVEL
+      ? '剩余 ' + this.session.grid.cells.reduce((n,v)=>n+(v>0),0)
+      : this.displayScore, 25, topY + 39,
+      this.session.playMode === GAME_MODES.LEVEL ? 14 : 22, '#5b3e2d', 'left');
     if (this.debugEffectUiEnabled) {
       this.button('effects', '特效', 331, topY + 5, 62, 38,
         () => this.openEffects(), false);

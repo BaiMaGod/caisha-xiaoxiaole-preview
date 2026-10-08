@@ -125,11 +125,18 @@ const modeHomeButton = document.createElement('button');
 modeHomeButton.type = 'button';
 modeHomeButton.textContent = '‹ 返回首页';
 modeHomeButton.style.cssText =
-  'display:none;position:absolute;top:max(14px,env(safe-area-inset-top));right:12px;z-index:15;'+
+  'display:none;position:absolute;top:max(14px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:15;'+
   'border:1px solid #ebdbc9;background:#fff9ed;color:#73513c;border-radius:14px;'+
   'padding:9px 11px;font:800 12px system-ui;';
 modeHomeButton.addEventListener('click', () => returnHome());
 gameShell.appendChild(modeHomeButton);
+const levelStatus = document.createElement('div');
+levelStatus.style.cssText =
+  'display:none;position:absolute;left:12px;top:max(12px,env(safe-area-inset-top));z-index:14;'+
+  'min-width:95px;padding:8px 11px;border-radius:14px;background:rgba(255,255,255,.91);'+
+  'color:#68503c;font:800 12px/1.45 system-ui,sans-serif;box-shadow:0 4px 14px rgba(91,65,42,.08);pointer-events:none;';
+gameShell.appendChild(levelStatus);
+let lastLevelStatusRevision = -1;
 
 function setArtTool(tool) {
   if (fruitManager.current && !['CONTROL', 'SAND'].includes(fruitManager.current.state)) return false;
@@ -392,6 +399,8 @@ function restartGame(mode = currentMode, level = currentLevel) {
   modePanels.hide();
   artToolbar.show(mode === GAME_MODES.ART);
   modeHomeButton.style.display = mode === GAME_MODES.LEVEL ? 'block' : 'none';
+  levelStatus.style.display = mode === GAME_MODES.LEVEL ? 'block' : 'none';
+  lastLevelStatusRevision = -1;
   sandRenderer.lineMode = mode === GAME_MODES.ART ? 'finish' : 'failure';
   settingsPanel.close({ silent: true });
   gameOverArtwork.hide();
@@ -432,7 +441,7 @@ function restartGame(mode = currentMode, level = currentLevel) {
   clearEffects.clear();
   audio.stopTransient();
   settlementGate.reset();
-  hud.setGameVisible(mode !== GAME_MODES.ART);
+  hud.setGameVisible(mode === GAME_MODES.ENDLESS);
 
   gameOver = false;
   lastFruitState = fruitManager.current?.state ?? null;
@@ -455,6 +464,7 @@ function returnHome() {
   fruitManager.setSpawnProvider(null);
   artToolbar.show(false);
   modeHomeButton.style.display = 'none';
+  levelStatus.style.display = 'none';
   modePanels.hide();
   sandRenderer.lineMode = 'failure';
   hud.setGameVisible(false);
@@ -485,6 +495,7 @@ function triggerLevelComplete() {
   gameOver = true;
   fruitManager.setEnabled(false);
   modeHomeButton.style.display = 'none';
+  levelStatus.style.display = 'none';
   const stars = modeProgress.winLevel(currentLevel, hud.dropHintCount,
     levelData?.referenceDrops || 1);
   modePanels.showWin({
@@ -614,6 +625,12 @@ function loop(time) {
     audio.updateSandFlow(0);
   }
 
+  if (!gameOver && !homeScreen.isOpen() && currentMode === GAME_MODES.LEVEL &&
+      lastLevelStatusRevision !== grid.revision) {
+    levelStatus.textContent = '第 ' + currentLevel + ' 关 · 剩余 ' +
+      countSand(grid).toLocaleString() + ' 粒';
+    lastLevelStatusRevision = grid.revision;
+  }
   stats.update();
   renderGameCanvas();
 }

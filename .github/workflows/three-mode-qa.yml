@@ -108,6 +108,14 @@ jobs:
           await levels.first().click();
           await page.waitForTimeout(500);
           await page.screenshot({path:'qa-shots/02-level-1.png',fullPage:true});
+          const solution = await page.evaluate(async () => (
+            await import('/src/modes/Levels.js')
+          ).getPrototypeLevel(1).guide.centerX);
+          const dropRect = await canvas.boundingBox();
+          await page.mouse.click(dropRect.x + dropRect.width * solution / 180,
+            dropRect.y + dropRect.height * .4);
+          await page.getByText('第 1 关挑战成功！').waitFor({timeout:15000});
+          await page.screenshot({path:'qa-shots/03-level-win.png',fullPage:true});
           assert.deepEqual(errors,[],'browser must not throw JS errors');
           await browser.close();
           console.log('Chromium mode switch, sand drawing, level select and screenshots passed');
