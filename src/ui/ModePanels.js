@@ -32,6 +32,24 @@ export class ModePanels {
     this.card.appendChild(button('返回首页', () => { this.hide(); home(); }));
     this.root.style.display='flex';
   }
+  showLose({ level, remaining, retry, home }) {
+    this.card.replaceChildren();
+    const title = document.createElement('h2');
+    title.textContent = '第 ' + level + ' 关挑战失败';
+    title.style.cssText = 'font-size:25px;margin:6px 0 12px;color:#a55342;';
+    const info = document.createElement('p');
+    info.textContent = '沙堆触碰了失败线 · 尚余 ' +
+      Number(remaining).toLocaleString() + ' 粒';
+    info.style.cssText = 'font-size:13px;line-height:1.8;color:#96745e;';
+    const advice = document.createElement('p');
+    advice.textContent = '调整下一块沙子的落点，再试一次吧！';
+    advice.style.cssText = 'font-size:12px;color:#9b8874;';
+    this.card.append(title, info, advice);
+    this.card.appendChild(button('重试本关', () => { this.hide(); retry(); }));
+    this.card.appendChild(button('返回首页', () => { this.hide(); home(); }));
+    this.root.style.display = 'flex';
+  }
+
   showGallery(artworks, { onClose, onView }) {
     this.card.replaceChildren();
     const title=document.createElement('h2'); title.textContent='🖼 我的沙画';

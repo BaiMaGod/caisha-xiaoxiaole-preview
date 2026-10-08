@@ -126,7 +126,10 @@ export class CanvasGame {
     platform.onVisibility((visible) => {
       this.hidden = !visible;
       this.lastTime = 0;
-      if (!visible) platform.stopSounds();
+      if (!visible) {
+        this.session.saveArtDraft();
+        platform.stopSounds();
+      }
       else this.needsDraw = true;
     });
     platform.onAdAvailabilityChange?.(() => { this.needsDraw = true; });
@@ -242,6 +245,7 @@ export class CanvasGame {
     else if (this.screen === 'levels') this.drawLevelSelect();
     else if (this.screen === 'gallery') this.drawGallery();
     else if (this.screen === 'win') this.drawLevelWin();
+    else if (this.screen === 'fail') this.drawLevelFail();
     else if (this.screen === 'playing') this.drawPlaying(now);
     else if (this.screen === 'paused') this.drawPaused();
     else if (this.screen === 'over') this.drawOver();
@@ -362,6 +366,22 @@ export class CanvasGame {
     this.button('retry','再玩一次',59,mid+83,139,44,
       ()=>this.startGame(GAME_MODES.LEVEL,result.level),false);
     this.button('home','返回首页',208,mid+83,137,44,()=>this.goHome(),false);
+  }
+
+  drawLevelFail() {
+    const ctx = this.ctx, mid = this.metrics.stageHeight / 2;
+    ctx.fillStyle = 'rgba(45,31,45,.74)';
+    ctx.fillRect(0, 0, DESIGN_W, this.metrics.stageHeight);
+    rounded(ctx, 27, mid - 164, 351, 328, 26, '#fff8ec');
+    label(ctx, '第 ' + this.selectedLevel + ' 关挑战失败', 202,
+      mid - 101, 24, '#a55342');
+    label(ctx, '沙堆碰到失败线', 202, mid - 55, 16, '#76563d');
+    label(ctx, '剩余 ' + this.session.grid.cells.reduce((n,v)=>n+(v>0),0) +
+      ' 粒沙 · 调整落点再试一次', 202, mid - 18, 13, '#927765');
+    this.button('retry', '重试本关', 58, mid + 25, 289, 56,
+      () => this.startGame(GAME_MODES.LEVEL, this.selectedLevel));
+    this.button('home', '返回首页', 94, mid + 97, 217, 45,
+      () => this.goHome(), false);
   }
 
   drawArtControls() {
@@ -913,6 +933,12 @@ export class CanvasGame {
 
   handleGameOver({ rating = 'GOOD', mode = GAME_MODES.ENDLESS } = {}) {
     this.overMode = mode;
+    if (mode === GAME_MODES.LEVEL) {
+      this.screen = 'fail';
+      this.platform.stopSounds();
+      this.needsDraw = true;
+      return;
+    }
     this.artwork = this.renderer.createArtworkCanvas({ scale: 3 });
     this.overRating = rating;
     this.screen = 'over';

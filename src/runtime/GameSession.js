@@ -39,6 +39,8 @@ export class GameSession {
     this.onArtComplete = onArtComplete;
     this.onLevelComplete = onLevelComplete;
     this.levelVictoryPending = false;
+    this.artAutosaveMs = 0;
+    this.artLastSavedRevision = -1;
     this.mode = 'home';
     this.dropCount = 0;
     this.lastFruitState = this.fruitManager.current?.state ?? null;
@@ -96,6 +98,8 @@ export class GameSession {
     this.level = level;
     this.levelData = null;
     this.levelVictoryPending = false;
+    this.artAutosaveMs = 0;
+    this.artLastSavedRevision = -1;
     this.art.stop();
     this.art.fixed.fill(0);
     this.grid.clear();
@@ -162,6 +166,7 @@ export class GameSession {
     this.fruitManager.setEnabled(false);
     const work = this.modeProgress.saveArtwork(this.grid, this.art.fixed, true);
     this.modeProgress.clearDraft();
+    this.artLastSavedRevision = -1;
     this.onArtComplete?.({ artwork: work });
   }
 
@@ -175,11 +180,20 @@ export class GameSession {
     this.onLevelComplete?.({ level: this.level, stars, drops: this.dropCount });
   }
 
-  goHome() {
-    if (this.mode === 'playing' && this.playMode === GAME_MODES.ART) {
-      if (countSand(this.grid) > 0) this.modeProgress.saveDraft(this.grid, this.art.fixed);
-      else this.modeProgress.clearDraft();
+  saveArtDraft() {
+    if (this.mode !== 'playing' || this.playMode !== GAME_MODES.ART) return false;
+    if (countSand(this.grid) === 0) {
+      this.modeProgress.clearDraft();
+      this.artLastSavedRevision = this.grid.revision;
+      return true;
     }
+    const saved = this.modeProgress.saveDraft(this.grid, this.art.fixed);
+    if (saved) this.artLastSavedRevision = this.grid.revision;
+    return saved;
+  }
+
+  goHome() {
+    this.saveArtDraft();
     this.art.stop();
     this.art.fixed.fill(0);
     this.fruitManager.setSpawnProvider(null);
@@ -232,7 +246,15 @@ export class GameSession {
       return;
     }
 
-    if (!demoActive && this.playMode === GAME_MODES.ART) this.art.update(dt);
+    if (!demoActive && this.playMode === GAME_MODES.ART) {
+      this.art.update(dt);
+      this.artAutosaveMs += dt;
+      if (this.artAutosaveMs >= 8000) {
+        this.artAutosaveMs = 0;
+        if (this.grid.revision !== this.artLastSavedRevision)
+          this.saveArtDraft();
+      }
+    }
     this.simulationElapsed += dt;
     if (this.simulationElapsed < CONFIG.UPDATE_INTERVAL) return;
     this.simulationElapsed = 0;

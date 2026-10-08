@@ -72,6 +72,15 @@
         background: #fff8ea;
       }
 
+      /* Keep the entire sand picture visible above the art palette. */
+      .game-shell.caisha-art-mode #game-root {
+        height: calc(100% - 150px);
+        max-height: 177.778vw;
+        width: auto;
+        max-width: 100%;
+        top: calc(50% - 75px);
+      }
+
       #game-root canvas {
         display: block;
         width: 100%;

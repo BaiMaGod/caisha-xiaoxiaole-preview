@@ -23,20 +23,35 @@ export function countSand(grid) {
 // Only grains physically supported by the bottom-connected sand mass can
 // finish the artwork. Passing the line while falling never completes a painting.
 export function touchesSupportedFinishLine(grid, lineY = CONFIG.DEATH_LINE_Y) {
-  const w = grid.width, h = grid.height, seen = new Uint8Array(grid.cells.length);
+  const w = grid.width, h = grid.height;
+  const limit = Math.max(0, Math.min(h - 1, Math.floor(lineY)));
+  const sources = [];
+  // Fast path: almost every art frame has no grain at the completion line.
+  // Avoid flooding the entire bottom mound on those frames.
+  for (let y = 0; y <= limit; y++) {
+    for (let x = 0; x < w; x++) {
+      const index = y * w + x;
+      if (grid.cells[index]) sources.push(index);
+    }
+  }
+  if (!sources.length) return false;
+  const seen = new Uint8Array(grid.cells.length);
   const queue = new Int32Array(grid.cells.length);
   let head = 0, tail = 0;
-  for (let x = 0; x < w; x++) {
-    const i = (h - 1) * w + x;
-    if (grid.cells[i]) { seen[i] = 1; queue[tail++] = i; }
+  for (const index of sources) {
+    seen[index] = 1;
+    queue[tail++] = index;
   }
   while (head < tail) {
-    const i = queue[head++], y = Math.floor(i / w), x = i % w;
-    if (y <= lineY) return true;
+    const index = queue[head++], y = Math.floor(index / w), x = index % w;
+    if (y === h - 1) return true;
     for (let yy = Math.max(0, y - 1); yy <= Math.min(h - 1, y + 1); yy++) {
       for (let xx = Math.max(0, x - 1); xx <= Math.min(w - 1, x + 1); xx++) {
-        const ni = yy * w + xx;
-        if (!seen[ni] && grid.cells[ni]) { seen[ni] = 1; queue[tail++] = ni; }
+        const next = yy * w + xx;
+        if (!seen[next] && grid.cells[next]) {
+          seen[next] = 1;
+          queue[tail++] = next;
+        }
       }
     }
   }

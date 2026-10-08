@@ -309,6 +309,18 @@ function triggerGameOver() {
   gameOver = true;
   fruitManager.setEnabled(false);
   audio.playGameOver();
+  if (currentMode === GAME_MODES.LEVEL) {
+    modeHomeButton.style.display = 'none';
+    levelStatus.style.display = 'none';
+    clearEffects.clear();
+    modePanels.showLose({
+      level: currentLevel,
+      remaining: countSand(grid),
+      retry: () => restartGame(GAME_MODES.LEVEL, currentLevel),
+      home: () => returnHome()
+    });
+    return;
+  }
   if (currentMode === GAME_MODES.ENDLESS) {
     progress.recordGameOver(clearSystem.score);
     unlockManager.checkAll();
@@ -333,7 +345,9 @@ if (import.meta.env.DEV) {
     clearSystem,
     audio,
     settingsPanel,
-    getLevelGuideCenter: () => levelData?.guide.centerX ?? null
+    getLevelGuideCenter: () => levelData?.guide.centerX ?? null,
+    getMode: () => currentMode,
+    art
   };
 }
 
@@ -398,6 +412,7 @@ function restartGame(mode = currentMode, level = currentLevel) {
   art.stop();
   art.fixed.fill(0);
   modePanels.hide();
+  gameShell.classList.toggle('caisha-art-mode', mode === GAME_MODES.ART);
   artToolbar.show(mode === GAME_MODES.ART);
   modeHomeButton.style.display = mode === GAME_MODES.LEVEL ? 'block' : 'none';
   levelStatus.style.display = mode === GAME_MODES.LEVEL ? 'block' : 'none';
@@ -462,6 +477,7 @@ function returnHome() {
   art.fixed.fill(0);
   fruitManager.setSpawnProvider(null);
   artToolbar.show(false);
+  gameShell.classList.remove('caisha-art-mode');
   modeHomeButton.style.display = 'none';
   levelStatus.style.display = 'none';
   modePanels.hide();
