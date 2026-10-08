@@ -77,9 +77,9 @@ function ensureStyles() {
       font-size: 10px;
       font-weight: 900;
       letter-spacing: .18em;
-      opacity: 0;
-      transform: translateY(-5px);
-      transition: opacity 280ms ease 420ms, transform 280ms ease 420ms;
+      opacity: 1;
+      transform: translateY(0);
+      transition: transform 280ms ease;
     }
 
     .caisha-result__frame-wrap {
@@ -99,9 +99,9 @@ function ensureStyles() {
       border-radius: 50%;
       background: rgba(72,45,24,.2);
       filter: blur(12px);
-      opacity: 0;
-      transform: scale(.72);
-      transition: opacity 340ms ease 220ms, transform 400ms ease 220ms;
+      opacity: .4;
+      transform: scale(.95);
+      transition: opacity 340ms ease, transform 400ms ease;
     }
 
     .caisha-result__frame {
@@ -119,8 +119,8 @@ function ensureStyles() {
         inset 0 1px 1px rgba(255,255,255,.58),
         inset 0 -2px 4px rgba(91,54,26,.18),
         0 11px 24px rgba(78,46,25,.15);
-      opacity: 0;
-      transform: translateY(12px) scale(.78) rotateX(3deg);
+      opacity: 1;
+      transform: translateY(0) scale(.96) rotateX(0);
       transform-origin: 50% 55%;
     }
 
@@ -166,9 +166,9 @@ function ensureStyles() {
     .caisha-result__copy {
       width: min(100%, 320px);
       margin-top: 15px;
-      opacity: 0;
-      transform: translateY(8px);
-      transition: opacity 300ms ease 630ms, transform 300ms ease 630ms;
+      opacity: 1;
+      transform: translateY(0);
+      transition: transform 300ms ease;
     }
 
     .caisha-result__headline {
@@ -210,9 +210,9 @@ function ensureStyles() {
       grid-template-columns: 1fr 1fr;
       gap: 9px;
       margin-top: 13px;
-      opacity: 0;
-      transform: translateY(8px);
-      transition: opacity 280ms ease 780ms, transform 280ms ease 780ms;
+      opacity: 1;
+      transform: translateY(0);
+      transition: transform 280ms ease;
     }
 
     .caisha-result button {
@@ -256,12 +256,9 @@ function ensureStyles() {
       font-size: 16px;
       font-weight: 950;
       letter-spacing: .04em;
-      opacity: 0;
-      transform: translateY(8px);
-      transition:
-        opacity 280ms ease 900ms,
-        transform 280ms ease 900ms,
-        box-shadow 120ms ease;
+      opacity: 1;
+      transform: translateY(0);
+      transition: transform 280ms ease, box-shadow 120ms ease;
     }
 
     .caisha-result__home {
@@ -271,8 +268,8 @@ function ensureStyles() {
       background: transparent;
       font-size: 11px;
       font-weight: 850;
-      opacity: 0;
-      transition: opacity 280ms ease 1020ms;
+      opacity: 1;
+      transition: opacity 280ms ease;
     }
 
     .caisha-result__toast {
@@ -315,13 +312,13 @@ function ensureStyles() {
     }
 
     .caisha-result.is-visible .caisha-result__frame {
-      animation: caisha-frame-in 560ms cubic-bezier(.18,.85,.24,1.08) 150ms forwards;
+      animation: caisha-frame-in 450ms cubic-bezier(.18,.85,.24,1.08) forwards;
     }
 
     @keyframes caisha-frame-in {
       0% {
-        opacity: 0;
-        transform: translateY(12px) scale(.78) rotateX(3deg);
+        opacity: 1;
+        transform: translateY(0) scale(.96) rotateX(0);
       }
       64% {
         opacity: 1;
@@ -511,16 +508,10 @@ export class GameOverArtwork {
 
     this.opened = true;
     this.root.style.display = 'block';
-    this.root.classList.remove('is-visible');
     this.root.scrollTop = 0;
-
-    this.showTimer = setTimeout(() => {
-      if (!this.opened) return;
-
-      requestAnimationFrame(() => {
-        this.root.classList.add('is-visible');
-      });
-    }, 180);
+    // All controls and the framed picture are visible on the first painted frame.
+    // The wood frame keeps a short scale-in animation, never a fully blank result.
+    this.root.classList.add('is-visible');
   }
 
   hide() {

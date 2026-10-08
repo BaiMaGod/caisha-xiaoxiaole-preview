@@ -39,8 +39,14 @@ export class GameSession {
     this.onArtComplete = onArtComplete;
     this.onLevelComplete = onLevelComplete;
     this.levelVictoryPending = false;
+    this.artFinishing = false;
+    this.artFinishStableTicks = 0;
+    this.artFinishElapsed = 0;
     this.artAutosaveMs = 0;
     this.artLastSavedRevision = -1;
+    this.artFinishing = false;
+    this.artFinishStableTicks = 0;
+    this.artFinishElapsed = 0;
     this.mode = 'home';
     this.dropCount = 0;
     this.lastFruitState = this.fruitManager.current?.state ?? null;
@@ -138,7 +144,8 @@ export class GameSession {
   }
 
   setArtTool(tool) {
-    if (this.mode !== 'playing' || this.playMode !== GAME_MODES.ART) return false;
+    if (this.mode !== 'playing' || this.playMode !== GAME_MODES.ART ||
+        this.artFinishing) return false;
     if (this.fruitManager.current && !['CONTROL', 'SAND'].includes(this.fruitManager.current.state)) return false;
     this.art.setTool(tool);
     if (this.art.tool === 'shape') {
@@ -208,7 +215,7 @@ export class GameSession {
   }
 
   releaseFruit() {
-    if (this.mode !== 'playing' ||
+    if (this.mode !== 'playing' || this.artFinishing ||
       (this.playMode === GAME_MODES.ART && this.art.tool !== 'shape')) return false;
     const released = this.fruitManager.releaseCurrent();
     if (released) this.dropCount += 1;
@@ -216,7 +223,7 @@ export class GameSession {
   }
 
   startFastDrop() {
-    if (this.mode !== 'playing' ||
+    if (this.mode !== 'playing' || this.artFinishing ||
       (this.playMode === GAME_MODES.ART && this.art.tool !== 'shape'))
       return { active: false, released: false };
     const result = this.fruitManager.startFastDrop();
@@ -269,7 +276,23 @@ export class GameSession {
     if (this.mode !== 'playing' && !demoActive) return;
 
     if (!demoActive && this.playMode === GAME_MODES.ART) {
-      if (this.art.isComplete()) this.finishArt();
+      if (!this.artFinishing && this.art.isComplete()) {
+        this.artFinishing = true;
+        this.artFinishStableTicks = 0;
+        this.artFinishElapsed = 0;
+        this.art.stop(); // lock the tools, but keep physics moving
+        this.fruitManager.setEnabled(false);
+      }
+      if (this.artFinishing) {
+        this.artFinishElapsed += dt;
+        const fruitMoving = this.fruitManager.current &&
+          !['SAND', 'CONTROL'].includes(this.fruitManager.current.state);
+        if (this.simulation.movedCount === 0 && !fruitMoving)
+          this.artFinishStableTicks++;
+        else this.artFinishStableTicks = 0;
+        if (this.artFinishStableTicks >= 4 || this.artFinishElapsed >= 2000)
+          this.finishArt();
+      }
       return;
     }
     if (this.settlementGate.isBlocking()) {

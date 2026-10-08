@@ -41,6 +41,9 @@ let currentLevel = 1;
 let levelData = null;
 let levelVictoryPending = false;
 let lastDraftSaveTime = 0;
+let artFinishing = false;
+let artFinishElapsed = 0;
+let artFinishStableTicks = 0;
 const sandRenderer = new SandRenderer(grid);
 sandRenderer.canvas.className = 'game-canvas';
 sandRenderer.canvas.setAttribute('aria-label', '七彩沙画消除游戏画布');
@@ -139,6 +142,7 @@ gameShell.appendChild(levelStatus);
 let lastLevelStatusRevision = -1;
 
 function setArtTool(tool) {
+  if (artFinishing || !art.active) return false;
   if (fruitManager.current && !['CONTROL', 'SAND'].includes(fruitManager.current.state)) return false;
   art.setTool(tool);
   if (tool === 'shape') {
@@ -160,8 +164,8 @@ function getArtPos(event) {
   };
 }
 function captureArtPointer(event) {
-  if (currentMode !== GAME_MODES.ART || art.tool === 'shape' ||
-      homeScreen.isOpen() || gameOver || gameOverArtwork.isOpen()) return;
+  if (currentMode !== GAME_MODES.ART || art.tool === 'shape' || !art.active ||
+      artFinishing || homeScreen.isOpen() || gameOver || gameOverArtwork.isOpen()) return;
   if (event.type === 'pointerdown') {
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -198,7 +202,7 @@ function openArtworkGallery() {
 hud.setGameVisible(false);
 
 new FruitController(sandRenderer.canvas, fruitManager, grid, {
-  canInteract: () => !gameOver && !homeScreen.isOpen() &&
+  canInteract: () => !gameOver && !artFinishing && !homeScreen.isOpen() &&
     (currentMode !== GAME_MODES.ART || art.tool === 'shape'),
   onRelease: () => {
     hud.notifyDropReleased();
@@ -409,6 +413,9 @@ function restartGame(mode = currentMode, level = currentLevel) {
   levelData = null;
   levelVictoryPending = false;
   lastDraftSaveTime = 0;
+  artFinishing = false;
+  artFinishElapsed = 0;
+  artFinishStableTicks = 0;
   art.stop();
   art.fixed.fill(0);
   modePanels.hide();
@@ -468,11 +475,13 @@ function restartGame(mode = currentMode, level = currentLevel) {
 }
 
 function returnHome() {
-  if (currentMode === GAME_MODES.ART && art.active && !gameOver) {
+  // Returning while the finishing animation is running saves the draft.
+  if (currentMode === GAME_MODES.ART && !gameOver) {
     if (countSand(grid) > 0) modeProgress.saveDraft(grid, art.fixed);
     else modeProgress.clearDraft();
   }
   drawingArt = false;
+  artFinishing = false;
   art.stop();
   art.fixed.fill(0);
   fruitManager.setSpawnProvider(null);
@@ -494,6 +503,7 @@ function returnHome() {
 
 function triggerArtComplete() {
   if (gameOver || currentMode !== GAME_MODES.ART) return;
+  artFinishing = false;
   gameOver = true;
   drawingArt = false;
   art.stop();
@@ -605,11 +615,28 @@ function loop(time) {
           !demoActive && !gameOver ? simulation.movedCount : 0
         );
 
-        // Every connectivity check must pass through the same settlement gate.
-        // This applies both to the first clear after a fruit turns into sand and
-        // to every later cascade caused by grains falling into the cleared space.
-        if (!gameOver && currentMode === GAME_MODES.ART && art.isComplete())
-          triggerArtComplete();
+        // A supported pile touching the finish line locks inputs immediately.
+        // Keep the grid simulated for a few stable ticks before capturing.
+        if (!gameOver && currentMode === GAME_MODES.ART) {
+          if (!artFinishing && art.isComplete()) {
+            artFinishing = true;
+            artFinishElapsed = 0;
+            artFinishStableTicks = 0;
+            drawingArt = false;
+            art.stop();
+            fruitManager.setEnabled(false);
+          }
+          if (artFinishing) {
+            artFinishElapsed += deltaMs;
+            const movingFruit = fruitManager.current &&
+              !['SAND', 'CONTROL'].includes(fruitManager.current.state);
+            if (simulation.movedCount === 0 && !movingFruit)
+              artFinishStableTicks++;
+            else artFinishStableTicks = 0;
+            if (artFinishStableTicks >= 4 || artFinishElapsed >= 2000)
+              triggerArtComplete();
+          }
+        }
         if (!gameOver && currentMode !== GAME_MODES.ART && settlementGate.isBlocking()) {
           const justSettled = settlementGate.observe(simulation.movedCount);
 
@@ -652,6 +679,8 @@ function loop(time) {
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
+    if (currentMode === GAME_MODES.ART && !gameOver && countSand(grid) > 0)
+      modeProgress.saveDraft(grid, art.fixed);
     audio.suspendForVisibility();
     return;
   }
