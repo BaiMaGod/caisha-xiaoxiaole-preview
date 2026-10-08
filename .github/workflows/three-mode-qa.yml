@@ -146,6 +146,22 @@ jobs:
             }
           });
           await page.locator('.caisha-result__headline').filter({hasText:'你的沙画完成啦！'}).waitFor({timeout:10000});
+          const artResultVisible = await page.evaluate(() => {
+            const frame = document.querySelector('.caisha-result__frame');
+            const art = document.querySelector('.caisha-result__art');
+            const back = document.querySelector('.caisha-result__home');
+            const ctx = art?.getContext('2d');
+            if (!frame || !art || !back || !ctx) return false;
+            // Pixel in the deliberately inserted red support column.
+            const pixel = ctx.getImageData(31*3, 115*3, 1, 1).data;
+            return Number(getComputedStyle(frame).opacity) >= 0.95 &&
+              Number(getComputedStyle(back).opacity) >= 0.95 &&
+              art.width >= 180 && art.height >= 320 &&
+              pixel[0] > pixel[1] + 25 && pixel[0] > pixel[2] + 25;
+          });
+          assert(artResultVisible,
+            'first visible result frame must show actual colored artwork and action buttons');
+          await page.waitForTimeout(520);
           await page.screenshot({path:'qa-shots/05-art-finished.png',fullPage:true});
           await page.locator('.caisha-result__home').click();
           await page.locator('.caisha-home__play').click();
