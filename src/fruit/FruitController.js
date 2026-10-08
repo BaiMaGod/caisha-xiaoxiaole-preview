@@ -5,7 +5,8 @@ export class FruitController {
     grid,
     {
       onRelease = null,
-      onFastDrop = null
+      onFastDrop = null,
+      canInteract = () => true
     } = {}
   ) {
     this.element = element;
@@ -13,12 +14,14 @@ export class FruitController {
     this.grid = grid;
     this.onRelease = onRelease;
     this.onFastDrop = onFastDrop;
+    this.canInteract = canInteract;
     this.dragging = false;
     this.dragStartX = 0;
     this.dragStartY = 0;
     this.fastDropActive = false;
 
     element.addEventListener('pointerdown', (event) => {
+      if (!this.canInteract()) return;
       this.dragging = true;
       this.dragStartX = event.clientX;
       this.dragStartY = event.clientY;
@@ -29,7 +32,7 @@ export class FruitController {
     });
 
     element.addEventListener('pointermove', (event) => {
-      if (!this.dragging) return;
+      if (!this.dragging || !this.canInteract()) return;
 
       this.updatePointer(event);
       this.updateFastDropGesture(event);
@@ -37,6 +40,7 @@ export class FruitController {
 
     const release = (event) => {
       if (!this.dragging) return;
+      if (!this.canInteract()) { this.dragging = false; return; }
 
       this.updatePointer(event);
       this.dragging = false;

@@ -4,6 +4,7 @@ import { CLEAR_EFFECTS, CLEAR_EFFECT_IDS } from '../clear-effects/ClearEffectReg
 import { getParticleRgb, SETTLED_PARTICLE_INSET, SETTLED_PARTICLE_SIZE } from '../colors.js';
 import { getRewardVoicePath } from '../RewardVoicePaths.js';
 import { CONFIG } from '../config.js';
+import { GAME_MODES, ART_COLORS, decodeArtwork } from '../modes/ModeLogic.js';
 import { renderArtworkPoster } from '../ui/PosterRenderer.js';
 import {
   CLEAR_EFFECT_TOTAL_MS,
@@ -80,6 +81,10 @@ export class CanvasGame {
     this.displayScore = 0;
     this.artwork = null;
     this.overRating = 'GOOD';
+    this.selectedMode = GAME_MODES.ENDLESS;
+    this.selectedLevel = 1;
+    this.overMode = GAME_MODES.ENDLESS;
+    this.levelResult = null;
     this.toastText = '';
     this.toastUntil = 0;
     this.lastTime = 0;
@@ -95,7 +100,9 @@ export class CanvasGame {
       storage: platform.storage,
       onBeforeClear: (payload) => this.beginClearEffect(payload),
       onClear: (payload) => this.handleClear(payload),
-      onGameOver: (payload) => this.handleGameOver(payload)
+      onGameOver: (payload) => this.handleGameOver(payload),
+      onArtComplete: (payload) => this.handleArtComplete(payload),
+      onLevelComplete: (payload) => this.handleLevelComplete(payload)
     });
 
     this.metrics = this.getMetrics();
@@ -122,6 +129,7 @@ export class CanvasGame {
       if (!visible) platform.stopSounds();
       else this.needsDraw = true;
     });
+    platform.onAdAvailabilityChange?.(() => { this.needsDraw = true; });
 
     this.frame = this.frame.bind(this);
     platform.requestFrame(this.frame);
@@ -230,6 +238,10 @@ export class CanvasGame {
     ctx.scale(width / DESIGN_W, width / DESIGN_W);
 
     if (this.screen === 'home') this.drawHome();
+    else if (this.screen === 'modes') this.drawModeSelect();
+    else if (this.screen === 'levels') this.drawLevelSelect();
+    else if (this.screen === 'gallery') this.drawGallery();
+    else if (this.screen === 'win') this.drawLevelWin();
     else if (this.screen === 'playing') this.drawPlaying(now);
     else if (this.screen === 'paused') this.drawPaused();
     else if (this.screen === 'over') this.drawOver();
@@ -276,7 +288,7 @@ export class CanvasGame {
       label(ctx, '七彩沙画消除', 202, titleY + 27, 38, '#d45b70');
     }
 
-    const start = () => this.startGame();
+    const start = () => { this.screen = 'modes'; this.needsDraw = true; };
     const startY = this.metrics.stageHeight / 2 - 44;
     if (this.startImage?.width > 0) {
       try {
@@ -290,13 +302,153 @@ export class CanvasGame {
     } else {
       this.button('start', '开始游戏', 47, startY, 311, 88, start);
     }
+    if (this.platform.shareGameAvailable) {
+      this.button('share-game', '分享游戏', 110, startY + 106, 185, 42,
+        () => this.shareGame(), false);
+    }
+  }
+
+  drawModeSelect() {
+    const ctx = this.ctx, mid = this.metrics.stageHeight / 2;
+    ctx.fillStyle = 'rgba(49,34,42,.54)';
+    ctx.fillRect(0, 0, DESIGN_W, this.metrics.stageHeight);
+    rounded(ctx, 28, mid-185, 349, 371, 24, '#fff8ec');
+    label(ctx, '选择玩法', 202, mid-142, 25, '#764a33');
+    this.button('endless','🌈 无尽模式',57,mid-115,291,66,
+      () => this.startGame(GAME_MODES.ENDLESS,1));
+    this.button('level','🏁 关卡模式',57,mid-35,291,66,() => {
+      this.screen='levels'; this.needsDraw=true;
+    });
+    this.button('art','🎨 沙画模式',57,mid+45,291,66,
+      () => this.startGame(GAME_MODES.ART,1));
+    this.button('gallery','🖼 我的沙画',57,mid+121,145,38,() => {
+      this.screen='gallery'; this.needsDraw=true;
+    },false);
+    this.button('home','返回首页',210,mid+121,136,38,() => this.goHome(),false);
+  }
+
+  drawLevelSelect() {
+    const ctx = this.ctx, top = Math.max(135,this.metrics.stageHeight/2-165);
+    ctx.fillStyle='rgba(49,34,42,.58)';
+    ctx.fillRect(0,0,DESIGN_W,this.metrics.stageHeight);
+    rounded(ctx,28,top-35,349,318,24,'#fff8ec');
+    label(ctx,'🏁 关卡挑战 · 首批 3 关',202,top,22,'#744d37');
+    for(let n=1;n<=3;n++){
+      const locked = n>this.session.modeProgress.unlockedLevel;
+      this.button('level-'+n,locked?'🔒 第'+n+'关':'第'+n+'关',
+        58+(n-1)*97,top+55,87,79,
+        () => { if(!locked)this.startGame(GAME_MODES.LEVEL,n); },!locked);
+    }
+    this.button('back','返回玩法',90,top+186,225,51,()=>{
+      this.screen='modes';this.needsDraw=true;
+    },false);
+  }
+
+  drawLevelWin() {
+    const ctx=this.ctx, mid=this.metrics.stageHeight/2, result=this.levelResult;
+    ctx.fillStyle='rgba(45,31,45,.7)';
+    ctx.fillRect(0,0,DESIGN_W,this.metrics.stageHeight);
+    rounded(ctx,27,mid-182,351,364,26,'#fff8ec');
+    label(ctx,'🎉 第 '+result.level+' 关挑战成功',202,mid-129,23,'#6b4938');
+    label(ctx,'⭐'.repeat(result.stars),202,mid-62,30,'#e9a84a');
+    label(ctx,'全清 · 使用沙块 '+result.drops+' 个',202,mid-15,16,'#74563d');
+    if(result.level<3)this.button('next','下一关',59,mid+24,286,49,
+      ()=>this.startGame(GAME_MODES.LEVEL,result.level+1));
+    this.button('retry','再玩一次',59,mid+83,139,44,
+      ()=>this.startGame(GAME_MODES.LEVEL,result.level),false);
+    this.button('home','返回首页',208,mid+83,137,44,()=>this.goHome(),false);
+  }
+
+  drawArtControls() {
+    const ctx=this.ctx, top=this.topControlsY();
+    rounded(ctx,12,top,220,42,14,'rgba(255,255,255,.88)');
+    label(ctx,'🎨 沙画 · 完成线',24,top+21,14,'#79513e','left');
+    this.button('brush-size','笔刷'+this.session.art.radius,238,top+3,72,36,()=>{
+      const sizes=[1,2,4];
+      const at=sizes.indexOf(this.session.art.radius);
+      this.session.art.setRadius(sizes[(at+1)%3]);this.needsDraw=true;
+    },false);
+    this.button('home','首页',316,top+3,75,36,()=>this.goHome(),false);
+    const y=this.metrics.stageHeight-136;
+    rounded(ctx,5,y-8,395,144,17,'rgba(255,248,235,.94)');
+    const names=[['flow','流沙'],['fixed','固沙'],['shape','形状'],['erase','橡皮']];
+    for(let i=0;i<4;i++){
+      const [tool,title]=names[i];
+      this.button(tool,title,10+i*99,y,88,35,
+        ()=>{if(!this.session.setArtTool(tool))this.toast('请等待沙块落稳');this.needsDraw=true;},
+        this.session.art.tool===tool);
+    }
+    const colors=['#ed6764','#f3a34a','#e8d15c','#65bc75','#5cc7cc','#6590d4','#a17acc'];
+    for(let i=0;i<7;i++){
+      const x=28+i*51,cy=y+61;
+      ctx.beginPath();ctx.arc(x,cy,15,0,Math.PI*2);
+      ctx.fillStyle=colors[i];ctx.fill();
+      if(this.session.art.color===ART_COLORS[i]){
+        ctx.strokeStyle='#61402c';ctx.lineWidth=2;ctx.stroke();
+      }
+      this.buttons.push({id:'color-'+i,x:x-22,y:cy-24,w:44,h:48,
+        action:()=>{this.session.setArtColor(ART_COLORS[i]);this.needsDraw=true;}});
+    }
+    this.button('undo','↶ 撤销',11,y+88,90,35,()=>this.session.art.undo(),false);
+    this.button('redo','↷ 重做',108,y+88,90,35,()=>this.session.art.redo(),false);
+    this.button('clear','清空画布',206,y+88,190,35,()=>{
+      if(this.confirmClear){
+        this.session.art.clear();this.confirmClear=false;
+      }else{
+        this.confirmClear=true;this.toast('再点一次清空画布');
+      }
+      this.needsDraw=true;
+    },false);
+  }
+
+  drawGallery() {
+    const ctx=this.ctx,mid=this.metrics.stageHeight/2;
+    ctx.fillStyle='rgba(47,34,47,.66)';
+    ctx.fillRect(0,0,DESIGN_W,this.metrics.stageHeight);
+    rounded(ctx,24,mid-200,357,405,22,'#fff8ec');
+    label(ctx,'🖼 我的沙画',202,mid-167,22,'#764e37');
+    const works=this.session.modeProgress.artworks.slice(0,5);
+    if(!works.length)label(ctx,'还没有作品，先创作一幅吧！',202,mid-60,15,'#94765a');
+    for(let i=0;i<works.length;i++)this.button('work-'+i,
+      '作品 '+(i+1)+' · '+works[i].date.slice(0,10),
+      54,mid-132+i*57,297,45,()=>this.viewArtwork(works[i]),false);
+    this.button('back','返回玩法',107,mid+160,191,38,()=>{
+      this.screen='modes';this.needsDraw=true;
+    },false);
+  }
+
+  viewArtwork(work) {
+    try {
+      const {cells}=decodeArtwork(work.runs,work.width*work.height);
+      const canvas=this.platform.createOffscreenCanvas();
+      canvas.width=work.width;canvas.height=work.height;
+      const ctx=canvas.getContext('2d');
+      ctx.fillStyle=ART_BG;ctx.fillRect(0,0,canvas.width,canvas.height);
+      for(let i=0;i<cells.length;i++){
+        if(!cells[i])continue;
+        const x=i%work.width,y=Math.floor(i/work.width);
+        const rgb=getParticleRgb(x,y,cells[i]);
+        ctx.fillStyle='rgb('+rgb.join(',')+')';
+        ctx.fillRect(x+SETTLED_PARTICLE_INSET,y+SETTLED_PARTICLE_INSET,
+          SETTLED_PARTICLE_SIZE,SETTLED_PARTICLE_SIZE);
+      }
+      this.artwork=canvas;
+      this.overMode=GAME_MODES.ART;
+      this.screen='over';
+      this.needsDraw=true;
+    } catch { this.toast('作品数据无法读取'); }
   }
 
   drawPlaying(now) {
+    if (this.session.playMode === GAME_MODES.ART) {
+      this.drawArtControls();
+      return;
+    }
     const ctx = this.ctx;
     const topY = this.topControlsY();
     rounded(ctx, 12, topY, 112, 58, 15, 'rgba(255,255,255,0.91)');
-    label(ctx, 'SCORE', 25, topY + 16, 11, '#a48771', 'left');
+    label(ctx, this.session.playMode === GAME_MODES.LEVEL
+      ? '第 ' + this.session.level + ' 关' : 'SCORE', 25, topY + 16, 11, '#a48771', 'left');
     label(ctx, this.displayScore, 25, topY + 39, 22, '#5b3e2d', 'left');
     if (this.debugEffectUiEnabled) {
       this.button('effects', '特效', 331, topY + 5, 62, 38,
@@ -367,10 +519,12 @@ export class CanvasGame {
     rounded(ctx, 120, 85, 165, 292, 2, '#fff8ea');
     if (this.artwork) ctx.drawImage(this.artwork, 120, 85, 165, 292);
 
-    label(ctx, '这一局，拼出了一幅不错的沙画', 202, 448, 18, '#664832');
+    label(ctx, this.overMode === GAME_MODES.ART
+      ? '你的沙画完成啦！' : '这一局，拼出了一幅不错的沙画', 202, 448, 18, '#664832');
     label(ctx, '分享给好友看看你的作品', 202, 476, 12, '#967d69');
     rounded(ctx, 151, 491, 103, 30, 15, 'rgba(255,255,255,.7)');
-    label(ctx, `${this.session.clearSystem.score} 分 · ${this.overRating}`,
+    label(ctx, this.overMode === GAME_MODES.ART ? '七彩流沙 · 我的原创作品' :
+      `${this.session.clearSystem.score} 分 · ${this.overRating}`,
       202, 506, 12, '#78543a');
 
     rounded(ctx, 32, 535, 165, 46, 15, 'rgba(255,255,255,.78)', '#e9ddcf');
@@ -382,9 +536,9 @@ export class CanvasGame {
     this.buttons.push({ id: 'save', x: 208, y: 535 + offsetY, w: 165, h: 46,
       action: () => this.saveArtwork() });
     rounded(ctx, 32, 591, 341, 55, 18, '#ff805f');
-    label(ctx, '再来一局', 202, 619, 18, '#fff');
+    label(ctx, this.overMode === GAME_MODES.ART ? '再画一幅' : '再来一局', 202, 619, 18, '#fff');
     this.buttons.push({ id: 'again', x: 32, y: 591 + offsetY, w: 341, h: 55,
-      action: () => this.startGame() });
+      action: () => this.startGame(this.overMode, this.selectedLevel) });
     label(ctx, '返回首页', 202, 670, 12, '#8f7461');
     this.buttons.push({ id: 'home', x: 135, y: 650 + offsetY, w: 135, h: 40,
       action: () => this.goHome() });
@@ -440,7 +594,7 @@ export class CanvasGame {
       const unlocked = this.session.progress.isUnlocked(effect.id);
       const selectedEffect = this.session.progress.getSelectedEffectId() === effect.id;
       const requirement = effect.unlock?.type === 'ad'
-        ? `观看 ${effect.unlock.value} 次激励广告`
+        ? `完整观看 ${effect.unlock.value} 次广告可解锁`
         : effect.unlock?.type === 'score'
           ? `最高分达到 ${effect.unlock.value}`
           : effect.unlock?.type === 'total_clear'
@@ -489,7 +643,16 @@ export class CanvasGame {
         this.drag = { kind: 'scroll', y: dy, start: this.effectScroll };
         return;
       }
-      if (this.screen !== 'playing' || dx < 0 || dx > DESIGN_W || dy < 0 || dy > DESIGN_H) return;
+      if (this.screen !== 'playing' || dx < 0 || dx > DESIGN_W ||
+          dy < 0 || dy > this.metrics.stageHeight) return;
+      if (this.session.playMode === GAME_MODES.ART && this.session.art.tool !== 'shape') {
+        const yGrid = (dy - b.y * DESIGN_W / b.width) / DESIGN_H * this.session.grid.height;
+        const xGrid = dx / DESIGN_W * this.session.grid.width;
+        this.drag = { kind: 'art' };
+        this.session.art.beginStroke(xGrid, yGrid);
+        this.needsDraw = true;
+        return;
+      }
       this.drag = { x: dx, y: dy, fast: false };
       this.session.setPointerX(dx / DESIGN_W * this.session.grid.width);
     } else if (type === 'move' && this.drag) {
@@ -504,6 +667,12 @@ export class CanvasGame {
           this.drag = null;
           return;
         }
+      }
+      if (this.drag.kind === 'art') {
+        const gy = (dy - b.y * DESIGN_W / b.width) / DESIGN_H * this.session.grid.height;
+        this.session.art.strokeTo(dx / DESIGN_W * this.session.grid.width, gy);
+        this.needsDraw = true;
+        return;
       }
       if (this.drag.kind === 'scroll') {
         this.effectScroll = Math.max(0, Math.min(this.effectMaxScroll,
@@ -529,14 +698,22 @@ export class CanvasGame {
         this.drag = null;
         return;
       }
+      if (this.drag.kind === 'art') {
+        this.session.art.endStroke();
+        this.drag = null;
+        this.needsDraw = true;
+        return;
+      }
       this.session.setPointerX(dx / DESIGN_W * this.session.grid.width);
       this.session.releaseFruit();
       this.drag = null;
     }
   }
 
-  startGame() {
-    this.session.start();
+  startGame(mode = this.selectedMode, level = this.selectedLevel) {
+    this.selectedMode = mode;
+    this.selectedLevel = level;
+    this.session.start(mode, level);
     this.screen = 'playing';
     this.artwork = null;
     this.effect = null;
@@ -724,7 +901,8 @@ export class CanvasGame {
     }
   }
 
-  handleGameOver({ rating = 'GOOD' } = {}) {
+  handleGameOver({ rating = 'GOOD', mode = GAME_MODES.ENDLESS } = {}) {
+    this.overMode = mode;
     this.artwork = this.renderer.createArtworkCanvas({ scale: 3 });
     this.overRating = rating;
     this.screen = 'over';
@@ -732,12 +910,28 @@ export class CanvasGame {
     this.needsDraw = true;
   }
 
+  handleArtComplete() {
+    this.overMode=GAME_MODES.ART;
+    this.artwork=this.renderer.createArtworkCanvas({scale:3});
+    this.screen='over';
+    this.platform.stopSounds();
+    this.needsDraw=true;
+  }
+
+  handleLevelComplete(result) {
+    this.levelResult=result;
+    this.screen='win';
+    this.platform.stopSounds();
+    this.needsDraw=true;
+  }
+
   makePoster() {
     return renderArtworkPoster({
       createCanvas: () => this.platform.createOffscreenCanvas(),
       artworkCanvas: this.artwork,
       score: this.session.clearSystem.score,
-      rating: this.overRating
+      rating: this.overRating,
+      mode: this.overMode
     });
   }
 
@@ -745,6 +939,15 @@ export class CanvasGame {
     try {
       const result = await this.platform.shareCanvas(this.makePoster(), '七彩沙画消除 · 我的沙画作品');
       this.toast(result || '已打开分享');
+    } catch (error) {
+      if (error?.name !== 'AbortError') this.toast('分享未完成');
+    }
+  }
+
+  async shareGame() {
+    try {
+      const result = await this.platform.shareGame();
+      this.toast(result || '已打开游戏分享');
     } catch (error) {
       if (error?.name !== 'AbortError') this.toast('分享未完成');
     }

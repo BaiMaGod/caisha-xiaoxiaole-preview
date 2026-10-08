@@ -7,7 +7,7 @@ export function createWebPlatform(canvas) {
 
   return {
     kind: 'web',
-    debugMode: Boolean(import.meta.env.DEV),
+    debugMode: Boolean(import.meta.env?.DEV),
     rewardedAdAvailable: false,
     canvas,
     storage,

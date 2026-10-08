@@ -313,6 +313,42 @@ function ensureStyles() {
       50% { transform: scale(1.08); opacity: 1; }
     }
 
+
+    .caisha-mode-menu {
+      position: absolute; inset: 0; z-index: 5;
+      display: none; align-items: center; justify-content: center;
+      padding: 22px; background: rgba(38,31,44,.55);
+      backdrop-filter: blur(7px);
+    }
+    .caisha-mode-menu.is-open { display: flex; }
+    .caisha-mode-menu__card {
+      width: min(100%, 355px); max-height: min(640px, 93vh);
+      overflow: auto; padding: 23px 18px 16px;
+      border-radius: 25px; background: #fff8ec;
+      box-shadow: 0 18px 55px rgba(54,37,31,.26);
+      text-align: center;
+    }
+    .caisha-mode-menu__title { font-size: 23px; font-weight: 950; color: #704936; margin-bottom: 15px; }
+    .caisha-mode-menu__item {
+      display: block; width: 100%; min-height: 76px; margin: 10px 0;
+      border: 1px solid rgba(173,122,79,.17); border-radius: 19px;
+      background: linear-gradient(120deg,#fff,#fff0dc);
+      color: #734932; text-align: left; padding: 12px 19px;
+      cursor: pointer; box-shadow: 0 5px 13px rgba(102,72,45,.06);
+    }
+    .caisha-mode-menu__item strong { display: block; font-size: 18px; margin-bottom: 4px; }
+    .caisha-mode-menu__item small { font-size: 11px; opacity: .7; }
+    .caisha-mode-menu__back {
+      margin-top: 9px; min-height: 36px; padding: 6px 18px;
+      border: 0; border-radius: 99px; background: #f4e2d2;
+      color: #77543d; font-weight: 850;
+    }
+    .caisha-mode-menu__levels { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; }
+    .caisha-mode-menu__levels button {
+      min-height: 75px; border-radius: 16px; border: 1px solid #f2dccb;
+      background: white; font: 850 15px system-ui,sans-serif; color: #755138;
+    }
+    .caisha-mode-menu__levels button:disabled { color: #b7a697; background: #f7efe7; }
     @media (max-height: 700px) {
       .caisha-home {
         padding-top: max(12px, env(safe-area-inset-top));
@@ -378,7 +414,7 @@ function ensureStyles() {
 export class HomeScreen {
   constructor(
     container,
-    { progress, onStart, onEffects, showEffectsButton = false } = {}
+    { progress, onStart, onEffects, onGallery, getUnlockedLevel, showEffectsButton = false } = {}
   ) {
     ensureStyles();
     ensureRainbowScoreStyles();
@@ -387,6 +423,8 @@ export class HomeScreen {
     this.progress = progress;
     this.onStart = onStart;
     this.onEffects = onEffects;
+    this.onGallery = onGallery;
+    this.getUnlockedLevel = getUnlockedLevel ?? (() => 1);
     this.showEffectsButton = Boolean(showEffectsButton);
     this.opened = true;
 
@@ -431,13 +469,73 @@ export class HomeScreen {
     this.playButton.append(playImage);
     actions.append(this.playButton);
 
-    this.root.append(top, brand, actions);
+    this.modeMenu = el('div', 'caisha-mode-menu');
+    const card = el('div', 'caisha-mode-menu__card');
+    this.modeTitle = el('div', 'caisha-mode-menu__title', '选择玩法');
+    this.modeItems = el('div');
+    this.modeBack = el('button', 'caisha-mode-menu__back', '返回首页');
+    this.modeBack.type = 'button';
+    this.modeBack.addEventListener('click', () => this.closeModeMenu());
+    card.append(this.modeTitle, this.modeItems, this.modeBack);
+    this.modeMenu.append(card);
+    this.root.append(top, brand, actions, this.modeMenu);
     this.container.appendChild(this.root);
 
-    this.playButton.addEventListener('click', () => {
-      this.onStart?.();
+    this.playButton.addEventListener('click', () => this.openModeMenu());
+
+    this.openModeMenu = () => {
+      this.modeTitle.textContent = '选择玩法';
+      this.modeItems.replaceChildren();
+      const item = (title, description, run) => {
+        const button = el('button', 'caisha-mode-menu__item');
+        button.type = 'button';
+        const head = el('strong', '', title);
+        const desc = el('small', '', description);
+        button.append(head, desc);
+        button.addEventListener('click', run);
+        this.modeItems.appendChild(button);
+      };
+      item('🌈 无尽模式', '同色左右贯通，挑战最高分', () => this.selectMode('endless'));
+      item('🏁 关卡模式', '预设自然沙堆，完全清空通关', () => this.openLevelMenu());
+      item('🎨 沙画模式', '七彩创作，堆到完成线装裱成画', () => this.selectMode('sandArt'));
+      if (this.onGallery) item('🖼 我的沙画', '查看已完成的作品', () => {
+        this.closeModeMenu();
+        this.onGallery();
+      });
+      this.modeMenu.classList.add('is-open');
+    };
+
+    this.openLevelMenu = () => {
+      this.modeTitle.textContent = '选择关卡 · 首批 3 关';
+      this.modeItems.replaceChildren();
+      const levels = el('div', 'caisha-mode-menu__levels');
+      for (let n = 1; n <= 3; n++) {
+        const button = el('button', '', n > this.getUnlockedLevel() ? '🔒 第' + n + '关' : '第' + n + '关');
+        button.type = 'button';
+        button.disabled = n > this.getUnlockedLevel();
+        button.addEventListener('click', () => this.selectMode('level', n));
+        levels.appendChild(button);
+      }
+      this.modeItems.appendChild(levels);
+      this.modeBack.textContent = '返回玩法';
+      this.modeBack.onclick = () => {
+        this.modeBack.onclick = null;
+        this.modeBack.textContent = '返回首页';
+        this.openModeMenu();
+      };
+    };
+
+    this.closeModeMenu = () => {
+      this.modeMenu.classList.remove('is-open');
+      this.modeBack.onclick = null;
+      this.modeBack.textContent = '返回首页';
+    };
+
+    this.selectMode = (mode, level = 1) => {
+      this.onStart?.(mode, level);
+      this.closeModeMenu();
       this.hide();
-    });
+    };
 
     this.effectsButton.addEventListener('click', () => {
       if (this.showEffectsButton) this.onEffects?.();
@@ -475,6 +573,7 @@ export class HomeScreen {
   show() {
     this.opened = true;
     this.root.style.display = 'flex';
+    this.closeModeMenu?.();
 
     if (this.progress) {
       this.renderProgress(this.progress.getSnapshot());

@@ -17,6 +17,7 @@ export class SandSimulation {
     this.chunkManager = new ChunkManager();
 
     this.fullUpdate = true;
+    this.fixedMask = null;
   }
 
   setRandom(random = Math.random) {
@@ -94,6 +95,7 @@ export class SandSimulation {
     if (value <= 0) return;
 
     const index = this.grid.index(x, y);
+    if (this.fixedMask?.[index]) return;
     if (this.sleepFrames[index] > CONFIG.SLEEP_THRESHOLD) return;
 
     this.velocity[index] = Math.min(

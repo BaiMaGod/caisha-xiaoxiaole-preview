@@ -71,6 +71,7 @@ export class SandRenderer {
     this.cssWidth = grid.width;
     this.cssHeight = grid.height;
     this.displayDpr = 1;
+    this.lineMode = 'failure';
 
     if (!getDisplayMetrics && typeof ResizeObserver !== 'undefined') {
       this.resizeObserver = new ResizeObserver(() => {
@@ -174,7 +175,8 @@ export class SandRenderer {
     this.logicalCtx.save();
     this.logicalCtx.setLineDash([5, 4]);
     this.logicalCtx.lineWidth = 1;
-    this.logicalCtx.strokeStyle = 'rgba(255, 105, 105, 0.68)';
+    this.logicalCtx.strokeStyle = this.lineMode === 'finish'
+      ? 'rgba(98, 195, 152, 0.88)' : 'rgba(255, 105, 105, 0.68)';
     this.logicalCtx.beginPath();
     this.logicalCtx.moveTo(0, y);
     this.logicalCtx.lineTo(this.grid.width, y);

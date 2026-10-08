@@ -1,7 +1,7 @@
 import { RAINBOW_SCORE_COLORS } from './RainbowScore.js';
 
 // The browser and Mini Game export the same artwork composition.
-export function renderArtworkPoster({ createCanvas, artworkCanvas, score = 0, rating = 'GOOD' }) {
+export function renderArtworkPoster({ createCanvas, artworkCanvas, score = 0, rating = 'GOOD', mode = 'endless' }) {
     const canvas = createCanvas();
     canvas.width = 1080;
     canvas.height = 1440;
@@ -35,7 +35,7 @@ export function renderArtworkPoster({ createCanvas, artworkCanvas, score = 0, ra
 
     ctx.fillStyle = 'rgba(112,81,57,.56)';
     ctx.font = '800 21px system-ui, sans-serif';
-    ctx.fillText('本局沙画完成', 540, 126);
+    ctx.fillText(mode === 'sandArt' ? '我的原创沙画作品' : '本局沙画完成', 540, 126);
 
     const frameX = 256;
     const frameY = 168;
@@ -114,7 +114,7 @@ export function renderArtworkPoster({ createCanvas, artworkCanvas, score = 0, ra
     ctx.fillStyle = '#664832';
     ctx.font = '900 34px system-ui, sans-serif';
     ctx.fillText(
-      '这一局，拼出了一幅不错的沙画',
+      mode === 'sandArt' ? '你的沙画完成啦！' : '这一局，拼出了一幅不错的沙画',
       540,
       1243
     );
@@ -125,8 +125,8 @@ export function renderArtworkPoster({ createCanvas, artworkCanvas, score = 0, ra
 
     // Match the on-screen rainbow score in saved/shared artwork.
     ctx.font = '900 28px system-ui, sans-serif';
-    const scoreText = Number(score).toLocaleString();
-    const suffix = ` 分 · ${rating}`;
+    const scoreText = mode === 'sandArt' ? '' : Number(score).toLocaleString();
+    const suffix = mode === 'sandArt' ? '七彩流沙 · 独一无二的作品' : ` 分 · ${rating}`;
     const scoreWidth = ctx.measureText(scoreText).width;
     const suffixWidth = ctx.measureText(suffix).width;
     const startX = 540 - (scoreWidth + suffixWidth) / 2;

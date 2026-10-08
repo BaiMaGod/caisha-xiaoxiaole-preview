@@ -395,6 +395,7 @@ export class GameOverArtwork {
 
     const card = el('div', 'caisha-result__card');
     const eyebrow = el('div', 'caisha-result__eyebrow', '本局沙画完成');
+    this.eyebrow = eyebrow;
 
     const frameWrap = el('div', 'caisha-result__frame-wrap');
     const frameShadow = el('div', 'caisha-result__frame-shadow');
@@ -411,11 +412,13 @@ export class GameOverArtwork {
       'caisha-result__headline',
       '这一局，拼出了一幅不错的沙画'
     );
+    this.headline = headline;
     const subline = el(
       'div',
       'caisha-result__subline',
       '分享给好友看看你的作品'
     );
+    this.subline = subline;
     this.scoreLine = el('div', 'caisha-result__score');
     copy.append(headline, subline, this.scoreLine);
 
@@ -485,12 +488,18 @@ export class GameOverArtwork {
     return this.opened;
   }
 
-  show({ score = 0, rating = 'GOOD', artworkCanvas } = {}) {
+  show({ score = 0, rating = 'GOOD', artworkCanvas, mode = 'endless' } = {}) {
     clearTimeout(this.showTimer);
     clearTimeout(this.toastTimer);
 
     this.score = Number(score) || 0;
     this.rating = String(rating || 'GOOD').toUpperCase();
+    this.mode = mode;
+    this.eyebrow.textContent = mode === 'sandArt' ? '七彩流沙 · 原创沙画' : '本局沙画完成';
+    this.headline.textContent = mode === 'sandArt' ? '你的沙画完成啦！' : '这一局，拼出了一幅不错的沙画';
+    this.subline.textContent = mode === 'sandArt' ? '把独一无二的作品送给好友' : '分享给好友看看你的作品';
+    this.restartButton.textContent = mode === 'sandArt' ? '再画一幅' : '再来一局';
+    this.scoreLine.style.display = mode === 'sandArt' ? 'none' : 'inline-flex';
     this.scoreLine.replaceChildren(
       el('span', 'caisha-rainbow-score', this.score.toLocaleString()),
       document.createTextNode(` 分 · ${this.rating}`)
@@ -553,7 +562,8 @@ export class GameOverArtwork {
       createCanvas: () => document.createElement('canvas'),
       artworkCanvas: this.previewCanvas,
       score: this.score,
-      rating: this.rating
+      rating: this.rating,
+      mode: this.mode
     });
   }
   async savePoster({ fallbackMessage = '沙画作品已生成' } = {}) {

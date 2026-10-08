@@ -19,6 +19,11 @@ import { HomeScreen } from './ui/HomeScreen.js';
 import { HomeDemoController } from './ui/HomeDemoController.js';
 import { GameOverArtwork } from './ui/GameOverArtwork.js';
 import { SettingsPanel } from './ui/SettingsPanel.js';
+import { GAME_MODES, ModeProgress, countSand } from './modes/ModeLogic.js';
+import { getPrototypeLevel } from './modes/Levels.js';
+import { SandArtTools } from './modes/SandArtTools.js';
+import { ArtToolbar } from './ui/ArtToolbar.js';
+import { ModePanels } from './ui/ModePanels.js';
 
 const gameShell = document.getElementById('game-shell');
 const gameRoot = document.getElementById('game-root');
@@ -29,6 +34,12 @@ if (!gameShell || !gameRoot) {
 
 const grid = new SandGrid();
 const simulation = new SandSimulation(grid);
+const art = new SandArtTools(grid, simulation);
+const modeProgress = new ModeProgress();
+let currentMode = GAME_MODES.ENDLESS;
+let currentLevel = 1;
+let levelData = null;
+let levelVictoryPending = false;
 const sandRenderer = new SandRenderer(grid);
 sandRenderer.canvas.className = 'game-canvas';
 sandRenderer.canvas.setAttribute('aria-label', '七彩沙画消除游戏画布');
@@ -78,21 +89,109 @@ const homeDemo = new HomeDemoController({
 const homeScreen = new HomeScreen(gameShell, {
   progress,
   showEffectsButton: debugEffectUiEnabled,
-  onStart: () => {
+  onStart: (mode, level) => {
     homeDemo.hide();
-    restartGame();
+    restartGame(mode, level);
   },
+  getUnlockedLevel: () => modeProgress.unlockedLevel,
+  onGallery: () => openArtworkGallery(),
   onEffects: () => effectPanel.open()
 });
 
 const gameOverArtwork = new GameOverArtwork(gameShell, {
-  onRestart: () => restartGame(),
+  onRestart: () => restartGame(currentMode, currentLevel),
   onHome: () => returnHome()
 });
 
+const modePanels = new ModePanels(gameShell);
+const artToolbar = new ArtToolbar(gameShell, {
+  onHome: () => returnHome(),
+  onTool: (tool) => {
+    if (!setArtTool(tool)) artToolbar.setTool(art.tool);
+  },
+  onSize: (size) => art.setRadius(size),
+  onColor: (color) => {
+    art.setColor(color);
+    if (fruitManager.current?.state === 'CONTROL') {
+      fruitManager.current.color = art.color;
+    }
+  },
+  onUndo: () => { art.undo(); renderGameCanvas(true); },
+  onRedo: () => { art.redo(); renderGameCanvas(true); },
+  onClear: () => { art.clear(); renderGameCanvas(true); }
+});
+const modeHomeButton = document.createElement('button');
+modeHomeButton.type = 'button';
+modeHomeButton.textContent = '‹ 返回首页';
+modeHomeButton.style.cssText =
+  'display:none;position:absolute;top:max(14px,env(safe-area-inset-top));right:12px;z-index:15;'+
+  'border:1px solid #ebdbc9;background:#fff9ed;color:#73513c;border-radius:14px;'+
+  'padding:9px 11px;font:800 12px system-ui;';
+modeHomeButton.addEventListener('click', () => returnHome());
+gameShell.appendChild(modeHomeButton);
+
+function setArtTool(tool) {
+  if (fruitManager.current && !['CONTROL', 'SAND'].includes(fruitManager.current.state)) return false;
+  art.setTool(tool);
+  if (tool === 'shape') {
+    fruitManager.setSpawnProvider(() => ({ color: art.color }));
+    fruitManager.reset();
+  } else {
+    fruitManager.setEnabled(false);
+    fruitManager.current = null;
+  }
+  renderGameCanvas(true);
+  return true;
+}
+let drawingArt = false;
+function getArtPos(event) {
+  const r = sandRenderer.canvas.getBoundingClientRect();
+  return {
+    x: (event.clientX - r.left) / Math.max(1, r.width) * grid.width,
+    y: (event.clientY - r.top) / Math.max(1, r.height) * grid.height
+  };
+}
+function captureArtPointer(event) {
+  if (currentMode !== GAME_MODES.ART || art.tool === 'shape' ||
+      homeScreen.isOpen() || gameOver || gameOverArtwork.isOpen()) return;
+  if (event.type === 'pointerdown') {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    drawingArt = true;
+    const p = getArtPos(event);
+    art.beginStroke(p.x, p.y);
+    sandRenderer.canvas.setPointerCapture?.(event.pointerId);
+  } else if (drawingArt && event.type === 'pointermove') {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const p = getArtPos(event);
+    art.strokeTo(p.x, p.y);
+  } else if (drawingArt && (event.type === 'pointerup' || event.type === 'pointercancel')) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    drawingArt = false;
+    art.endStroke();
+  }
+}
+for (const type of ['pointerdown','pointermove','pointerup','pointercancel'])
+  sandRenderer.canvas.addEventListener(type, captureArtPointer, { capture: true });
+
+function openArtworkGallery() {
+  modePanels.showGallery(modeProgress.artworks, {
+    onClose: () => {},
+    onView: (canvas) => {
+      currentMode = GAME_MODES.ART;
+      homeDemo.hide();
+      gameOver = true;
+      gameOverArtwork.show({ mode: 'sandArt', artworkCanvas: canvas });
+    }
+  });
+}
 hud.setGameVisible(false);
 
 new FruitController(sandRenderer.canvas, fruitManager, grid, {
+  canInteract: () => !gameOver && !homeScreen.isOpen() &&
+    (currentMode !== GAME_MODES.ART || art.tool === 'shape'),
   onRelease: () => {
     hud.notifyDropReleased();
 
@@ -125,8 +224,12 @@ clearSystem.onClear = (payload) => {
 
   const rating = getClearRating(cleared);
 
-  progress.recordClear({ cleared, score, combo });
-  unlockManager.checkAll();
+  if (currentMode === GAME_MODES.ENDLESS) {
+    progress.recordClear({ cleared, score, combo });
+    unlockManager.checkAll();
+  }
+  if (currentMode === GAME_MODES.LEVEL && countSand(grid) === 0)
+    levelVictoryPending = true;
 
   hud.showCombo(combo);
 
@@ -198,8 +301,10 @@ function triggerGameOver() {
   gameOver = true;
   fruitManager.setEnabled(false);
   audio.playGameOver();
-  progress.recordGameOver(clearSystem.score);
-  unlockManager.checkAll();
+  if (currentMode === GAME_MODES.ENDLESS) {
+    progress.recordGameOver(clearSystem.score);
+    unlockManager.checkAll();
+  }
 
   const artworkCanvas = sandRenderer.createArtworkCanvas({
     scale: 3
@@ -224,6 +329,8 @@ if (import.meta.env.DEV) {
 }
 
 function resetHomeDemoWorld(baselineCells = null) {
+  art.stop();
+  art.fixed.fill(0);
   clearEffects.clear();
   audio.stopTransient();
   grid.clear();
@@ -273,7 +380,17 @@ function prepareFirstDropGuide() {
   });
 }
 
-function restartGame() {
+function restartGame(mode = currentMode, level = currentLevel) {
+  currentMode = mode;
+  currentLevel = level;
+  levelData = null;
+  levelVictoryPending = false;
+  art.stop();
+  art.fixed.fill(0);
+  modePanels.hide();
+  artToolbar.show(mode === GAME_MODES.ART);
+  modeHomeButton.style.display = mode === GAME_MODES.LEVEL ? 'block' : 'none';
+  sandRenderer.lineMode = mode === GAME_MODES.ART ? 'finish' : 'failure';
   settingsPanel.close({ silent: true });
   gameOverArtwork.hide();
   hud.setGameVisible(false);
@@ -281,17 +398,37 @@ function restartGame() {
 
   // Pre-simulate the onboarding terrain while the previous screen is still
   // covering the playfield. The player only sees the final settled piles.
-  prepareFirstDropGuide();
+  if (mode === GAME_MODES.ENDLESS) {
+    prepareFirstDropGuide();
+  } else if (mode === GAME_MODES.LEVEL) {
+    levelData = getPrototypeLevel(level);
+    grid.cells.set(levelData.cells);
+    grid.revision++;
+    let first = true;
+    const guide = levelData.guide;
+    fruitManager.setSpawnProvider(() => {
+      if (first) {
+        first = false;
+        return { templateId: guide.templateId, color: guide.color,
+          centerX: guide.centerX };
+      }
+      return { color: guide.color };
+    });
+  } else {
+    fruitManager.setSpawnProvider(null);
+    art.reset();
+  }
 
   simulation.reset();
   clearSystem.reset();
   rules.reset();
   fruitManager.reset();
+  if (mode === GAME_MODES.ART) setArtTool('flow');
   hud.reset();
   clearEffects.clear();
   audio.stopTransient();
   settlementGate.reset();
-  hud.setGameVisible(true);
+  hud.setGameVisible(mode !== GAME_MODES.ART);
 
   gameOver = false;
   lastFruitState = fruitManager.current?.state ?? null;
@@ -304,6 +441,14 @@ function restartGame() {
 }
 
 function returnHome() {
+  drawingArt = false;
+  art.stop();
+  art.fixed.fill(0);
+  fruitManager.setSpawnProvider(null);
+  artToolbar.show(false);
+  modeHomeButton.style.display = 'none';
+  modePanels.hide();
+  sandRenderer.lineMode = 'failure';
   hud.setGameVisible(false);
   audio.stopTransient();
   clearEffects.clear();
@@ -314,6 +459,32 @@ function returnHome() {
   homeDemo.show();
 }
 
+function triggerArtComplete() {
+  if (gameOver || currentMode !== GAME_MODES.ART) return;
+  gameOver = true;
+  drawingArt = false;
+  art.stop();
+  fruitManager.setEnabled(false);
+  artToolbar.show(false);
+  audio.stopTransient();
+  modeProgress.saveArtwork(grid, art.fixed);
+  const artworkCanvas = sandRenderer.createArtworkCanvas({ scale: 3 });
+  gameOverArtwork.show({ mode: 'sandArt', artworkCanvas });
+}
+function triggerLevelComplete() {
+  if (gameOver || currentMode !== GAME_MODES.LEVEL) return;
+  gameOver = true;
+  fruitManager.setEnabled(false);
+  modeHomeButton.style.display = 'none';
+  const stars = modeProgress.winLevel(currentLevel, hud.dropHintCount,
+    levelData?.referenceDrops || 1);
+  modePanels.showWin({
+    level: currentLevel, stars, drops: hud.dropHintCount,
+    next: currentLevel < 3 ? () => restartGame(GAME_MODES.LEVEL, currentLevel+1) : null,
+    retry: () => restartGame(GAME_MODES.LEVEL, currentLevel),
+    home: () => returnHome()
+  });
+}
 function canResolveConnectivity(fruitState) {
   // During IMPACT/BREAKING the fruit is still writing grains into SandGrid.
   // Connectivity is resolved only after SettlementGate confirms the board has
@@ -347,6 +518,7 @@ function loop(time) {
         homeDemo.update(time);
       }
 
+      if (!demoActive && currentMode === GAME_MODES.ART) art.update(deltaMs);
       fruitManager.update(deltaMs);
 
       const fruitState = fruitManager.current?.state ?? null;
@@ -373,13 +545,13 @@ function loop(time) {
 
       lastFruitState = fruitState;
 
-      if (!demoActive && rules.checkDeathLine()) {
+      if (!demoActive && currentMode !== GAME_MODES.ART && rules.checkDeathLine()) {
         triggerGameOver();
       }
 
       if (!gameOver && time - lastSimulation >= CONFIG.UPDATE_INTERVAL) {
         simulation.update(() => {
-          if (!demoActive && rules.checkDeathLine()) {
+          if (!demoActive && currentMode !== GAME_MODES.ART && rules.checkDeathLine()) {
             triggerGameOver();
             return false;
           }
@@ -394,7 +566,9 @@ function loop(time) {
         // Every connectivity check must pass through the same settlement gate.
         // This applies both to the first clear after a fruit turns into sand and
         // to every later cascade caused by grains falling into the cleared space.
-        if (!gameOver && settlementGate.isBlocking()) {
+        if (!gameOver && currentMode === GAME_MODES.ART && art.isComplete())
+          triggerArtComplete();
+        if (!gameOver && currentMode !== GAME_MODES.ART && settlementGate.isBlocking()) {
           const justSettled = settlementGate.observe(simulation.movedCount);
 
           if (
@@ -413,6 +587,10 @@ function loop(time) {
           }
         }
 
+        if (!demoActive && !gameOver && currentMode === GAME_MODES.LEVEL &&
+            levelVictoryPending && !settlementGate.isBlocking() &&
+            !clearEffects.isBusy() && countSand(grid) === 0)
+          triggerLevelComplete();
         lastSimulation = time;
       }
     }
