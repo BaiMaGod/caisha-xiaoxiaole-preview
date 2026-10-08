@@ -314,41 +314,162 @@ function ensureStyles() {
     }
 
 
+    /* Play-mode picker: light candy panel with distinct, tappable modes. */
     .caisha-mode-menu {
-      position: absolute; inset: 0; z-index: 5;
-      display: none; align-items: center; justify-content: center;
-      padding: 22px; background: rgba(38,31,44,.55);
-      backdrop-filter: blur(7px);
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+      background: rgba(34, 26, 51, .56);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
     .caisha-mode-menu.is-open { display: flex; }
     .caisha-mode-menu__card {
-      width: min(100%, 355px); max-height: min(640px, 93vh);
-      overflow: auto; padding: 23px 18px 16px;
-      border-radius: 25px; background: #fff8ec;
-      box-shadow: 0 18px 55px rgba(54,37,31,.26);
+      position: relative;
+      width: min(100%, 362px);
+      max-height: min(650px, 91%);
+      overflow-y: auto;
+      padding: 31px 19px 19px;
+      border: 2px solid rgba(255, 255, 255, .94);
+      border-radius: 29px;
+      background:
+        radial-gradient(circle at 16% 0%, rgba(255, 216, 142, .43), transparent 40%),
+        radial-gradient(circle at 100% 68%, rgba(211, 194, 255, .28), transparent 45%),
+        linear-gradient(162deg, #fffcf8 0%, #fff5ee 100%);
+      box-shadow: 0 22px 62px rgba(45, 27, 46, .32), inset 0 1px 0 #fff;
       text-align: center;
+      overscroll-behavior: contain;
+      animation: caisha-dialog-pop 180ms cubic-bezier(.2,.8,.2,1) both;
     }
-    .caisha-mode-menu__title { font-size: 23px; font-weight: 950; color: #704936; margin-bottom: 15px; }
+    .caisha-mode-menu__card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 7px;
+      border-radius: 27px 27px 0 0;
+      background: linear-gradient(90deg,#ff8c91,#ffc66f,#f5e07f,#89dcb4,#8bc8ff,#c2a3f6);
+    }
+    .caisha-mode-menu__head-icon {
+      display: grid; place-items: center;
+      width: 51px; height: 51px;
+      margin: 0 auto 8px;
+      border-radius: 18px;
+      background: linear-gradient(142deg,#fff3c4,#ffdeeb 55%,#e6dbff);
+      box-shadow: 0 5px 14px rgba(232,165,117,.18), inset 0 1px 0 #fff;
+      font-size: 28px;
+    }
+    .caisha-mode-menu__title {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.24;
+      letter-spacing: .02em;
+      font-weight: 950;
+      color: #6f4559;
+    }
+    .caisha-mode-menu__subtitle {
+      margin: 6px 0 19px;
+      color: #ab8f91;
+      font-size: 12px;
+      font-weight: 650;
+    }
     .caisha-mode-menu__item {
-      display: block; width: 100%; min-height: 76px; margin: 10px 0;
-      border: 1px solid rgba(173,122,79,.17); border-radius: 19px;
-      background: linear-gradient(120deg,#fff,#fff0dc);
-      color: #734932; text-align: left; padding: 12px 19px;
-      cursor: pointer; box-shadow: 0 5px 13px rgba(102,72,45,.06);
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      min-height: 91px;
+      margin: 0 0 11px;
+      padding: 12px 37px 12px 12px;
+      border: 1.5px solid var(--mode-border, #f8d5d6);
+      border-radius: 20px;
+      background: linear-gradient(112deg, #fff, var(--mode-bg, #fff0ef));
+      box-shadow: 0 6px 15px rgba(119, 78, 93, .055), inset 0 1px 0 rgba(255,255,255,.95);
+      color: #734c60;
+      text-align: left;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 125ms ease, box-shadow 125ms ease;
     }
-    .caisha-mode-menu__item strong { display: block; font-size: 18px; margin-bottom: 4px; }
-    .caisha-mode-menu__item small { font-size: 11px; opacity: .7; }
+    .caisha-mode-menu__item:active { transform: scale(.975); }
+    .caisha-mode-menu__item:focus-visible, .caisha-mode-menu__back:focus-visible,
+    .caisha-mode-menu__levels button:focus-visible {
+      outline: 3px solid #a594f5;
+      outline-offset: 2px;
+    }
+    .caisha-mode-menu__item:nth-child(1) {
+      --mode-bg: #fff0e9; --mode-border: #f9d8c8; --mode-icon: #ffe6dd;
+    }
+    .caisha-mode-menu__item:nth-child(2) {
+      --mode-bg: #ebf9fa; --mode-border: #d1edf0; --mode-icon: #daf4f6;
+    }
+    .caisha-mode-menu__item:nth-child(3) {
+      --mode-bg: #f1edff; --mode-border: #e2d9fa; --mode-icon: #e9e2ff;
+    }
+    .caisha-mode-menu__mode-icon {
+      display: grid; place-items: center; flex: 0 0 57px;
+      height: 57px;
+      border-radius: 17px;
+      background: var(--mode-icon, #ffe9db);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.98);
+      font-size: 29px;
+    }
+    .caisha-mode-menu__copy { display: block; min-width: 0; }
+    .caisha-mode-menu__item strong {
+      display: block; margin-bottom: 5px;
+      color: #69475a; font-size: 17px; line-height: 1.1; font-weight: 900;
+    }
+    .caisha-mode-menu__item small {
+      display: block;
+      font-size: 11px; line-height: 1.45; color: #a38c94; font-weight: 650;
+    }
+    .caisha-mode-menu__item::after {
+      content: "›"; position: absolute; right: 16px; top: 50%;
+      transform: translateY(-53%);
+      color: #c8a8b3; font: 900 27px/1 system-ui, sans-serif;
+    }
     .caisha-mode-menu__back {
-      margin-top: 9px; min-height: 36px; padding: 6px 18px;
-      border: 0; border-radius: 99px; background: #f4e2d2;
-      color: #77543d; font-weight: 850;
+      width: 100%; min-height: 47px; margin-top: 7px;
+      border: 1px solid #eedcdf; border-radius: 16px;
+      background: rgba(255,255,255,.76); color: #9c737e;
+      font: 850 13px/1 system-ui, sans-serif;
+      cursor: pointer;
     }
-    .caisha-mode-menu__levels { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; }
+    .caisha-mode-menu__levels {
+      display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px;
+      margin-bottom: 11px;
+    }
     .caisha-mode-menu__levels button {
-      min-height: 75px; border-radius: 16px; border: 1px solid #f2dccb;
-      background: white; font: 850 15px system-ui,sans-serif; color: #755138;
+      min-height: 75px; padding: 8px 4px;
+      border: 1.5px solid #dfd1f6; border-radius: 17px;
+      background: linear-gradient(145deg,#fff,#f1eaff);
+      color: #78639d; font: 850 14px system-ui,sans-serif;
+      box-shadow: 0 5px 12px rgba(119,78,93,.06);
+      cursor: pointer;
     }
-    .caisha-mode-menu__levels button:disabled { color: #b7a697; background: #f7efe7; }
+    .caisha-mode-menu__levels button:disabled {
+      color: #beaebc; background: #f4edf0; border-color: #eee6e9;
+      box-shadow: none; cursor: not-allowed;
+    }
+    @keyframes caisha-dialog-pop {
+      from { opacity: .6; transform: translateY(8px) scale(.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @media (max-height: 590px) {
+      .caisha-mode-menu__card { padding: 20px 14px 14px; }
+      .caisha-mode-menu__head-icon { width: 42px; height: 42px; font-size: 23px; margin-bottom: 5px; }
+      .caisha-mode-menu__subtitle { margin-bottom: 12px; }
+      .caisha-mode-menu__item { min-height: 73px; padding-top: 7px; padding-bottom: 7px; margin-bottom: 8px; }
+      .caisha-mode-menu__mode-icon { flex-basis: 46px; height: 46px; font-size: 24px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .caisha-mode-menu__card { animation: none; }
+    }
+
     @media (max-height: 700px) {
       .caisha-home {
         padding-top: max(12px, env(safe-area-inset-top));
@@ -470,13 +591,24 @@ export class HomeScreen {
     actions.append(this.playButton);
 
     this.modeMenu = el('div', 'caisha-mode-menu');
+    this.modeMenu.setAttribute('role', 'dialog');
+    this.modeMenu.setAttribute('aria-modal', 'true');
+    this.modeMenu.setAttribute('aria-label', '选择玩法');
     const card = el('div', 'caisha-mode-menu__card');
+    this.modeHeadIcon = el('div', 'caisha-mode-menu__head-icon', '🌈');
     this.modeTitle = el('div', 'caisha-mode-menu__title', '选择玩法');
+    this.modeSubtitle = el('div', 'caisha-mode-menu__subtitle', '开启一场缤纷的沙粒冒险');
     this.modeItems = el('div');
-    this.modeBack = el('button', 'caisha-mode-menu__back', '返回首页');
+    this.modeBack = el('button', 'caisha-mode-menu__back', '← 返回首页');
     this.modeBack.type = 'button';
     this.modeBack.addEventListener('click', () => this.closeModeMenu());
-    card.append(this.modeTitle, this.modeItems, this.modeBack);
+    this.modeMenu.addEventListener('pointerdown', (event) => {
+      if (event.target === this.modeMenu) this.closeModeMenu();
+    });
+    this.modeMenu.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') this.closeModeMenu();
+    });
+    card.append(this.modeHeadIcon, this.modeTitle, this.modeSubtitle, this.modeItems, this.modeBack);
     this.modeMenu.append(card);
     this.root.append(top, brand, actions, this.modeMenu);
     this.container.appendChild(this.root);
@@ -486,27 +618,33 @@ export class HomeScreen {
     this.openModeMenu = () => {
       this.modeTitle.textContent = '选择玩法';
       this.modeItems.replaceChildren();
-      const item = (title, description, run) => {
+      this.modeHeadIcon.textContent = '🌈';
+      this.modeSubtitle.textContent = '开启一场缤纷的沙粒冒险';
+      const item = (symbol, title, description, run) => {
         const button = el('button', 'caisha-mode-menu__item');
         button.type = 'button';
-        const head = el('strong', '', title);
-        const desc = el('small', '', description);
-        button.append(head, desc);
+        const icon = el('span', 'caisha-mode-menu__mode-icon', symbol);
+        icon.setAttribute('aria-hidden', 'true');
+        const copy = el('span', 'caisha-mode-menu__copy');
+        copy.append(el('strong', '', title), el('small', '', description));
+        button.append(icon, copy);
         button.addEventListener('click', run);
         this.modeItems.appendChild(button);
       };
-      item('🌈 无尽模式', '同色左右贯通，挑战最高分', () => this.selectMode('endless'));
-      item('🏁 关卡模式', '预设自然沙堆，完全清空通关', () => this.openLevelMenu());
-      item('🎨 沙画模式', '七彩创作，堆到完成线装裱成画', () => this.selectMode('sandArt'));
-      if (this.onGallery) item('🖼 我的沙画', '查看已完成的作品', () => {
-        this.closeModeMenu();
-        this.onGallery();
-      });
+      item('🌈', '无尽模式', '左右同色贯通，挑战最高纪录', () => this.selectMode('endless'));
+      item('🏁', '关卡模式', '闯过精心设计的彩沙挑战', () => this.openLevelMenu());
+      item('🎨', '沙画模式', '堆叠缤纷彩沙，创作独特画作', () => this.selectMode('sandArt'));
+      // The gallery feature remains in the project; its menu entry is hidden for now.
+      this.modeBack.onclick = null;
+      this.modeBack.textContent = '← 返回首页';
       this.modeMenu.classList.add('is-open');
+      this.modeItems.querySelector('button')?.focus({ preventScroll: true });
     };
 
     this.openLevelMenu = () => {
-      this.modeTitle.textContent = '选择关卡 · 共 12 关';
+      this.modeTitle.textContent = '选择关卡';
+      this.modeHeadIcon.textContent = '🏁';
+      this.modeSubtitle.textContent = '12 个缤纷关卡，逐步解锁';
       this.modeItems.replaceChildren();
       const levels = el('div', 'caisha-mode-menu__levels');
       for (let n = 1; n <= 12; n++) {
@@ -517,10 +655,10 @@ export class HomeScreen {
         levels.appendChild(button);
       }
       this.modeItems.appendChild(levels);
-      this.modeBack.textContent = '返回玩法';
+      this.modeBack.textContent = '← 返回玩法';
       this.modeBack.onclick = () => {
         this.modeBack.onclick = null;
-        this.modeBack.textContent = '返回首页';
+        this.modeBack.textContent = '← 返回首页';
         this.openModeMenu();
       };
     };
