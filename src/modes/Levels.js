@@ -120,8 +120,7 @@ function buildBase(id) {
   };
 }
 
-function buildLayered(id) {
-  const p = plans[id - 2];
+function buildLayeredAttempt(id, p) {
   if (!p) throw new Error('Missing distinct level recipe ' + id);
   // Use a separate verified one-color underlay even when its seed number is
   // now a playable layered level. Avoid recursively cloning another level.
@@ -205,6 +204,52 @@ function buildLayered(id) {
     solution, palette: [base.guide.color, ...colorSteps.map(step => step.color)],
     referenceDrops: solution.length, runtimeSeed
   };
+}
+
+// Test proposed challenge profiles against the exact simulation. A complicated
+// layout is never exposed just because it looks different: it must also clear.
+// Fall back to another distinct three-color profile when physics blocks a route.
+function buildLayered(id) {
+  const primary = plans[id - 2];
+  if (!primary) throw new Error('Missing distinct level recipe ' + id);
+  const alternate = {
+    8: [
+      { base: 3, bShape: 'banana', pairs: 1, cCenters: [40, 140] },
+      { base: 2, bShape: 'banana', pairs: 1, cCenters: [40, 140] }
+    ],
+    9: [
+      { base: 1, bShape: 'heart', pairs: 1, cCenters: [60] },
+      { base: 3, bShape: 'banana', pairs: 1, cCenters: [40] }
+    ],
+    10: [
+      { base: 3, bShape: 'banana', pairs: 1, cCenters: [40, 140], dCenters: [18, 162] },
+      { base: 3, bShape: 'banana', pairs: 1, cCenters: [60] }
+    ],
+    11: [
+      { base: 2, bShape: 'banana', pairs: 1, cCenters: [40, 140], dCenters: [18, 162] },
+      { base: 2, bShape: 'banana', pairs: 1, cCenters: [40, 140] }
+    ],
+    12: [
+      { base: 3, bShape: 'banana', pairs: 1, cCenters: [40], dCenters: [18, 162] },
+      { base: 3, bShape: 'banana', pairs: 1, cCenters: [40] }
+    ]
+  };
+  const candidates = [primary, ...(alternate[id] ?? [])];
+  const errors = [];
+  for (const recipe of candidates) {
+    try {
+      const level = buildLayeredAttempt(id, recipe);
+      level.recipe = {
+        base: recipe.base, pairs: recipe.pairs,
+        bShape: recipe.bShape,
+        extraColors: Number(Boolean(recipe.cCenters)) + Number(Boolean(recipe.dCenters))
+      };
+      return level;
+    } catch (err) {
+      errors.push(String(err?.message || err));
+    }
+  }
+  throw new Error('Level ' + id + ' did not pass simulation: ' + errors.join('; '));
 }
 
 export function getPrototypeLevel(level) {
