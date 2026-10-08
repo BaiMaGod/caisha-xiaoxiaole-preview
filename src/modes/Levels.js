@@ -27,12 +27,12 @@ const plans = [
   { base: 3, bShape: 'banana', pairs: 1, cCenters: [40] },
   // levels 7–9: change both the color obstacles and initial mound silhouette
   { base: 2, bShape: 'heart', pairs: 1, cCenters: [60] },
-  { base: 1, bShape: 'banana', pairs: 1, cCenters: [40, 140] },
+  { base: 4, bShape: 'banana', pairs: 1, cCenters: [40, 140] },
   { base: 1, bShape: 'banana', pairs: 1, cCenters: [40] },
   // levels 10–12: an additional color changes the intended clear order
   { base: 3, bShape: 'banana', pairs: 1, cCenters: [60], dCenters: [90] },
   { base: 2, bShape: 'clover', pairs: 2, cCenters: [40, 140], dCenters: [90] },
-  { base: 1, bShape: 'apple', pairs: 3, cCenters: [40, 90, 140], dCenters: [60, 120] }
+  { base: 3, bShape: 'clover', pairs: 2, cCenters: [40, 140], dCenters: [90] }
 ];
 
 export function createLevelRandom(seed) {
@@ -214,6 +214,7 @@ function buildLayered(id) {
   if (!primary) throw new Error('Missing distinct level recipe ' + id);
   const alternate = {
     8: [
+      { base: 5, bShape: 'banana', pairs: 1, cCenters: [60] },
       { base: 3, bShape: 'banana', pairs: 1, cCenters: [40, 140] },
       { base: 2, bShape: 'banana', pairs: 1, cCenters: [40, 140] }
     ],
@@ -230,7 +231,8 @@ function buildLayered(id) {
       { base: 2, bShape: 'banana', pairs: 1, cCenters: [40, 140] }
     ],
     12: [
-      { base: 3, bShape: 'banana', pairs: 1, cCenters: [40], dCenters: [18, 162] },
+      { base: 1, bShape: 'clover', pairs: 2, cCenters: [40, 140], dCenters: [90] },
+      { base: 2, bShape: 'clover', pairs: 2, cCenters: [40, 140], dCenters: [90] },
       { base: 3, bShape: 'banana', pairs: 1, cCenters: [40] }
     ]
   };
