@@ -624,16 +624,22 @@ function loop(time) {
             artFinishStableTicks = 0;
             drawingArt = false;
             art.stop();
-            fruitManager.setEnabled(false);
+            // Freeze new input, not the currently released shape's physics.
+            const state = fruitManager.current?.state;
+            if (!state || state === 'CONTROL' || state === 'SAND')
+              fruitManager.setEnabled(false);
           }
           if (artFinishing) {
+            if (!fruitManager.current) fruitManager.setEnabled(false);
             artFinishElapsed += deltaMs;
             const movingFruit = fruitManager.current &&
               !['SAND', 'CONTROL'].includes(fruitManager.current.state);
             if (simulation.movedCount === 0 && !movingFruit)
               artFinishStableTicks++;
             else artFinishStableTicks = 0;
-            if (artFinishStableTicks >= 4 || artFinishElapsed >= 2000)
+            if (artFinishStableTicks >= 4 ||
+                (artFinishElapsed >= 2000 && !movingFruit) ||
+                artFinishElapsed >= 5000)
               triggerArtComplete();
           }
         }

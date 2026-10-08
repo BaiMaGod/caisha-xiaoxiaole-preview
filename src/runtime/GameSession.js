@@ -238,6 +238,8 @@ export class GameSession {
     const previousFruitState = this.lastFruitState;
     if (demoActive) this.homeDemo.update(time);
     this.fruitManager.update(dt);
+    if (this.artFinishing && !this.fruitManager.current)
+      this.fruitManager.setEnabled(false);
     const fruitState = this.fruitManager.current?.state ?? null;
 
     if (fruitState !== previousFruitState && fruitState === 'FALLING') {
@@ -281,7 +283,10 @@ export class GameSession {
         this.artFinishStableTicks = 0;
         this.artFinishElapsed = 0;
         this.art.stop(); // lock the tools, but keep physics moving
-        this.fruitManager.setEnabled(false);
+        // Never interrupt an already released shape; finish breaking it apart.
+        const activeShape = this.fruitManager.current?.state;
+        if (!activeShape || activeShape === 'CONTROL' || activeShape === 'SAND')
+          this.fruitManager.setEnabled(false);
       }
       if (this.artFinishing) {
         this.artFinishElapsed += dt;
@@ -290,7 +295,9 @@ export class GameSession {
         if (this.simulation.movedCount === 0 && !fruitMoving)
           this.artFinishStableTicks++;
         else this.artFinishStableTicks = 0;
-        if (this.artFinishStableTicks >= 4 || this.artFinishElapsed >= 2000)
+        if (this.artFinishStableTicks >= 4 ||
+            (this.artFinishElapsed >= 2000 && !fruitMoving) ||
+            this.artFinishElapsed >= 5000)
           this.finishArt();
       }
       return;

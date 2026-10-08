@@ -79,6 +79,24 @@ jobs:
           assert.equal(resumed.grid.get(19,300),4,'draft must restore color');
           assert.equal(resumed.art.fixed[resumed.grid.index(19,300)],1,
             'draft must restore fixed grain');
+          const shaped = new GameSession();
+          shaped.start(GAME_MODES.ART);
+          assert.equal(shaped.setArtTool('shape'),true);
+          shaped.setPointerX(110);
+          assert.equal(shaped.releaseFruit(),true);
+          for(let yp=CONFIG.DEATH_LINE_Y;yp<shaped.grid.height;yp++){
+            shaped.grid.set(17,yp,1);
+            shaped.art.fixed[shaped.grid.index(17,yp)]=1;
+          }
+          shaped.update(50,0);
+          assert.equal(shaped.artFinishing,true);
+          assert.equal(shaped.fruitManager.enabled,true,
+            'in-flight shape must remain simulated during finish');
+          for(let n=1;n<150 && shaped.mode==='playing';n++)
+            shaped.update(50,n*50);
+          assert.equal(shaped.mode,'over','art frame must finish after shape falls');
+          assert.ok(countSand(shaped.grid)>shaped.grid.height-CONFIG.DEATH_LINE_Y+100,
+            'art frame includes the shaped sand grain contribution');
           for(let id=1;id<=12;id++){
             const level = getPrototypeLevel(id);
             const s = new GameSession();
