@@ -122,8 +122,29 @@ jobs:
           const errors=[];
           page.on('pageerror',error=>errors.push(error.message));
           await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'});
+          await page.getByRole('button',{name:'打开设置'}).click();
+          await page.locator('.caisha-settings-overlay.is-open').waitFor();
+          assert.equal(await page.locator('.caisha-settings-volume__track').count(),2,
+            'both image-independent volume tracks must render');
+          const hasPaintedRail = await page.locator('.caisha-settings-volume__fill').first()
+            .evaluate(el => getComputedStyle(el).backgroundImage.includes('linear-gradient'));
+          assert(hasPaintedRail,'volume rail must render without loading PNG track');
+          const musicInput=page.getByRole('slider',{name:'音乐音量'});
+          await musicInput.evaluate(el => {
+            el.value='37';
+            el.dispatchEvent(new Event('input',{bubbles:true}));
+          });
+          assert.equal(await page.locator('.caisha-settings-volume__badge').first().textContent(),'37%',
+            'volume percentage tracks interactive changes');
+          await page.screenshot({path:'qa-shots/09-settings-redesign.png',fullPage:true});
+          await page.getByRole('button',{name:'关闭设置'}).click();
           await page.locator('.caisha-home__play').click();
           assert.equal(await page.locator('.caisha-mode-menu.is-open').count(),1,'mode chooser visible');
+          assert.equal(await page.locator('.caisha-mode-menu__item').count(),3,
+            'only the three active play modes are offered');
+          assert.equal(await page.locator('.caisha-mode-menu__item').filter({hasText:'我的沙画'}).count(),0,
+            'gallery entry is temporarily hidden');
+          await page.screenshot({path:'qa-shots/08-mode-picker-redesign.png',fullPage:true});
           await page.locator('.caisha-mode-menu__item').filter({hasText:'沙画模式'}).click();
           assert.equal(await page.locator('section[aria-label="沙画创作工具栏"]').isVisible(),true,'art toolbar visible');
           const canvas=page.locator('.game-canvas');
@@ -176,13 +197,8 @@ jobs:
           await page.screenshot({path:'qa-shots/05-art-finished.png',fullPage:true});
           await page.locator('.caisha-result__home').click();
           await page.locator('.caisha-home__play').click();
-          await page.locator('.caisha-mode-menu__item').filter({hasText:'我的沙画'}).click();
-          assert.equal(await page.locator('.caisha-mode-menu__levels').count(),0,
-            'art gallery is independent from levels');
-          await page.getByText('查看作品').first().waitFor();
-          await page.screenshot({path:'qa-shots/07-art-gallery.png',fullPage:true});
-          await page.getByText('关闭',{exact:true}).last().click();
-          await page.locator('.caisha-home__play').click();
+          assert.equal(await page.locator('.caisha-mode-menu__item').count(),3,
+            'gallery remains hidden after returning home');
           await page.locator('.caisha-mode-menu__item').filter({hasText:'关卡模式'}).click();
           const levels=page.locator('.caisha-mode-menu__levels button');
           assert.equal(await levels.count(),12,'12 playable levels offered');
