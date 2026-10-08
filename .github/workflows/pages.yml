@@ -28,6 +28,21 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Check both Web and Canvas mini-game JavaScript
+        run: |
+          find src -name '*.js' -print0 | xargs -0 -n1 node --check
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { CanvasGame } from './src/runtime/CanvasGame.js';
+          const game = Object.create(CanvasGame.prototype);
+          let stopped = 0;
+          game.platform = {stopSounds:()=>stopped++};
+          game.selectedLevel = 2;
+          game.handleGameOver({mode:'level'});
+          assert.equal(game.screen,'fail','mini-game must use level-specific failure UI');
+          assert.equal(stopped,1);
+          console.log('All JS parses and CanvasGame level failure routes correctly');
+          NODE
       - name: Run 12-level, art and save-data regressions
         run: |
           node --input-type=module <<'NODE'
