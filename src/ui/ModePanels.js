@@ -1,19 +1,24 @@
 import { decodeArtwork } from '../modes/ModeLogic.js';
 import { getParticleRgb, SETTLED_PARTICLE_INSET, SETTLED_PARTICLE_SIZE } from '../colors.js';
+import { ensureRainbowSandTheme } from './RainbowSandTheme.js';
 
 const style = 'position:absolute;inset:0;z-index:51;background:rgba(40,28,33,.69);padding:max(28px,env(safe-area-inset-top)) 20px;overflow:auto;font:800 14px system-ui,sans-serif;color:#664832;';
 function button(text, action) {
   const b = document.createElement('button');
   b.textContent = text;
   b.type = 'button';
+  b.className = 'caisha-mode-panel__button';
   b.style.cssText='border:0;background:linear-gradient(120deg,#ffad7d,#f17f61);color:white;border-radius:15px;padding:13px 17px;margin:5px;font:900 15px system-ui;';
   b.addEventListener('click', action); return b;
 }
 export class ModePanels {
   constructor(parent) {
+    ensureRainbowSandTheme();
     this.root = document.createElement('div');
     this.root.style.cssText = style + 'display:none;align-items:center;justify-content:center;';
+    this.root.classList.add('caisha-mode-panel');
     this.card = document.createElement('div');
+    this.card.classList.add('caisha-mode-panel__card');
     this.card.style.cssText = 'width:min(100%,380px);margin:auto;padding:22px 16px;text-align:center;background:#fff9ec;border-radius:24px;box-shadow:0 16px 44px #35232380;';
     this.root.appendChild(this.card);
     parent.appendChild(this.root);

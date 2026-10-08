@@ -1,5 +1,6 @@
 import { ensureRainbowScoreStyles } from './RainbowScore.js';
 import { renderArtworkPoster } from './PosterRenderer.js';
+import { ensureRainbowSandTheme } from './RainbowSandTheme.js';
 
 const GAME_OVER_STYLE_ID = 'caisha-game-over-artwork-styles';
 
@@ -376,6 +377,7 @@ function ensureStyles() {
 export class GameOverArtwork {
   constructor(container, { onRestart, onHome } = {}) {
     ensureStyles();
+    ensureRainbowSandTheme();
     ensureRainbowScoreStyles();
 
     this.container = container;

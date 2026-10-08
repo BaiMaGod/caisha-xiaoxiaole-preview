@@ -1,5 +1,6 @@
 import { ensureRainbowScoreStyles } from './RainbowScore.js';
 import { LEVEL_NAMES } from '../modes/Levels.js';
+import { ensureRainbowSandTheme } from './RainbowSandTheme.js';
 
 const HOME_STYLE_ID = 'dream-sand-home-screen-styles';
 
@@ -546,6 +547,7 @@ export class HomeScreen {
     { progress, onStart, onEffects, onGallery, getUnlockedLevel, showEffectsButton = false } = {}
   ) {
     ensureStyles();
+    ensureRainbowSandTheme();
     ensureRainbowScoreStyles();
 
     this.container = container;
@@ -624,6 +626,7 @@ export class HomeScreen {
     this.playButton.addEventListener('click', () => this.openModeMenu());
 
     this.openModeMenu = () => {
+      this.modeMenu.classList.remove('is-level');
       this.modeTitle.textContent = '选择玩法';
       this.modeItems.replaceChildren();
       this.modeHeadIcon.textContent = '🌈';
@@ -650,6 +653,7 @@ export class HomeScreen {
     };
 
     this.openLevelMenu = () => {
+      this.modeMenu.classList.add('is-level');
       this.modeTitle.textContent = '选择关卡';
       this.modeHeadIcon.textContent = '🏁';
       this.modeSubtitle.textContent = '12 个缤纷关卡，逐步解锁';
