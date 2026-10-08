@@ -55,7 +55,9 @@ jobs:
           assert.equal(resumed.grid.get(19,300),4,'draft must restore color');
           assert.equal(resumed.art.fixed[resumed.grid.index(19,300)],1,
             'draft must restore fixed grain');
+          const levelProblems = [];
           for(let id=1;id<=12;id++){
+            try {
             const level = getPrototypeLevel(id);
             const s = new GameSession();
             s.start(GAME_MODES.LEVEL,id);
@@ -80,7 +82,13 @@ jobs:
             for(let k=0;k<1000 && s.mode==='playing';k++)s.update(50,++frame*50);
             assert.equal(s.mode,'over','level '+id+' must complete');
             assert.equal(countSand(s.grid),0,'level '+id+' must be fully empty');
+            console.log('PASS level', id, 'colors', level.palette.length, 'drops', level.solution.length, 'recipe', JSON.stringify(level.recipe||{}));
+            } catch(error) {
+              console.log('FAIL level', id, error.message);
+              levelProblems.push(id + ': ' + error.message);
+            }
           }
+          assert.deepEqual(levelProblems, [], 'all 12 levels must be playable in actual session');
           console.log('Shared modes and all 12 verified level solutions passed');
           NODE
       - name: Build preview
