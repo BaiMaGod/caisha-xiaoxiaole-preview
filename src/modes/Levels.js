@@ -223,7 +223,8 @@ function buildLayered(id) {
       { base: 3, bShape: 'banana', pairs: 1, cCenters: [40] }
     ],
     10: [
-      { base: 3, bShape: 'banana', pairs: 1, cCenters: [40, 140], dCenters: [18, 162] },
+      { base: 6, bShape: 'banana', pairs: 1, cCenters: [60], dCenters: [18, 162] },
+      { base: 6, bShape: 'banana', pairs: 1, cCenters: [60] },
       { base: 3, bShape: 'banana', pairs: 1, cCenters: [60] }
     ],
     11: [
