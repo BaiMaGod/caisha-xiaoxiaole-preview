@@ -85,6 +85,26 @@ jobs:
           NODE
       - name: Build preview
         run: npm run build
+      - name: Validate GitHub Pages project subdirectory build
+        run: |
+          mkdir -p /tmp/github-pages-root/caisha-xiaoxiaole-preview
+          cp -R dist/. /tmp/github-pages-root/caisha-xiaoxiaole-preview/
+          (python3 -m http.server 4173 --directory /tmp/github-pages-root > /tmp/static-preview.log 2>&1 &)
+          for n in $(seq 1 40); do curl -fsS http://127.0.0.1:4173/caisha-xiaoxiaole-preview/ >/dev/null && break; sleep 1; done
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
+          const page = await browser.newPage({viewport:{width:390,height:844}});
+          const errors = [];
+          page.on('pageerror', error => errors.push(error.message));
+          await page.goto('http://127.0.0.1:4173/caisha-xiaoxiaole-preview/',{waitUntil:'networkidle'});
+          await page.locator('.caisha-home__play').waitFor({timeout:12000});
+          await page.locator('.caisha-home__play').click();
+          await page.locator('.caisha-mode-menu.is-open').waitFor();
+          if(errors.length)throw new Error('Static Pages JS failed: '+errors.join(' | '));
+          console.log('GitHub Pages subdirectory static build renders and opens mode picker');
+          await browser.close();
+          NODE
       - name: Start web preview
         run: |
           (npm run dev -- --host 127.0.0.1 > /tmp/preview.log 2>&1 &)
@@ -141,6 +161,13 @@ jobs:
         with:
           name: three-mode-browser-screenshots
           path: qa-shots/
+          if-no-files-found: ignore
+      - name: Upload built GitHub Pages release
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-pages-build
+          path: dist/
           if-no-files-found: ignore
       - name: Upload preview runtime for isolated local QA
         if: always()
