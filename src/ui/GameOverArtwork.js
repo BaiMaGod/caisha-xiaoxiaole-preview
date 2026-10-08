@@ -28,7 +28,7 @@ function ensureStyles() {
     .caisha-result {
       position: absolute;
       inset: 0;
-      z-index: 40;
+      z-index: 60;
       display: none;
       overflow: hidden auto;
       padding:
