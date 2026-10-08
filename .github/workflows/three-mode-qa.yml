@@ -108,9 +108,8 @@ jobs:
           await levels.first().click();
           await page.waitForTimeout(500);
           await page.screenshot({path:'qa-shots/02-level-1.png',fullPage:true});
-          const solution = await page.evaluate(async () => (
-            await import('/src/modes/Levels.js')
-          ).getPrototypeLevel(1).guide.centerX);
+          const solution = await page.evaluate(() => window.__legacyGame.getLevelGuideCenter());
+          assert(Number.isFinite(solution),'development guide center available');
           const dropRect = await canvas.boundingBox();
           await page.mouse.click(dropRect.x + dropRect.width * solution / 180,
             dropRect.y + dropRect.height * .4);
@@ -126,4 +125,15 @@ jobs:
         with:
           name: three-mode-browser-screenshots
           path: qa-shots/
+          if-no-files-found: ignore
+      - name: Upload preview runtime for isolated local QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-runtime-snapshot
+          path: |
+            src/
+            public/
+            index.html
+            package.json
           if-no-files-found: ignore

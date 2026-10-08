@@ -332,7 +332,8 @@ if (import.meta.env.DEV) {
     progress,
     clearSystem,
     audio,
-    settingsPanel
+    settingsPanel,
+    getLevelGuideCenter: () => levelData?.guide.centerX ?? null
   };
 }
 
