@@ -56,9 +56,16 @@ jobs:
           assert.equal(resumed.art.fixed[resumed.grid.index(19,300)],1,
             'draft must restore fixed grain');
           const levelProblems = [];
+          const boardFingerprints = new Map();
           for(let id=1;id<=12;id++){
             try {
             const level = getPrototypeLevel(id);
+            const key = Buffer.from(level.cells).toString('base64');
+            if (boardFingerprints.has(key))
+              throw new Error('level repeats the exact starting board of level ' + boardFingerprints.get(key));
+            boardFingerprints.set(key,id);
+            assert.ok(level.palette.length >= (id>=11 ? 4 : id>=4 ? 3 : id>=2 ? 2 : 1),
+              'level ' + id + ' must add real color complexity');
             const s = new GameSession();
             s.start(GAME_MODES.LEVEL,id);
             let frame=0;
@@ -153,6 +160,16 @@ jobs:
           assert.equal(await page.locator('.caisha-mode-menu__item').filter({hasText:'我的沙画'}).count(),0,
             'gallery entry is temporarily hidden');
           await page.screenshot({path:'qa-shots/08-mode-picker-redesign.png',fullPage:true});
+          await page.locator('.caisha-mode-menu__item').filter({hasText:'无尽模式'}).click();
+          await page.getByRole('button',{name:'打开设置'}).click();
+          await page.locator('.caisha-settings-overlay.is-open').waitFor();
+          assert.equal(await page.getByRole('button',{name:'返回主页'}).isVisible(),true,
+            'settings must offer return home while inside a game');
+          await page.screenshot({path:'qa-shots/10-in-game-settings-home.png',fullPage:true});
+          await page.getByRole('button',{name:'返回主页'}).click();
+          assert.equal(await page.locator('.caisha-home').isVisible(),true,
+            'return-home action restores the home screen');
+          await page.locator('.caisha-home__play').click();
           await page.locator('.caisha-mode-menu__item').filter({hasText:'沙画模式'}).click();
           assert.equal(await page.locator('section[aria-label="沙画创作工具栏"]').isVisible(),true,'art toolbar visible');
           const canvas=page.locator('.game-canvas');
