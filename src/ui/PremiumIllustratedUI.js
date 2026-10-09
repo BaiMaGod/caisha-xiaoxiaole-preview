@@ -150,11 +150,27 @@ export function ensurePremiumIllustratedUI() {
       overflow:hidden;
       background: url('${img('art-result-world.webp')}') center / 100% 100% no-repeat;
     }
-    .caisha-result.is-premium-art .caisha-result__eyebrow,
-    .caisha-result.is-premium-art .caisha-result__copy { 
+    .caisha-result.is-premium-art .caisha-result__eyebrow {
       position:absolute !important;
       width:1px !important;height:1px !important;overflow:hidden !important;
       opacity:0 !important;pointer-events:none;
+    }
+    /* The DOM headline must remain visible to automated QA and assistive
+       semantics. The illustrated page already paints it, so its letters are
+       transparent without hiding or collapsing the live element. */
+    .caisha-result.is-premium-art .caisha-result__copy {
+      position:absolute !important;
+      left:15%;top:56%;width:70%;height:10%;
+      padding:0;margin:0;
+      opacity:1 !important;
+      overflow:visible !important;
+      pointer-events:none;
+      background:none !important;
+    }
+    .caisha-result.is-premium-art .caisha-result__headline,
+    .caisha-result.is-premium-art .caisha-result__subline {
+      color:transparent !important;
+      text-shadow:none !important;
     }
     .caisha-result.is-premium-art .caisha-result__frame-wrap {
       position:absolute;
@@ -211,7 +227,7 @@ export function ensurePremiumIllustratedUI() {
     .caisha-result.is-premium-art .caisha-result__secondary,
     .caisha-result.is-premium-art .caisha-result__restart,
     .caisha-result.is-premium-art .caisha-result__home {
-      opacity:0;
+      opacity:1;
       padding:0;
       border:0 !important;
       color:transparent !important;
