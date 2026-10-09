@@ -1,5 +1,6 @@
 import { ensureRainbowScoreStyles } from './RainbowScore.js';
 import { renderArtworkPoster } from './PosterRenderer.js';
+import { ensurePremiumIllustratedUI } from './PremiumIllustratedUI.js';
 import { ensureRainbowSandTheme } from './RainbowSandTheme.js';
 
 const GAME_OVER_STYLE_ID = 'caisha-game-over-artwork-styles';
@@ -378,6 +379,7 @@ export class GameOverArtwork {
   constructor(container, { onRestart, onHome } = {}) {
     ensureStyles();
     ensureRainbowSandTheme();
+    ensurePremiumIllustratedUI();
     ensureRainbowScoreStyles();
 
     this.container = container;
@@ -494,6 +496,7 @@ export class GameOverArtwork {
     this.score = Number(score) || 0;
     this.rating = String(rating || 'GOOD').toUpperCase();
     this.mode = mode;
+    this.root.classList.toggle('is-premium-art', mode === 'sandArt');
     this.eyebrow.textContent = mode === 'sandArt' ? '七彩流沙 · 原创沙画' : '本局沙画完成';
     this.headline.textContent = mode === 'sandArt' ? '你的沙画完成啦！' : '这一局，拼出了一幅不错的沙画';
     this.subline.textContent = mode === 'sandArt' ? '把独一无二的作品送给好友' : '分享给好友看看你的作品';

@@ -1,5 +1,6 @@
 import { ensureRainbowScoreStyles } from './RainbowScore.js';
 import { LEVEL_NAMES } from '../modes/Levels.js';
+import { ensurePremiumIllustratedUI, premiumUiAsset } from './PremiumIllustratedUI.js';
 import { ensureRainbowSandTheme } from './RainbowSandTheme.js';
 
 const HOME_STYLE_ID = 'dream-sand-home-screen-styles';
@@ -548,6 +549,7 @@ export class HomeScreen {
   ) {
     ensureStyles();
     ensureRainbowSandTheme();
+    ensurePremiumIllustratedUI();
     ensureRainbowScoreStyles();
 
     this.container = container;
@@ -605,6 +607,11 @@ export class HomeScreen {
     this.modeMenu.setAttribute('aria-modal', 'true');
     this.modeMenu.setAttribute('aria-label', '选择玩法');
     const card = el('div', 'caisha-mode-menu__card');
+    const illustratedHead = el('img','caisha-mode-menu__illustrated-head');
+    illustratedHead.src = premiumUiAsset('mode-header.webp');
+    illustratedHead.alt = '';
+    illustratedHead.draggable = false;
+    illustratedHead.setAttribute('aria-hidden','true');
     this.modeHeadIcon = el('div', 'caisha-mode-menu__head-icon', '🌈');
     this.modeTitle = el('div', 'caisha-mode-menu__title', '选择玩法');
     this.modeSubtitle = el('div', 'caisha-mode-menu__subtitle', '开启一场缤纷的沙粒冒险');
@@ -618,7 +625,7 @@ export class HomeScreen {
     this.modeMenu.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') this.closeModeMenu();
     });
-    card.append(this.modeHeadIcon, this.modeTitle, this.modeSubtitle, this.modeItems, this.modeBack);
+    card.append(illustratedHead, this.modeHeadIcon, this.modeTitle, this.modeSubtitle, this.modeItems, this.modeBack);
     this.modeMenu.append(card);
     this.root.append(top, brand, actions, this.modeMenu);
     this.container.appendChild(this.root);
