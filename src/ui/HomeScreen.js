@@ -685,7 +685,7 @@ export class HomeScreen {
         button.append(
           el('span', 'caisha-mode-menu__level-number', (locked ? '🔒 ' : '') + '第' + n + '关'),
           el('span', 'caisha-mode-menu__level-name', LEVEL_NAMES[n - 1]),
-          el('span', 'caisha-mode-menu__level-stars', locked ? '未解锁' : (stars ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '☆☆☆'))
+          el('span', 'caisha-mode-menu__level-stars', locked ? '' : (stars ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '☆☆☆'))
         );
         button.addEventListener('click', () => this.selectMode('level', n));
         levels.appendChild(button);
