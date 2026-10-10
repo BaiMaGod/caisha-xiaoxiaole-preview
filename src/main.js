@@ -102,6 +102,7 @@ const homeScreen = new HomeScreen(gameShell, {
     restartGame(mode, level);
   },
   getUnlockedLevel: () => modeProgress.unlockedLevel,
+  getLevelStars: (level) => modeProgress.levelRecords[level]?.stars ?? 0,
   onGallery: () => openArtworkGallery(),
   onEffects: () => effectPanel.open()
 });
