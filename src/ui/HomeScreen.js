@@ -2,6 +2,7 @@ import { ensureRainbowScoreStyles } from './RainbowScore.js';
 import { LEVEL_NAMES } from '../modes/Levels.js';
 import { ensurePremiumIllustratedUI, premiumUiAsset } from './PremiumIllustratedUI.js';
 import { ensureRainbowSandTheme } from './RainbowSandTheme.js';
+import { ensureModeSelection2026 } from './ModeSelection2026.js';
 
 const HOME_STYLE_ID = 'dream-sand-home-screen-styles';
 
@@ -545,11 +546,12 @@ function ensureStyles() {
 export class HomeScreen {
   constructor(
     container,
-    { progress, onStart, onEffects, onGallery, getUnlockedLevel, showEffectsButton = false } = {}
+    { progress, onStart, onEffects, onGallery, getUnlockedLevel, getLevelStars, showEffectsButton = false } = {}
   ) {
     ensureStyles();
     ensureRainbowSandTheme();
     ensurePremiumIllustratedUI();
+    ensureModeSelection2026();
     ensureRainbowScoreStyles();
 
     this.container = container;
@@ -558,6 +560,7 @@ export class HomeScreen {
     this.onEffects = onEffects;
     this.onGallery = onGallery;
     this.getUnlockedLevel = getUnlockedLevel ?? (() => 1);
+    this.getLevelStars = getLevelStars ?? (() => 0);
     this.showEffectsButton = Boolean(showEffectsButton);
     this.opened = true;
 
@@ -608,17 +611,20 @@ export class HomeScreen {
     this.modeMenu.setAttribute('aria-label', '选择玩法');
     const card = el('div', 'caisha-mode-menu__card');
     const illustratedHead = el('img','caisha-mode-menu__illustrated-head');
-    illustratedHead.src = premiumUiAsset('mode-header.webp');
+    illustratedHead.src = homeAsset('qicai_title_mobile.png');
     illustratedHead.alt = '';
     illustratedHead.draggable = false;
     illustratedHead.setAttribute('aria-hidden','true');
     this.modeHeadIcon = el('div', 'caisha-mode-menu__head-icon', '🌈');
-    this.modeTitle = el('div', 'caisha-mode-menu__title', '选择玩法');
+    this.modeTitle = el('div', 'caisha-mode-menu__title', '模式选择');
     this.modeSubtitle = el('div', 'caisha-mode-menu__subtitle', '开启一场缤纷的沙粒冒险');
-    this.modeItems = el('div');
+    this.modeItems = el('div', 'caisha-mode-menu__items');
     this.modeBack = el('button', 'caisha-mode-menu__back', '← 返回首页');
     this.modeBack.type = 'button';
-    this.modeBack.addEventListener('click', () => this.closeModeMenu());
+    this.modeBack.addEventListener('click', () => {
+      if (this.modeMenu.classList.contains('is-level')) this.openModeMenu();
+      else this.closeModeMenu();
+    });
     this.modeMenu.addEventListener('pointerdown', (event) => {
       if (event.target === this.modeMenu) this.closeModeMenu();
     });
@@ -634,13 +640,15 @@ export class HomeScreen {
 
     this.openModeMenu = () => {
       this.modeMenu.classList.remove('is-level');
-      this.modeTitle.textContent = '选择玩法';
+      this.modeMenu.classList.add('is-main');
+      this.modeTitle.textContent = '模式选择';
       this.modeItems.replaceChildren();
       this.modeHeadIcon.textContent = '🌈';
       this.modeSubtitle.textContent = '开启一场缤纷的沙粒冒险';
-      const item = (symbol, title, description, run) => {
+      const item = (mode, symbol, title, description, run) => {
         const button = el('button', 'caisha-mode-menu__item');
         button.type = 'button';
+        button.dataset.mode = mode;
         const icon = el('span', 'caisha-mode-menu__mode-icon', symbol);
         icon.setAttribute('aria-hidden', 'true');
         const copy = el('span', 'caisha-mode-menu__copy');
@@ -649,19 +657,19 @@ export class HomeScreen {
         button.addEventListener('click', run);
         this.modeItems.appendChild(button);
       };
-      item('🌈', '无尽模式', '左右同色贯通，挑战最高纪录', () => this.selectMode('endless'));
-      item('🏁', '关卡模式', '闯过精心设计的彩沙挑战', () => this.openLevelMenu());
-      item('🎨', '沙画模式', '堆叠缤纷彩沙，创作独特画作', () => this.selectMode('sandArt'));
+      item('sandArt', '🎨', '沙画模式', '堆叠七彩流沙，创作独特画作', () => this.selectMode('sandArt'));
+      item('level', '🏁', '关卡模式', '穿越彩沙群岛，逐关收集星星', () => this.openLevelMenu());
+      item('endless', '🌈', '无尽模式', '同色贯通消除，挑战最高纪录', () => this.selectMode('endless'));
       // The gallery feature remains in the project; its menu entry is hidden for now.
-      this.modeBack.onclick = null;
-      this.modeBack.textContent = '← 返回首页';
+      this.modeBack.textContent = '⌂ 返回首页';
       this.modeMenu.classList.add('is-open');
       this.modeItems.querySelector('button')?.focus({ preventScroll: true });
     };
 
     this.openLevelMenu = () => {
+      this.modeMenu.classList.remove('is-main');
       this.modeMenu.classList.add('is-level');
-      this.modeTitle.textContent = '选择关卡';
+      this.modeTitle.textContent = '关卡地图';
       this.modeHeadIcon.textContent = '🏁';
       this.modeSubtitle.textContent = '12 个缤纷关卡，逐步解锁';
       this.modeItems.replaceChildren();
@@ -669,28 +677,26 @@ export class HomeScreen {
       for (let n = 1; n <= 12; n++) {
         const button = el('button');
         const locked = n > this.getUnlockedLevel();
+        const stars = locked ? 0 : Math.max(0, Math.min(3, Number(this.getLevelStars(n)) || 0));
         button.type = 'button';
         button.disabled = locked;
+        button.classList.toggle('is-current', n === this.getUnlockedLevel());
+        button.setAttribute('aria-label', `第${n}关 ${LEVEL_NAMES[n - 1]}${locked ? ' 未解锁' : ` 已获得${stars}星`}`);
         button.append(
           el('span', 'caisha-mode-menu__level-number', (locked ? '🔒 ' : '') + '第' + n + '关'),
-          el('span', 'caisha-mode-menu__level-name', LEVEL_NAMES[n - 1])
+          el('span', 'caisha-mode-menu__level-name', LEVEL_NAMES[n - 1]),
+          el('span', 'caisha-mode-menu__level-stars', locked ? '未解锁' : (stars ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '☆☆☆'))
         );
         button.addEventListener('click', () => this.selectMode('level', n));
         levels.appendChild(button);
       }
       this.modeItems.appendChild(levels);
-      this.modeBack.textContent = '← 返回玩法';
-      this.modeBack.onclick = () => {
-        this.modeBack.onclick = null;
-        this.modeBack.textContent = '← 返回首页';
-        this.openModeMenu();
-      };
+      this.modeBack.textContent = '‹ 返回模式选择';
     };
 
     this.closeModeMenu = () => {
-      this.modeMenu.classList.remove('is-open');
-      this.modeBack.onclick = null;
-      this.modeBack.textContent = '返回首页';
+      this.modeMenu.classList.remove('is-open', 'is-level', 'is-main');
+      this.modeBack.textContent = '⌂ 返回首页';
     };
 
     this.selectMode = (mode, level = 1) => {
