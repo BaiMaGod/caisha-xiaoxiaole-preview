@@ -3,6 +3,7 @@ import { LEVEL_NAMES } from '../modes/Levels.js';
 import { ensurePremiumIllustratedUI, premiumUiAsset } from './PremiumIllustratedUI.js';
 import { ensureRainbowSandTheme } from './RainbowSandTheme.js';
 import { ensureModeSelection2026 } from './ModeSelection2026.js';
+import { ensureModeIllustrationV4 } from './ModeIllustrationV4.js';
 
 const HOME_STYLE_ID = 'dream-sand-home-screen-styles';
 
@@ -552,6 +553,7 @@ export class HomeScreen {
     ensureRainbowSandTheme();
     ensurePremiumIllustratedUI();
     ensureModeSelection2026();
+    ensureModeIllustrationV4();
     ensureRainbowScoreStyles();
 
     this.container = container;
@@ -615,6 +617,15 @@ export class HomeScreen {
     illustratedHead.alt = '';
     illustratedHead.draggable = false;
     illustratedHead.setAttribute('aria-hidden','true');
+    const illustratedBrand = el('div', 'caisha-mode-menu__brand');
+    illustratedBrand.setAttribute('aria-label','七彩沙画消除');
+    illustratedBrand.setAttribute('role','heading');
+    illustratedBrand.setAttribute('aria-level','1');
+    for(const character of '七彩沙画消除') {
+      const glyph=el('span','',character);
+      glyph.setAttribute('aria-hidden','true');
+      illustratedBrand.append(glyph);
+    }
     this.modeHeadIcon = el('div', 'caisha-mode-menu__head-icon', '🌈');
     this.modeTitle = el('div', 'caisha-mode-menu__title', '模式选择');
     this.modeSubtitle = el('div', 'caisha-mode-menu__subtitle', '开启一场缤纷的沙粒冒险');
@@ -631,7 +642,7 @@ export class HomeScreen {
     this.modeMenu.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') this.closeModeMenu();
     });
-    card.append(illustratedHead, this.modeHeadIcon, this.modeTitle, this.modeSubtitle, this.modeItems, this.modeBack);
+    card.append(illustratedHead, illustratedBrand, this.modeHeadIcon, this.modeTitle, this.modeSubtitle, this.modeItems, this.modeBack);
     this.modeMenu.append(card);
     this.root.append(top, brand, actions, this.modeMenu);
     this.container.appendChild(this.root);
