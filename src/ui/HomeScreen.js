@@ -621,9 +621,12 @@ export class HomeScreen {
     illustratedBrand.setAttribute('aria-label','七彩沙画消除');
     illustratedBrand.setAttribute('role','heading');
     illustratedBrand.setAttribute('aria-level','1');
-    for(const character of '七彩沙画消除') {
+    const rainbowLogoColors = ['#f15185','#f49a31','#4cae7a','#269bc3','#4c76d1','#9e58cd'];
+    for(const [index,character] of [...'七彩沙画消除'].entries()) {
       const glyph=el('span','',character);
       glyph.setAttribute('aria-hidden','true');
+      glyph.style.setProperty('color',rainbowLogoColors[index],'important');
+      glyph.style.setProperty('-webkit-text-fill-color',rainbowLogoColors[index],'important');
       illustratedBrand.append(glyph);
     }
     this.modeHeadIcon = el('div', 'caisha-mode-menu__head-icon', '🌈');
@@ -663,7 +666,14 @@ export class HomeScreen {
         const icon = el('span', 'caisha-mode-menu__mode-icon', symbol);
         icon.setAttribute('aria-hidden', 'true');
         const copy = el('span', 'caisha-mode-menu__copy');
-        copy.append(el('strong', '', title), el('small', '', description));
+        const heading=el('strong','',title);
+        // Inline contrast control takes precedence over legacy image-skin rules.
+        const headingColor=mode==='sandArt' ? '#8b431a' : mode==='level' ? '#244c8f' : '#604292';
+        heading.style.setProperty('color',headingColor,'important');
+        heading.style.setProperty('-webkit-text-fill-color',headingColor,'important');
+        heading.style.setProperty('-webkit-text-stroke','0','important');
+        heading.style.setProperty('text-shadow','0 1px 0 #fffaf1, 0 3px 2px #ffffffa8','important');
+        copy.append(heading,el('small', '', description));
         button.append(icon, copy);
         button.addEventListener('click', run);
         this.modeItems.appendChild(button);
