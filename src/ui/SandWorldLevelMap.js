@@ -4,11 +4,11 @@
  */
 const STYLE_ID = 'caisha-sandworld-level-map-v1';
 const POSITIONS = [
-  [50,1.0],[22,18.0],[78,18.0],
-  [17.5,35.0],[50,35.0],[82.5,35.0],
-  [30,52.0],[70,52.0],
-  [18,65.5],[50,65.5],[82,65.5],
-  [50,79.0]
+  [50,1.0],[22,17.0],[78,17.0],
+  [17.5,33.0],[50,33.0],[82.5,33.0],
+  [28,49.0],[72,49.0],
+  [18,67.0],[50,64.5],[82,67.0],
+  [50,82.0]
 ];
 const COLORS = ['pink','amber','purple','blue','mint','pink','purple','orange','blue','pink','mint','purple'];
 const routes = `M50 9 Q31 14 22 24 Q50 30 78 24 Q88 29 18 40 Q33 45 50 41 Q67 37 82 41 Q78 50 30 57 Q50 63 70 57 Q68 67 18 74 Q33 78 50 75 Q69 71 82 75 Q87 83 50 90`;
@@ -60,7 +60,7 @@ export function ensureSandWorldLevelMap() {
     background:transparent !important;z-index:2;
   }
   .caisha-mode-menu.is-level.${rootClass} .caisha-mode-menu__levels .caisha-sandworld__node {
-    --node-width:clamp(83px,27%,111px);
+    --node-width:clamp(72px,22%,88px);
     box-sizing:border-box !important;display:block !important;position:absolute !important;
     width:var(--node-width) !important;height:auto !important;
     min-width:0 !important;min-height:0 !important;max-width:none !important;
@@ -145,7 +145,7 @@ export function ensureSandWorldLevelMap() {
     aspect-ratio:3.08 !important;min-height:0 !important;
   }
   @media(max-width:350px){
-    .caisha-mode-menu.is-level.${rootClass} .caisha-mode-menu__levels .caisha-sandworld__node {--node-width:29%;}
+    .caisha-mode-menu.is-level.${rootClass} .caisha-mode-menu__levels .caisha-sandworld__node {--node-width:23%;}
     .caisha-mode-menu.is-level.${rootClass} .caisha-sandworld__name {font-size:9px !important;}
   }
   @media(max-height:690px){
