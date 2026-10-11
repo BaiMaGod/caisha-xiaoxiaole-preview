@@ -285,6 +285,13 @@ export function ensureHDModeUI(){
   .caisha-mode-menu.is-level .caisha-mode-menu__levels button:nth-child(n+4) .caisha-mode-menu__level-name{
     transform:translateY(-13px);
   }
+  /* Live star strips mask the baked-in stars on the source illustration. */
+  .caisha-mode-menu.is-level .caisha-mode-menu__levels button .caisha-mode-menu__level-stars{
+    transform:translateY(-7px);
+  }
+  .caisha-mode-menu.is-level .caisha-mode-menu__levels button:nth-child(n+4) .caisha-mode-menu__level-stars{
+    transform:translateY(-15px);
+  }
   @media(prefers-reduced-motion:reduce){
     .caisha-mode-menu.is-main .caisha-mode-menu__item{transition:none !important;}
   }
