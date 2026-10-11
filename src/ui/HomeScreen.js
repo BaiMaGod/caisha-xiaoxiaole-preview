@@ -5,6 +5,7 @@ import { ensureRainbowSandTheme } from './RainbowSandTheme.js';
 import { ensureModeSelection2026 } from './ModeSelection2026.js';
 import { ensureModeIllustrationV4 } from './ModeIllustrationV4.js';
 import { ensureHDModeUI } from './HDModeUI.js';
+import { ensureSandWorldLevelMap, renderSandWorldMap } from './SandWorldLevelMap.js';
 
 const HOME_STYLE_ID = 'dream-sand-home-screen-styles';
 
@@ -556,6 +557,7 @@ export class HomeScreen {
     ensureModeSelection2026();
     ensureModeIllustrationV4();
     ensureHDModeUI();
+    ensureSandWorldLevelMap();
     ensureRainbowScoreStyles();
 
     this.container = container;
@@ -655,7 +657,7 @@ export class HomeScreen {
     this.playButton.addEventListener('click', () => this.openModeMenu());
 
     this.openModeMenu = () => {
-      this.modeMenu.classList.remove('is-level');
+      this.modeMenu.classList.remove('is-level', 'sandworld-v1');
       this.modeMenu.classList.add('is-main');
       this.modeTitle.textContent = '模式选择';
       this.modeItems.replaceChildren();
@@ -691,34 +693,24 @@ export class HomeScreen {
 
     this.openLevelMenu = () => {
       this.modeMenu.classList.remove('is-main');
-      this.modeMenu.classList.add('is-level');
+      this.modeMenu.classList.add('is-level','sandworld-v1');
       this.modeTitle.textContent = '关卡地图';
       this.modeHeadIcon.textContent = '🏁';
       this.modeSubtitle.textContent = '12 个缤纷关卡，逐步解锁';
       this.modeItems.replaceChildren();
-      const levels = el('div', 'caisha-mode-menu__levels');
-      for (let n = 1; n <= 12; n++) {
-        const button = el('button');
-        const locked = n > this.getUnlockedLevel();
-        const stars = locked ? 0 : Math.max(0, Math.min(3, Number(this.getLevelStars(n)) || 0));
-        button.type = 'button';
-        button.disabled = locked;
-        button.classList.toggle('is-current', n === this.getUnlockedLevel());
-        button.setAttribute('aria-label', `第${n}关 ${LEVEL_NAMES[n - 1]}${locked ? ' 未解锁' : ` 已获得${stars}星`}`);
-        button.append(
-          el('span', 'caisha-mode-menu__level-number', (locked ? '🔒 ' : '') + '第' + n + '关'),
-          el('span', 'caisha-mode-menu__level-name', LEVEL_NAMES[n - 1]),
-          el('span', 'caisha-mode-menu__level-stars', locked ? '' : (stars ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '☆☆☆'))
-        );
-        button.addEventListener('click', () => this.selectMode('level', n));
-        levels.appendChild(button);
-      }
+      const levels = renderSandWorldMap({
+        levelNames:LEVEL_NAMES,
+        unlockedLevel:this.getUnlockedLevel(),
+        getStars:(n)=>this.getLevelStars(n),
+        onSelect:(n)=>this.selectMode('level',n)
+      });
+      // The scenery has no baked game-state labels; every node is a real button.
       this.modeItems.appendChild(levels);
       this.modeBack.textContent = '‹ 返回模式选择';
     };
 
     this.closeModeMenu = () => {
-      this.modeMenu.classList.remove('is-open', 'is-level', 'is-main');
+      this.modeMenu.classList.remove('is-open', 'is-level', 'is-main', 'sandworld-v1');
       this.modeBack.textContent = '⌂ 返回首页';
     };
 
