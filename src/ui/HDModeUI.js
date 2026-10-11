@@ -264,12 +264,12 @@ export function ensureHDModeUI(){
   /* Compact overlays: preserve most of the original hand-rendered island artwork. */
   .caisha-mode-menu.is-level .caisha-mode-menu__levels button .caisha-mode-menu__level-name{
     left:15% !important;right:15% !important;max-width:70% !important;
-    bottom:16% !important;padding:2px 1px;
+    bottom:0% !important;padding:2px 1px;
     border-radius:99px !important;
   }
   .caisha-mode-menu.is-level .caisha-mode-menu__levels button .caisha-mode-menu__level-stars{
     left:17% !important;right:17% !important;max-width:66% !important;
-    bottom:-12% !important;border-radius:99px !important;
+    bottom:-16% !important;border-radius:99px !important;
   }
   .caisha-mode-menu.is-level .caisha-mode-menu__levels button:disabled::before{
     content:"🔒" !important;display:grid;place-items:center;
