@@ -120,8 +120,11 @@ export function ensureSoftSandScreens() {
     }
     .caisha-mode-menu.soft-sand-v2.is-main .caisha-mode-menu__item::before {
       content:"";position:absolute;display:block !important;inset:auto 0 0;height:29%;
-      background:linear-gradient(155deg,transparent 0 28%,#f7d4c185 28% 49%,#c1e3d79c 49% 68%,#b6d8e493 68% 85%,transparent 85%);
-      opacity:.8;pointer-events:none;
+      background:
+        radial-gradient(ellipse 72% 150% at 2% 140%,#f5d7c9 0 61%,transparent 62%),
+        radial-gradient(ellipse 90% 160% at 55% 155%,#c8e4d6 0 64%,transparent 65%),
+        radial-gradient(ellipse 75% 145% at 105% 148%,#c9deeb 0 60%,transparent 61%);
+      opacity:.85;pointer-events:none;
     }
     .caisha-mode-menu.soft-sand-v2.is-main .caisha-mode-menu__item::after {
       content:"›";position:absolute;z-index:3;right:12px;top:50%;bottom:auto;
@@ -139,25 +142,13 @@ export function ensureSoftSandScreens() {
     }
     .caisha-mode-menu.soft-sand-v2.is-main .soft-sand__mode-art::before {
       content:"";position:absolute;inset:40% 8% 12%;z-index:-1;
-      background:linear-gradient(130deg,#e9cdae,#d4e4d5 51%,#bdcddd);
-      clip-path:polygon(0 85%,24% 48%,47% 66%,73% 8%,100% 80%,100% 100%,0 100%);
-      opacity:.82;
+      background:linear-gradient(145deg,#f3ddc6,#dae7d6 50%,#cadae7);
+      border-radius:58% 43% 25% 22% / 73% 65% 15% 20%;
+      transform:rotate(-7deg);opacity:.72;
     }
-    .caisha-mode-menu.soft-sand-v2.is-main .soft-sand__mode-art span {
-      font-size:clamp(51px,14vw,80px);line-height:1;font-weight:850;
-      color:#b79a85;text-shadow:0 2px #fff7e7;
-    }
-    .caisha-mode-menu.soft-sand-v2.is-main .soft-sand__mode-art[data-mode="endless"] span {
-      font-size:clamp(70px,19vw,107px);
-      background:linear-gradient(125deg,#e4b279,#df9fa6 31%,#96ccc3 60%,#9ebadb 82%,#bbabd5);
-      -webkit-background-clip:text;background-clip:text;color:transparent;
-      -webkit-text-fill-color:transparent;
-    }
-    .caisha-mode-menu.soft-sand-v2.is-main .soft-sand__mode-art[data-mode="sandArt"] span {
-      font-size:clamp(42px,12vw,64px);filter:saturate(.67);
-    }
-    .caisha-mode-menu.soft-sand-v2.is-main .soft-sand__mode-art[data-mode="level"] span {
-      font-size:clamp(40px,12vw,60px);filter:saturate(.62);
+    .caisha-mode-menu.soft-sand-v2.is-main .soft-sand__mode-art svg {
+      width:100%;height:100%;max-height:120px;overflow:visible;
+      filter:drop-shadow(0 2px 2px #876d5519);pointer-events:none;
     }
     .caisha-mode-menu.soft-sand-v2.is-main .caisha-mode-menu__copy {
       position:relative !important;display:block !important;z-index:2;
@@ -216,6 +207,14 @@ export function ensureSoftSandScreens() {
       display:block;width:100%;height:100%;
       filter:drop-shadow(0 1px 1px #96755811);
     }
+    .caisha-mode-menu.soft-sand-v2 .soft-sand__thumb::after {
+      content:"";position:absolute;inset:0;pointer-events:none;
+      background-image:
+        radial-gradient(circle,#fff9efb3 .75px,transparent 1.2px),
+        radial-gradient(circle,#8e796014 .7px,transparent 1.4px);
+      background-size:5px 6px,7px 9px;background-position:2px 3px,0 0;
+      opacity:.86;
+    }
     .caisha-mode-menu.soft-sand-v2 .soft-sand__stars {
       position:relative;z-index:2;display:flex;justify-content:center;gap:3px;
       flex:0 0 auto;margin-top:2px;font-size:clamp(12px,3.5vw,17px);line-height:1;
@@ -239,18 +238,26 @@ export function ensureSoftSandScreens() {
       width:100%;height:clamp(120px,23svh,210px);z-index:1;overflow:hidden;
     }
     .caisha-mode-menu.soft-sand-v2 .soft-sand__scenery span {
-      position:absolute;display:block;inset:0;opacity:.72;
-      clip-path:polygon(0 80%,16% 55%,29% 70%,51% 28%,67% 56%,79% 40%,100% 79%,100% 100%,0 100%);
+      position:absolute;display:block;inset:0;opacity:.7;
+      border-radius:48% 56% 0 0 / 72% 85% 0 0;
+      background-image:
+        radial-gradient(circle,#ffffff7d .6px,transparent 1px);
+      background-size:7px 7px;
     }
-    .caisha-mode-menu.soft-sand-v2 .soft-sand__scenery span:nth-child(1) {background:#b8dbc7;transform:translateY(-13%) scale(1.25);}
+    .caisha-mode-menu.soft-sand-v2.is-level .soft-sand__scenery {
+      opacity:.34;height:clamp(80px,15svh,130px);
+    }
+    .caisha-mode-menu.soft-sand-v2 .soft-sand__scenery span:nth-child(1) {
+      background-color:#bfdcc8;transform:translate(-10%,6%) scale(1.25);
+    }
     .caisha-mode-menu.soft-sand-v2 .soft-sand__scenery span:nth-child(2) {
-      background:#b9dce2;transform:translate(-8%,10%) scale(1.3);opacity:.55;
+      background-color:#bbd9e1;transform:translate(18%,33%) scale(1.25);opacity:.7;
     }
     .caisha-mode-menu.soft-sand-v2 .soft-sand__scenery span:nth-child(3) {
-      background:#cdbde1;transform:translate(16%,30%) scale(1.34);opacity:.6;
+      background-color:#d0bfe0;transform:translate(-24%,50%) scale(1.35);opacity:.64;
     }
     .caisha-mode-menu.soft-sand-v2 .soft-sand__scenery span:nth-child(4) {
-      background:#f1cfb2;transform:translate(-23%,49%) scale(1.45);opacity:.73;
+      background-color:#f0d5b9;transform:translate(29%,72%) scale(1.5);opacity:.78;
     }
     @media(max-height:740px) {
       .caisha-mode-menu.soft-sand-v2 .caisha-mode-menu__card {padding-top:max(8px,env(safe-area-inset-top)) !important;}
@@ -272,6 +279,49 @@ export function ensureSoftSandScreens() {
     }
   `;
   document.head.appendChild(style);
+}
+
+
+export function makeModeIllustration(mode) {
+  const svg=document.createElementNS(SVG_NS,'svg');
+  svg.setAttribute('viewBox','0 0 150 110');
+  svg.setAttribute('aria-hidden','true');
+  const defs=`<defs>
+    <linearGradient id="soft-rainbow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e7ae83"/><stop offset=".3" stop-color="#e5a8b1"/>
+      <stop offset=".56" stop-color="#a3d4c1"/><stop offset=".82" stop-color="#a0c9df"/>
+      <stop offset="1" stop-color="#cbb8e2"/>
+    </linearGradient>
+  </defs>`;
+  const bodies={
+    endless:`<text x="75" y="83" text-anchor="middle"
+      font-family="ui-rounded,system-ui,sans-serif" font-size="115"
+      font-weight="900" fill="url(#soft-rainbow)">∞</text>`,
+    sandArt:`<path d="M73 15 C42 7 23 29 22 56 C20 81 43 98 69 94
+      C79 93 83 84 79 77 C75 68 81 64 91 64 C108 63 126 56
+      123 40 C120 22 96 15 73 15Z"
+      fill="#ebd0ae" stroke="#ddbe9c" stroke-width="2"/>
+      <circle cx="51" cy="35" r="10" fill="#e8b1ad"/>
+      <circle cx="80" cy="29" r="10" fill="#e9ca84"/>
+      <circle cx="105" cy="44" r="10" fill="#9fcdb7"/>
+      <circle cx="54" cy="65" r="10" fill="#9bc7df"/>
+      <circle cx="78" cy="56" r="10" fill="#c6b2dc"/>
+      <path d="M95 91 L127 46" stroke="#b58765" stroke-linecap="round" stroke-width="8"/>
+      <path d="M127 45 L134 30 L120 38Z" fill="#8dbbcc"/>`,
+    level:`<path d="M5 90 Q31 61 51 68 Q72 33 97 61 Q119 61 145 87Z"
+      fill="#a5d6c6"/><path d="M8 94 Q39 72 64 81 Q88 53 111 71
+      Q129 78 145 91Z" fill="#e7c995"/>
+      <path d="M68 53 L68 20" stroke="#ad8974" stroke-width="4" stroke-linecap="round"/>
+      <path d="M70 21 Q91 18 96 30 Q79 35 70 33Z" fill="#e4a8a4"/>
+      <circle cx="38" cy="35" r="8" fill="#efd9a7" opacity=".75"/>`
+  };
+  const specks=Array.from({length:28},(_,i)=>{
+    const x=8+((i*41+17)%131),y=12+((i*19+31)%85);
+    const colors=['#eab9ac','#d8c397','#add6c6','#a3cada','#cab8d5'];
+    return `<circle cx="${x}" cy="${y}" r="${i%5===0?1.7:.9}" fill="${colors[i%5]}" opacity=".76"/>`;
+  }).join('');
+  svg.innerHTML=defs+bodies[mode]+specks;
+  return svg;
 }
 
 function sandThumb(n) {
