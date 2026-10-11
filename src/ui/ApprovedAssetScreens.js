@@ -88,11 +88,11 @@ export function ensureApprovedAssetScreens() {
     pointer-events:none;user-select:none;-webkit-user-drag:none;
   }
   .caisha-mode-menu.approved-art-v1.is-main .approved-art__headline {
-    width:min(100%,360px);max-height:clamp(72px,13.6svh,108px);
+    width:min(100%,308px);max-height:clamp(69px,11.8svh,91px);
     margin:6px auto clamp(7px,1.9svh,20px);
   }
   .caisha-mode-menu.approved-art-v1.is-level .approved-art__headline {
-    width:min(100%,352px);max-height:clamp(103px,18svh,157px);
+    width:min(100%,314px);max-height:clamp(97px,15.4svh,128px);
     margin:0 auto clamp(6px,1.1svh,12px);
   }
   .caisha-mode-menu.approved-art-v1 .caisha-mode-menu__items {
@@ -105,7 +105,7 @@ export function ensureApprovedAssetScreens() {
     background:transparent !important;box-shadow:none !important;overflow:visible !important;
   }
   .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__items {
-    gap:clamp(10px,1.8svh,19px);padding-bottom:18svh !important;
+    width:min(100%,330px) !important;margin:0 auto !important;gap:clamp(9px,1.4svh,15px);padding-bottom:18svh !important;
   }
   .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__item {
     box-sizing:border-box !important;position:relative !important;display:block !important;
@@ -135,7 +135,7 @@ export function ensureApprovedAssetScreens() {
   }
   .caisha-mode-menu.approved-art-v1 .approved-art__level-grid {
     width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-    gap:clamp(9px,1.4svh,17px) clamp(10px,2.1vw,16px);
+    gap:clamp(9px,1.4svh,15px) clamp(10px,2vw,14px);margin:0 auto;width:min(100%,330px);
   }
   .caisha-mode-menu.approved-art-v1 .approved-art__level-card {
     position:relative;box-sizing:border-box;display:block !important;
