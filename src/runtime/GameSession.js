@@ -13,26 +13,23 @@ import { GAME_MODES, MODE_SETTINGS, ModeProgress, countSand } from '../modes/Mod
 import { SandArtTools } from '../modes/SandArtTools.js';
 import { getPrototypeLevel, createLevelRandom } from '../modes/Levels.js';
 
-// Randomly choose among colors still present on the level board. A larger
-// sand pile is somewhat likelier to be selected, but repeat colors are allowed.
+// Choose uniformly among the distinct colors remaining on the level board.
+// Each draw is independent: consecutive identical colors are intentionally
+// possible. Never bias the choice by how many grains a color has.
 export function pickRandomLevelColor(grid, palette, random = Math.random) {
-  const counts = new Map(palette.map(color => [color, 0]));
+  const allowed = new Set(palette);
+  const present = new Set();
   for (const color of grid.cells) {
-    if (counts.has(color)) counts.set(color, counts.get(color) + 1);
+    if (allowed.has(color)) {
+      present.add(color);
+      if (present.size === allowed.size) break;
+    }
   }
-  const candidates = [...counts]
-    .filter(([, count]) => count > 0)
-    .map(([color, count]) => ({ color, weight: Math.sqrt(count) }));
-  if (candidates.length === 0) {
-    return palette[Math.floor(random() * palette.length)];
-  }
-  const totalWeight = candidates.reduce((total, item) => total + item.weight, 0);
-  let roll = random() * totalWeight;
-  for (const item of candidates) {
-    roll -= item.weight;
-    if (roll <= 0) return item.color;
-  }
-  return candidates[candidates.length - 1].color;
+  const choices = palette.filter(color => present.has(color));
+  // If the board is empty, allow any stage color until victory completes.
+  const available = choices.length > 0 ? choices : palette;
+  return available[Math.min(available.length - 1,
+    Math.floor(random() * available.length))];
 }
 
 
