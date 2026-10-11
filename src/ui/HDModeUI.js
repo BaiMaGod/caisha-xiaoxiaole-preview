@@ -260,6 +260,27 @@ export function ensureHDModeUI(){
   .caisha-mode-menu.is-level .caisha-mode-menu__levels button:focus-visible{
     outline:2px solid #f6cf71 !important;outline-offset:0;border-radius:50% !important;
   }
+
+  /* Compact overlays: preserve most of the original hand-rendered island artwork. */
+  .caisha-mode-menu.is-level .caisha-mode-menu__levels button .caisha-mode-menu__level-name{
+    left:15% !important;right:15% !important;max-width:70% !important;
+    bottom:16% !important;padding:2px 1px;
+    border-radius:99px !important;
+  }
+  .caisha-mode-menu.is-level .caisha-mode-menu__levels button .caisha-mode-menu__level-stars{
+    left:17% !important;right:17% !important;max-width:66% !important;
+    bottom:-12% !important;border-radius:99px !important;
+  }
+  .caisha-mode-menu.is-level .caisha-mode-menu__levels button:disabled::before{
+    content:"🔒" !important;display:grid;place-items:center;
+    inset:8% 23% 36%;border-radius:50%;
+    background:#96919ebd;color:#fff !important;-webkit-text-fill-color:#fff !important;
+    font:900 18px/1 system-ui,sans-serif;text-shadow:0 2px 4px #3c3a4f;
+    backdrop-filter:grayscale(1);-webkit-backdrop-filter:grayscale(1);
+  }
+  .caisha-mode-menu.is-level .caisha-mode-menu__levels button:disabled .caisha-mode-menu__level-number{
+    display:none !important;
+  }
   @media(prefers-reduced-motion:reduce){
     .caisha-mode-menu.is-main .caisha-mode-menu__item{transition:none !important;}
   }
