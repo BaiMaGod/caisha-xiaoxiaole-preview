@@ -4,6 +4,7 @@ import { ensurePremiumIllustratedUI, premiumUiAsset } from './PremiumIllustrated
 import { ensureRainbowSandTheme } from './RainbowSandTheme.js';
 import { ensureModeSelection2026 } from './ModeSelection2026.js';
 import { ensureModeIllustrationV4 } from './ModeIllustrationV4.js';
+import { ensureHDModeUI } from './HDModeUI.js';
 
 const HOME_STYLE_ID = 'dream-sand-home-screen-styles';
 
@@ -554,6 +555,7 @@ export class HomeScreen {
     ensurePremiumIllustratedUI();
     ensureModeSelection2026();
     ensureModeIllustrationV4();
+    ensureHDModeUI();
     ensureRainbowScoreStyles();
 
     this.container = container;
@@ -613,7 +615,7 @@ export class HomeScreen {
     this.modeMenu.setAttribute('aria-label', '选择玩法');
     const card = el('div', 'caisha-mode-menu__card');
     const illustratedHead = el('img','caisha-mode-menu__illustrated-head');
-    illustratedHead.src = homeAsset('qicai_title_mobile.png');
+    illustratedHead.src = homeAsset('mode-hd/logo.webp');
     illustratedHead.alt = '';
     illustratedHead.draggable = false;
     illustratedHead.setAttribute('aria-hidden','true');
