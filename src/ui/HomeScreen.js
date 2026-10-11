@@ -1,6 +1,6 @@
 import { ensureRainbowScoreStyles } from './RainbowScore.js';
 import { LEVEL_NAMES } from '../modes/Levels.js';
-import { ensureSoftSandScreens, renderSoftSandLevels } from './SoftSandScreens.js';
+import { ensureSoftSandScreens, renderSoftSandLevels, makeModeIllustration } from './SoftSandScreens.js';
 import { ensurePremiumIllustratedUI, premiumUiAsset } from './PremiumIllustratedUI.js';
 import { ensureRainbowSandTheme } from './RainbowSandTheme.js';
 
@@ -676,7 +676,7 @@ export class HomeScreen {
         const art=el('span','soft-sand__mode-art');
         art.dataset.mode=mode;
         art.setAttribute('aria-hidden','true');
-        art.append(el('span','',mode==='endless'?'∞':mode==='sandArt'?'🎨':'🏁'));
+        art.append(makeModeIllustration(mode));
         button.append(art,icon,copy);
         button.addEventListener('click', run);
         this.modeItems.appendChild(button);
