@@ -1,11 +1,8 @@
 import { ensureRainbowScoreStyles } from './RainbowScore.js';
 import { LEVEL_NAMES } from '../modes/Levels.js';
+import { ensureSoftSandScreens, renderSoftSandLevels } from './SoftSandScreens.js';
 import { ensurePremiumIllustratedUI, premiumUiAsset } from './PremiumIllustratedUI.js';
 import { ensureRainbowSandTheme } from './RainbowSandTheme.js';
-import { ensureModeSelection2026 } from './ModeSelection2026.js';
-import { ensureModeIllustrationV4 } from './ModeIllustrationV4.js';
-import { ensureHDModeUI } from './HDModeUI.js';
-import { ensureSandWorldLevelMap, renderSandWorldMap } from './SandWorldLevelMap.js';
 
 const HOME_STYLE_ID = 'dream-sand-home-screen-styles';
 
@@ -554,11 +551,8 @@ export class HomeScreen {
     ensureStyles();
     ensureRainbowSandTheme();
     ensurePremiumIllustratedUI();
-    ensureModeSelection2026();
-    ensureModeIllustrationV4();
-    ensureHDModeUI();
-    ensureSandWorldLevelMap();
     ensureRainbowScoreStyles();
+    ensureSoftSandScreens();
 
     this.container = container;
     this.progress = progress;
@@ -649,8 +643,15 @@ export class HomeScreen {
     this.modeMenu.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') this.closeModeMenu();
     });
-    card.append(illustratedHead, illustratedBrand, this.modeHeadIcon, this.modeTitle, this.modeSubtitle, this.modeItems, this.modeBack);
-    this.modeMenu.append(card);
+    const topbar=el('div','soft-sand__topbar');
+    this.menuBest=el('div','soft-sand__record');
+    this.menuBest.setAttribute('aria-label','历史最高分');
+    topbar.append(this.modeBack,this.menuBest);
+    const scenery=el('div','soft-sand__scenery');
+    scenery.setAttribute('aria-hidden','true');
+    for(let i=0;i<4;i++)scenery.append(el('span',''));
+    card.append(topbar,illustratedHead,illustratedBrand,this.modeHeadIcon,this.modeTitle,this.modeSubtitle,this.modeItems);
+    this.modeMenu.append(card,scenery);
     this.root.append(top, brand, actions, this.modeMenu);
     this.container.appendChild(this.root);
 
@@ -658,8 +659,8 @@ export class HomeScreen {
 
     this.openModeMenu = () => {
       this.modeMenu.classList.remove('is-level', 'sandworld-v1');
-      this.modeMenu.classList.add('is-main');
-      this.modeTitle.textContent = '模式选择';
+      this.modeMenu.classList.add('is-main','soft-sand-v2');
+      this.modeTitle.textContent = '选择模式';
       this.modeItems.replaceChildren();
       this.modeHeadIcon.textContent = '🌈';
       this.modeSubtitle.textContent = '开启一场缤纷的沙粒冒险';
@@ -671,20 +672,18 @@ export class HomeScreen {
         icon.setAttribute('aria-hidden', 'true');
         const copy = el('span', 'caisha-mode-menu__copy');
         const heading=el('strong','',title);
-        // Inline contrast control takes precedence over legacy image-skin rules.
-        const headingColor=mode==='sandArt' ? '#8b431a' : mode==='level' ? '#244c8f' : '#604292';
-        heading.style.setProperty('color',headingColor,'important');
-        heading.style.setProperty('-webkit-text-fill-color',headingColor,'important');
-        heading.style.setProperty('-webkit-text-stroke','0','important');
-        heading.style.setProperty('text-shadow','0 1px 0 #fffaf1, 0 3px 2px #ffffffa8','important');
-        copy.append(heading,el('small', '', description));
-        button.append(icon, copy);
+        copy.append(heading,el('small','',description));
+        const art=el('span','soft-sand__mode-art');
+        art.dataset.mode=mode;
+        art.setAttribute('aria-hidden','true');
+        art.append(el('span','',mode==='endless'?'∞':mode==='sandArt'?'🎨':'🏁'));
+        button.append(art,icon,copy);
         button.addEventListener('click', run);
         this.modeItems.appendChild(button);
       };
-      item('sandArt', '🎨', '沙画模式', '堆叠七彩流沙，创作独特画作', () => this.selectMode('sandArt'));
-      item('level', '🏁', '关卡模式', '穿越彩沙群岛，逐关收集星星', () => this.openLevelMenu());
-      item('endless', '🌈', '无尽模式', '同色贯通消除，挑战最高纪录', () => this.selectMode('endless'));
+      item('endless','∞','无尽模式','不断挑战，创造更高分数',()=>this.selectMode('endless'));
+      item('sandArt','🎨','沙画模式','自由创作，绘制独一无二的沙画',()=>this.selectMode('sandArt'));
+      item('level','🏁','挑战模式','完成关卡，解锁新的沙画挑战',()=>this.openLevelMenu());
       // The gallery feature remains in the project; its menu entry is hidden for now.
       this.modeBack.textContent = '⌂ 返回首页';
       this.modeMenu.classList.add('is-open');
@@ -693,24 +692,24 @@ export class HomeScreen {
 
     this.openLevelMenu = () => {
       this.modeMenu.classList.remove('is-main');
-      this.modeMenu.classList.add('is-level','sandworld-v1');
-      this.modeTitle.textContent = '关卡地图';
+      this.modeMenu.classList.add('is-level','soft-sand-v2');
+      this.modeTitle.textContent = '沙画关卡';
       this.modeHeadIcon.textContent = '🏁';
-      this.modeSubtitle.textContent = '12 个缤纷关卡，逐步解锁';
+      this.modeSubtitle.textContent = '完成关卡，解锁精美沙画作品';
       this.modeItems.replaceChildren();
-      const levels = renderSandWorldMap({
+      const levels = renderSoftSandLevels({
         levelNames:LEVEL_NAMES,
         unlockedLevel:this.getUnlockedLevel(),
         getStars:(n)=>this.getLevelStars(n),
         onSelect:(n)=>this.selectMode('level',n)
       });
-      // The scenery has no baked game-state labels; every node is a real button.
+      // The thumbnail is illustrative; every lock and star comes from real progress.
       this.modeItems.appendChild(levels);
       this.modeBack.textContent = '‹ 返回模式选择';
     };
 
     this.closeModeMenu = () => {
-      this.modeMenu.classList.remove('is-open', 'is-level', 'is-main', 'sandworld-v1');
+      this.modeMenu.classList.remove('is-open', 'is-level', 'is-main', 'sandworld-v1', 'soft-sand-v2');
       this.modeBack.textContent = '⌂ 返回首页';
     };
 
@@ -739,6 +738,7 @@ export class HomeScreen {
     const bestScore = snapshot?.stats?.bestScore ?? 0;
     const newCount = snapshot?.newClearEffects?.length ?? 0;
 
+    this.menuBest.replaceChildren(el('span','','🏆 最高'),el('strong','',Number(bestScore).toLocaleString()));
     this.best.replaceChildren(
       el('span', '', '🏆 最高'),
       el('strong', 'caisha-rainbow-score', Number(bestScore).toLocaleString())
