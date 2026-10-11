@@ -13,6 +13,29 @@ import { GAME_MODES, MODE_SETTINGS, ModeProgress, countSand } from '../modes/Mod
 import { SandArtTools } from '../modes/SandArtTools.js';
 import { getPrototypeLevel, createLevelRandom } from '../modes/Levels.js';
 
+// Randomly choose among colors still present on the level board. A larger
+// sand pile is somewhat likelier to be selected, but repeat colors are allowed.
+export function pickRandomLevelColor(grid, palette, random = Math.random) {
+  const counts = new Map(palette.map(color => [color, 0]));
+  for (const color of grid.cells) {
+    if (counts.has(color)) counts.set(color, counts.get(color) + 1);
+  }
+  const candidates = [...counts]
+    .filter(([, count]) => count > 0)
+    .map(([color, count]) => ({ color, weight: Math.sqrt(count) }));
+  if (candidates.length === 0) {
+    return palette[Math.floor(random() * palette.length)];
+  }
+  const totalWeight = candidates.reduce((total, item) => total + item.weight, 0);
+  let roll = random() * totalWeight;
+  for (const item of candidates) {
+    roll -= item.weight;
+    if (roll <= 0) return item.color;
+  }
+  return candidates[candidates.length - 1].color;
+}
+
+
 // Game rules and progression live here. The host only supplies storage and
 // presentation callbacks; no browser or mini-game API enters this module.
 export class GameSession {
@@ -124,12 +147,20 @@ export class GameSession {
       this.levelData = getPrototypeLevel(level);
       this.grid.cells.set(this.levelData.cells);
       this.grid.revision++;
-      let nextStep = 0;
-      const queue = this.levelData.solution;
-      const fallback = this.levelData.palette[this.levelData.palette.length - 1];
+      // Only the opening piece is guided. Every later piece is genuinely
+      // randomized from colors still on the board (with replacement).
+      let firstDrop = true;
+      const opening = this.levelData.solution[0];
       this.fruitManager.setSpawnProvider(() => {
-        const step = queue[nextStep++];
-        return step ? { ...step } : { templateId: 'banana', color: fallback };
+        if (firstDrop) {
+          firstDrop = false;
+          return { ...opening };
+        }
+        return {
+          color: pickRandomLevelColor(
+            this.grid, this.levelData.palette, this.fruitManager.random
+          )
+        };
       });
       this.simulation.setRandom(createLevelRandom(this.levelData.runtimeSeed));
       this.fruitManager.reset();
