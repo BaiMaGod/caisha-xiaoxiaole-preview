@@ -281,6 +281,10 @@ export function ensureHDModeUI(){
   .caisha-mode-menu.is-level .caisha-mode-menu__levels button:disabled .caisha-mode-menu__level-number{
     display:none !important;
   }
+  /* Align the dynamic name badges with the artwork on later island rows. */
+  .caisha-mode-menu.is-level .caisha-mode-menu__levels button:nth-child(n+4) .caisha-mode-menu__level-name{
+    transform:translateY(-13px);
+  }
   @media(prefers-reduced-motion:reduce){
     .caisha-mode-menu.is-main .caisha-mode-menu__item{transition:none !important;}
   }
