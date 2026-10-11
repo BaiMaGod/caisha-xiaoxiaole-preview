@@ -227,8 +227,11 @@ jobs:
           await page.locator('.caisha-home__play').click();
           assert.equal(await page.locator('.caisha-mode-menu__item').count(),3,
             'gallery remains hidden after returning home');
-          await page.locator('.caisha-mode-menu__item').filter({hasText:'关卡模式'}).click();
-          const levels=page.locator('.caisha-mode-menu__levels button');
+          await page.locator('.caisha-mode-menu__item').filter({hasText:'挑战模式'}).click();
+          const levels=page.locator('.soft-sand__grid button');
+          assert.equal(await page.locator('.caisha-mode-menu__item').filter({hasText:'挑战模式'}).count(),0,
+            'challenge mode cards no longer appear within the level grid');
+          assert.equal(await page.locator('.soft-sand__grid').count(),1,'new low-saturation level grid visible');
           assert.equal(await levels.count(),12,'12 playable levels offered');
           await page.screenshot({path:'qa-shots/04-level-select.png',fullPage:true});
           await levels.first().click();
