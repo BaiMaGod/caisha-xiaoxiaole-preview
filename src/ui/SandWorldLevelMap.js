@@ -7,8 +7,8 @@ const POSITIONS = [
   [50,1.0],[22,18.0],[78,18.0],
   [17.5,35.0],[50,35.0],[82.5,35.0],
   [30,52.0],[70,52.0],
-  [18,69.0],[50,69.0],[82,69.0],
-  [50,85.0]
+  [18,65.5],[50,65.5],[82,65.5],
+  [50,79.0]
 ];
 const COLORS = ['pink','amber','purple','blue','mint','pink','purple','orange','blue','pink','mint','purple'];
 const routes = `M50 9 Q31 14 22 24 Q50 30 78 24 Q88 29 18 40 Q33 45 50 41 Q67 37 82 41 Q78 50 30 57 Q50 63 70 57 Q68 67 18 74 Q33 78 50 75 Q69 71 82 75 Q87 83 50 90`;
@@ -127,6 +127,9 @@ export function ensureSandWorldLevelMap() {
   }
   .caisha-mode-menu.is-level.${rootClass} .caisha-sandworld__node:disabled .caisha-sandworld__name {
     color:#96818d !important;-webkit-text-fill-color:#96818d !important;
+  }
+  .caisha-mode-menu.is-level.${rootClass} .caisha-sandworld__node.is-current {
+    outline:none !important;
   }
   .caisha-mode-menu.is-level.${rootClass} .caisha-sandworld__node.is-current .caisha-sandworld__art {
     filter:drop-shadow(0 0 7px #fff4b9) !important;
