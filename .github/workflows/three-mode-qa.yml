@@ -23,11 +23,19 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           import assert from 'node:assert/strict';
-          import { GameSession } from './src/runtime/GameSession.js';
+          import { GameSession, pickRandomLevelColor } from './src/runtime/GameSession.js';
           import { GAME_MODES, countSand, touchesSupportedFinishLine } from './src/modes/ModeLogic.js';
           import { getPrototypeLevel } from './src/modes/Levels.js';
           import { SandGrid } from './src/SandGrid.js';
           import { CONFIG } from './src/config.js';
+          // The random level picker allows repeats, but not colors missing
+          // from the current sand pile.
+          const twoColorGrid=new SandGrid();
+          twoColorGrid.set(5,twoColorGrid.height-1,1);
+          twoColorGrid.set(6,twoColorGrid.height-1,3);
+          assert.equal(pickRandomLevelColor(twoColorGrid,[1,3,4],()=>0),1);
+          assert.equal(pickRandomLevelColor(twoColorGrid,[1,3,4],()=>0.99),3);
+          assert.equal(pickRandomLevelColor(twoColorGrid,[1,3,4],()=>0.99),3);
           let grid = new SandGrid();
           grid.set(10, CONFIG.DEATH_LINE_Y, 1);
           assert.equal(touchesSupportedFinishLine(grid), false);
@@ -68,6 +76,12 @@ jobs:
               'level ' + id + ' must add real color complexity');
             const s = new GameSession();
             s.start(GAME_MODES.LEVEL,id);
+            // Run the known solvable reference sequence as an explicit test
+            // override. The real game randomly selects colors after the first drop.
+            let referenceStep=1;
+            s.fruitManager.setSpawnProvider(
+              () => level.solution[referenceStep++] ?? null
+            );
             let frame=0;
             for(const action of level.solution){
               for(let k=0;k<1000 && s.mode==='playing';k++){
