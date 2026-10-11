@@ -194,6 +194,47 @@ export function ensureHDModeUI(){
     .caisha-mode-menu.is-main .caisha-mode-menu__title{width:72% !important;}
     .caisha-mode-menu.is-level .caisha-mode-menu__level-name{font-size:9px !important;}
   }
+
+  /* Override legacy selector-specific shorthand/background rules. */
+  .caisha-mode-menu.is-main .caisha-mode-menu__item[data-mode="endless"]{
+    background:${a('endless-card')} center / contain no-repeat !important;
+    border:0 !important;border-radius:0 !important;
+    box-shadow:none !important;overflow:visible !important;
+  }
+  .caisha-mode-menu.is-level .caisha-mode-menu__items{
+    box-sizing:border-box; flex:0 0 auto !important;
+    width:100%;height:auto !important;max-height:none !important;
+    aspect-ratio:1122 / 1402 !important;
+  }
+  .caisha-mode-menu.is-level .caisha-mode-menu__card{
+    justify-content:center !important;
+  }
+  .caisha-mode-menu.is-level .caisha-mode-menu__levels{
+    padding:16% 4% 9% !important;
+  }
+  .caisha-mode-menu.is-level .caisha-mode-menu__levels button:disabled{
+    background:transparent !important;border:0 !important;
+    box-shadow:none !important;filter:none !important;
+    outline:0 !important;
+  }
+  .caisha-mode-menu.is-level .caisha-mode-menu__levels button:disabled::before{
+    content:"";inset:5% 14% 34%;border-radius:50%;
+    background:#b0aeb0a8;backdrop-filter:grayscale(1) brightness(.92);
+    -webkit-backdrop-filter:grayscale(1) brightness(.92);
+    box-shadow:inset 0 2px 3px #4342583d,0 1px 5px #79748156;
+  }
+  .caisha-mode-menu.is-level .caisha-mode-menu__levels button:disabled .caisha-mode-menu__level-number{
+    position:absolute;top:23%;left:0;right:0;z-index:3;
+    color:#fff !important;font-size:clamp(12px,3.6vw,18px) !important;
+    text-shadow:0 2px 3px #5c5868 !important;
+  }
+  .caisha-mode-menu.is-level .caisha-mode-menu__levels button:disabled .caisha-mode-menu__level-stars{
+    display:block !important;color:#9993a6 !important;
+    background:#e7e4e8f4 !important;
+  }
+  .caisha-mode-menu.is-level .caisha-mode-menu__levels button:disabled .caisha-mode-menu__level-stars::after{
+    content:"☆☆☆";
+  }
   @media(prefers-reduced-motion:reduce){
     .caisha-mode-menu.is-main .caisha-mode-menu__item{transition:none !important;}
   }
