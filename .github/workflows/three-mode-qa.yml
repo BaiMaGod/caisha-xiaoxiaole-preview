@@ -162,6 +162,10 @@ jobs:
             'only the three active play modes are offered');
           assert.equal(await page.locator('.caisha-mode-menu__item').filter({hasText:'我的沙画'}).count(),0,
             'gallery entry is temporarily hidden');
+          const cards = page.locator('.approved-art__mode-picture');
+          assert.equal(await cards.count(),3,'approved raster mode assets must be used');
+          const loadedCards = await cards.evaluateAll(imgs => imgs.every(img => img.complete && img.naturalWidth > 0));
+          assert(loadedCards,'all approved mode card image files must load');
           await page.screenshot({path:'qa-shots/08-mode-picker-redesign.png',fullPage:true});
           await page.locator('.caisha-mode-menu__item').filter({hasText:'无尽模式'}).click();
           await page.getByRole('button',{name:'打开设置'}).click();
@@ -228,11 +232,19 @@ jobs:
           assert.equal(await page.locator('.caisha-mode-menu__item').count(),3,
             'gallery remains hidden after returning home');
           await page.locator('.caisha-mode-menu__item').filter({hasText:'挑战模式'}).click();
-          const levels=page.locator('.soft-sand__grid button');
+          const levels=page.locator('.approved-art__level-grid button');
           assert.equal(await page.locator('.caisha-mode-menu__item').filter({hasText:'挑战模式'}).count(),0,
             'challenge mode cards no longer appear within the level grid');
-          assert.equal(await page.locator('.soft-sand__grid').count(),1,'new low-saturation level grid visible');
+          assert.equal(await page.locator('.approved-art__level-grid').count(),1,'new low-saturation level grid visible');
           assert.equal(await levels.count(),12,'12 playable levels offered');
+          const levelArtLoaded = await page.locator('.approved-art__level-card').first().evaluate(async el => {
+            const url=getComputedStyle(el).backgroundImage.slice(5,-2);
+            if(!url)return false;
+            const image=new Image();image.src=url;
+            await image.decode();
+            return image.naturalWidth > 0;
+          });
+          assert(levelArtLoaded,'approved level card art loaded from image file');
           await page.screenshot({path:'qa-shots/04-level-select.png',fullPage:true});
           await levels.first().click();
           await page.waitForTimeout(500);

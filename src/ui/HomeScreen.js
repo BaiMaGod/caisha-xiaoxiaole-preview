@@ -1,6 +1,6 @@
 import { ensureRainbowScoreStyles } from './RainbowScore.js';
 import { LEVEL_NAMES } from '../modes/Levels.js';
-import { ensureSoftSandScreens, renderSoftSandLevels, makeModeIllustration } from './SoftSandScreens.js';
+import { ensureApprovedAssetScreens, renderApprovedLevels, approvedUiAsset } from './ApprovedAssetScreens.js';
 import { ensurePremiumIllustratedUI, premiumUiAsset } from './PremiumIllustratedUI.js';
 import { ensureRainbowSandTheme } from './RainbowSandTheme.js';
 
@@ -552,7 +552,7 @@ export class HomeScreen {
     ensureRainbowSandTheme();
     ensurePremiumIllustratedUI();
     ensureRainbowScoreStyles();
-    ensureSoftSandScreens();
+    ensureApprovedAssetScreens();
 
     this.container = container;
     this.progress = progress;
@@ -643,15 +643,24 @@ export class HomeScreen {
     this.modeMenu.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') this.closeModeMenu();
     });
-    const topbar=el('div','soft-sand__topbar');
-    this.menuBest=el('div','soft-sand__record');
+    const topbar=el('div','approved-art__topbar');
+    this.menuBest=el('div','approved-art__record');
     this.menuBest.setAttribute('aria-label','历史最高分');
-    topbar.append(this.modeBack,this.menuBest);
-    const scenery=el('div','soft-sand__scenery');
-    scenery.setAttribute('aria-hidden','true');
-    for(let i=0;i<4;i++)scenery.append(el('span',''));
-    card.append(topbar,illustratedHead,illustratedBrand,this.modeHeadIcon,this.modeTitle,this.modeSubtitle,this.modeItems);
-    this.modeMenu.append(card,scenery);
+    this.modeGear=el('button','approved-art__gear','⚙');
+    this.modeGear.type='button';
+    this.modeGear.setAttribute('aria-label','打开设置');
+    this.modeGear.addEventListener('click',()=>{
+      const buttons=[...document.querySelectorAll('button[aria-label="打开设置"]')];
+      const outside=buttons.find(button=>button!==this.modeGear);
+      outside?.click();
+    });
+    topbar.append(this.modeBack,this.menuBest,this.modeGear);
+    this.approvedHead=el('img','approved-art__headline');
+    this.approvedHead.src=approvedUiAsset('mode-title.webp');
+    this.approvedHead.alt='选择模式';
+    this.approvedHead.draggable=false;
+    card.append(topbar,this.approvedHead,illustratedHead,illustratedBrand,this.modeHeadIcon,this.modeTitle,this.modeSubtitle,this.modeItems);
+    this.modeMenu.append(card);
     this.root.append(top, brand, actions, this.modeMenu);
     this.container.appendChild(this.root);
 
@@ -659,7 +668,9 @@ export class HomeScreen {
 
     this.openModeMenu = () => {
       this.modeMenu.classList.remove('is-level', 'sandworld-v1');
-      this.modeMenu.classList.add('is-main','soft-sand-v2');
+      this.modeMenu.classList.add('is-main','approved-art-v1');
+      this.approvedHead.src=approvedUiAsset('mode-title.webp');
+      this.approvedHead.alt='选择模式';
       this.modeTitle.textContent = '选择模式';
       this.modeItems.replaceChildren();
       this.modeHeadIcon.textContent = '🌈';
@@ -673,10 +684,10 @@ export class HomeScreen {
         const copy = el('span', 'caisha-mode-menu__copy');
         const heading=el('strong','',title);
         copy.append(heading,el('small','',description));
-        const art=el('span','soft-sand__mode-art');
-        art.dataset.mode=mode;
+        const art=el('img','approved-art__mode-picture');
+        art.src=approvedUiAsset(mode==='endless'?'mode-endless.webp':mode==='sandArt'?'mode-art.webp':'mode-challenge.webp');
+        art.alt='';art.draggable=false;
         art.setAttribute('aria-hidden','true');
-        art.append(makeModeIllustration(mode));
         button.append(art,icon,copy);
         button.addEventListener('click', run);
         this.modeItems.appendChild(button);
@@ -692,12 +703,14 @@ export class HomeScreen {
 
     this.openLevelMenu = () => {
       this.modeMenu.classList.remove('is-main');
-      this.modeMenu.classList.add('is-level','soft-sand-v2');
+      this.modeMenu.classList.add('is-level','approved-art-v1');
+      this.approvedHead.src=approvedUiAsset('level-title.webp');
+      this.approvedHead.alt='沙画关卡';
       this.modeTitle.textContent = '沙画关卡';
       this.modeHeadIcon.textContent = '🏁';
       this.modeSubtitle.textContent = '完成关卡，解锁精美沙画作品';
       this.modeItems.replaceChildren();
-      const levels = renderSoftSandLevels({
+      const levels = renderApprovedLevels({
         levelNames:LEVEL_NAMES,
         unlockedLevel:this.getUnlockedLevel(),
         getStars:(n)=>this.getLevelStars(n),
@@ -709,7 +722,7 @@ export class HomeScreen {
     };
 
     this.closeModeMenu = () => {
-      this.modeMenu.classList.remove('is-open', 'is-level', 'is-main', 'sandworld-v1', 'soft-sand-v2');
+      this.modeMenu.classList.remove('is-open', 'is-level', 'is-main', 'sandworld-v1', 'soft-sand-v2', 'approved-art-v1');
       this.modeBack.textContent = '⌂ 返回首页';
     };
 
