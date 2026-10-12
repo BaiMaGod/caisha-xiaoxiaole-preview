@@ -669,6 +669,7 @@ export class HomeScreen {
     this.openModeMenu = () => {
       this.modeMenu.classList.remove('is-level', 'sandworld-v1');
       this.modeMenu.classList.add('is-main','approved-art-v1');
+      this.container.classList.add('caisha-mode-picker-open');
       this.menuTopbar.replaceChildren(this.modeBack);
       this.approvedHead.src=approvedUiAsset('mode-title.webp');
       this.approvedHead.alt='选择模式';
@@ -705,6 +706,7 @@ export class HomeScreen {
     this.openLevelMenu = () => {
       this.modeMenu.classList.remove('is-main');
       this.modeMenu.classList.add('is-level','approved-art-v1');
+      this.container.classList.remove('caisha-mode-picker-open');
       this.menuTopbar.replaceChildren(this.modeBack,this.menuBest,this.modeGear);
       this.approvedHead.src=approvedUiAsset('level-title.webp');
       this.approvedHead.alt='沙画关卡';
@@ -724,6 +726,7 @@ export class HomeScreen {
     };
 
     this.closeModeMenu = () => {
+      this.container.classList.remove('caisha-mode-picker-open');
       this.modeMenu.classList.remove('is-open', 'is-level', 'is-main', 'sandworld-v1', 'soft-sand-v2', 'approved-art-v1');
       this.modeBack.textContent = '⌂ 返回首页';
     };

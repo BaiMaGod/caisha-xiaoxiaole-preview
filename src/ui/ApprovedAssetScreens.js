@@ -12,6 +12,7 @@ export function ensureApprovedAssetScreens() {
   const style = document.createElement('style');
   style.id = STYLE_ID;
   style.textContent = `
+  .caisha-mode-picker-open > button[aria-label="打开设置"] {display:none !important;}
   .caisha-mode-menu.approved-art-v1 {
     display:none;position:absolute;inset:0;z-index:30;
     padding:0 !important;overflow:hidden !important;
