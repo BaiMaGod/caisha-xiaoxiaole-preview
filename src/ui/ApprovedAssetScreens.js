@@ -78,7 +78,7 @@ export function ensureApprovedAssetScreens() {
   }
   .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__back::after {
     width:36px;height:36px;border:0;border-radius:0;transform:none;
-    background:center / contain no-repeat url('${img('back-arrow-rainbow-sand.webp')}');
+    background:center / contain no-repeat url('${img('back-arrow-pastel-sand.webp')}');
     filter:drop-shadow(0 1px 1px #9a67452b);
   }  .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__back:active {
     transform:translateX(-2px) scale(.95);background:#bd92671a !important;
