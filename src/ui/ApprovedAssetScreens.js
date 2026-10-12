@@ -71,6 +71,19 @@ export function ensureApprovedAssetScreens() {
     border-bottom:4px solid #795c48;border-radius:2px;
     transform:translateX(3px) rotate(45deg);
   }
+  .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__back {
+    width:46px !important;height:46px !important;min-height:46px !important;
+    border:0 !important;border-radius:12px !important;background:transparent !important;
+    box-shadow:none !important;transition:transform 120ms ease,background 120ms ease;
+  }
+  .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__back::after {
+    width:30px;height:30px;border:0;border-radius:0;transform:none;
+    background:center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M15 7L6 16l9 9M7 16h19' fill='none' stroke='%23916b4e' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    filter:drop-shadow(0 1px 0 #fff8e9);
+  }
+  .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__back:active {
+    transform:translateX(-2px) scale(.95);background:#bd92671a !important;
+  }
   .caisha-mode-menu.approved-art-v1 .approved-art__gear {right:0;font-size:26px !important;}
   .caisha-mode-menu.approved-art-v1 .approved-art__record {
     min-height:43px;max-width:calc(100% - 110px);padding:7px 16px;
