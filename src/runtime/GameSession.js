@@ -12,17 +12,8 @@ import { HomeDemoController } from '../ui/HomeDemoController.js';
 import { GAME_MODES, MODE_SETTINGS, ModeProgress, countSand } from '../modes/ModeLogic.js';
 import { SandArtTools } from '../modes/SandArtTools.js';
 import { getPrototypeLevel, createLevelRandom } from '../modes/Levels.js';
-
-// After the guided opening piece, every color in the level palette has the
-// same independent probability. Board contents do not affect color selection.
-export function pickRandomLevelColor(palette, random = Math.random) {
-  if (!Array.isArray(palette) || palette.length === 0) {
-    throw new Error('Level palette must contain at least one color');
-  }
-  return palette[Math.min(
-    palette.length - 1, Math.floor(random() * palette.length)
-  )];
-}
+import { createLevelSpawnProvider } from '../modes/LevelSpawn.js';
+export { pickRandomLevelColor } from '../modes/LevelSpawn.js';
 
 // Game rules and progression live here. The host only supplies storage and
 // presentation callbacks; no browser or mini-game API enters this module.
@@ -135,21 +126,9 @@ export class GameSession {
       this.levelData = getPrototypeLevel(level);
       this.grid.cells.set(this.levelData.cells);
       this.grid.revision++;
-      // Only the first drop is guided; every subsequent color is sampled
-      // independently and uniformly from this level's full allowed palette.
-      let firstDrop = true;
-      const opening = this.levelData.solution[0];
-      this.fruitManager.setSpawnProvider(() => {
-        if (firstDrop) {
-          firstDrop = false;
-          return { ...opening };
-        }
-        return {
-          color: pickRandomLevelColor(
-            this.levelData.palette, this.fruitManager.random
-          )
-        };
-      });
+      this.fruitManager.setSpawnProvider(createLevelSpawnProvider(
+        this.levelData, () => this.fruitManager.random()
+      ));
       this.simulation.setRandom(createLevelRandom(this.levelData.runtimeSeed));
       this.fruitManager.reset();
     } else {
@@ -348,3 +327,4 @@ export class GameSession {
       mode: this.playMode, level: this.level });
   }
 }
+

@@ -21,6 +21,7 @@ import { GameOverArtwork } from './ui/GameOverArtwork.js';
 import { SettingsPanel } from './ui/SettingsPanel.js';
 import { GAME_MODES, ModeProgress, countSand } from './modes/ModeLogic.js';
 import { getPrototypeLevel, createLevelRandom } from './modes/Levels.js';
+import { createLevelSpawnProvider } from './modes/LevelSpawn.js';
 import { SandArtTools } from './modes/SandArtTools.js';
 import { ArtToolbar } from './ui/ArtToolbar.js';
 import { ModePanels } from './ui/ModePanels.js';
@@ -443,13 +444,9 @@ function restartGame(mode = currentMode, level = currentLevel) {
     levelData = getPrototypeLevel(level);
     grid.cells.set(levelData.cells);
     grid.revision++;
-    let nextStep = 0;
-    const queue = levelData.solution;
-    const fallback = levelData.palette[levelData.palette.length - 1];
-    fruitManager.setSpawnProvider(() => {
-      const step = queue[nextStep++];
-      return step ? { ...step } : { templateId: 'banana', color: fallback };
-    });
+    fruitManager.setSpawnProvider(createLevelSpawnProvider(
+      levelData, () => fruitManager.random()
+    ));
     simulation.setRandom(createLevelRandom(levelData.runtimeSeed));
   } else {
     fruitManager.setSpawnProvider(null);
@@ -706,3 +703,4 @@ document.addEventListener('visibilitychange', () => {
 
 renderGameCanvas(true);
 loop(performance.now());
+

@@ -147,6 +147,8 @@ jobs:
           for n in $(seq 1 40); do curl -fsS http://127.0.0.1:5173/ >/dev/null && exit 0; sleep 1; done
           cat /tmp/preview.log
           exit 1
+      - name: Check level colors through actual Web entry
+        run: node tests/browser-level-colors.mjs
       - name: Test actual Chromium interface
         run: |
           mkdir -p qa-shots
