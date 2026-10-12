@@ -5,7 +5,7 @@
  */
 const STYLE_ID = 'caisha-approved-assets-20261011';
 const BASE = () => (import.meta.env?.BASE_URL || './') + 'images/approved-ui/';
-const img = filename => BASE() + filename;
+const img = filename => BASE() + filename + (/^mode-(challenge|endless|art)\.webp$/.test(filename) ? '?v=20261012-transparent' : '');
 
 export function ensureApprovedAssetScreens() {
   if (document.getElementById(STYLE_ID)) return;
@@ -142,7 +142,7 @@ export function ensureApprovedAssetScreens() {
   .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__item::after {display:none !important;content:none !important;}
   .caisha-mode-menu.approved-art-v1.is-main .approved-art__mode-frame {
     display:block;position:absolute;left:50%;top:50%;
-    width:min(100cqw,200cqh);aspect-ratio:2/1;transform:translate(-50%,-50%);
+    width:min(100cqw,177.683315cqh);aspect-ratio:1672/941;transform:translate(-50%,-50%);
     container-type:inline-size;pointer-events:none;
   }
   .caisha-mode-menu.approved-art-v1.is-main .approved-art__mode-picture {
