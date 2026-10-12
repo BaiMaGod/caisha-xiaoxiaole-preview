@@ -687,16 +687,16 @@ export class HomeScreen {
         const heading=el('strong','',title);
         copy.append(heading,el('small','',description));
         const art=el('img','approved-art__mode-picture');
-        art.src=approvedUiAsset(mode==='endless'?'mode-endless.webp':mode==='sandArt'?'mode-art.webp':'mode-challenge.webp');
+        art.src=approvedUiAsset(mode==='endless'?'mode-endless-bg.svg':mode==='sandArt'?'mode-art-bg.svg':'mode-challenge-bg.svg');
         art.alt='';art.draggable=false;
         art.setAttribute('aria-hidden','true');
         button.append(art,icon,copy);
         button.addEventListener('click', run);
         this.modeItems.appendChild(button);
       };
-      item('level','🏁','挑战模式','完成关卡，解锁新的沙画挑战',()=>this.openLevelMenu());
-      item('endless','∞','无尽模式','不断挑战，创造更高分数',()=>this.selectMode('endless'));
-      item('sandArt','🎨','沙画模式','自由创作，绘制独一无二的沙画',()=>this.selectMode('sandArt'));
+      item('level','🏁','挑战模式','特殊形状，更高难度',()=>this.openLevelMenu());
+      item('endless','∞','无尽模式','不断挑战更高的分数',()=>this.selectMode('endless'));
+      item('sandArt','🎨','沙画模式','完成关卡，解锁精美沙画',()=>this.selectMode('sandArt'));
       // The gallery feature remains in the project; its menu entry is hidden for now.
       this.modeBack.textContent = '⌂ 返回首页';
       this.modeMenu.classList.add('is-open');

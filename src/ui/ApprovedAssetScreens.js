@@ -145,11 +145,49 @@ export function ensureApprovedAssetScreens() {
     border:0;border-radius:0;pointer-events:none;user-select:none;
   }
   .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__mode-icon,
-  .caisha-mode-menu.approved-art-v1.is-main .soft-sand__mode-art,
-  .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__copy {
+  .caisha-mode-menu.approved-art-v1.is-main .soft-sand__mode-art {
     position:absolute !important;width:1px !important;height:1px !important;
     left:0 !important;top:0 !important;overflow:hidden !important;
     opacity:0 !important;pointer-events:none !important;
+  }
+  /* Titles and descriptions are real HTML text, layered over clean card art. */
+  .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__copy {
+    box-sizing:border-box !important;position:absolute !important;z-index:2 !important;
+    display:flex !important;flex-direction:column !important;align-items:flex-start !important;
+    justify-content:center !important;gap:clamp(5px,1.4svh,12px) !important;
+    top:24% !important;left:10.5% !important;width:62% !important;height:auto !important;
+    min-width:0 !important;overflow:visible !important;opacity:1 !important;
+    text-align:left !important;pointer-events:none !important;
+  }
+  .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__item[data-mode="level"] .caisha-mode-menu__copy {
+    top:26% !important;
+  }
+  .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__item[data-mode="endless"] .caisha-mode-menu__copy {
+    top:22% !important;
+  }
+  .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__item .caisha-mode-menu__copy strong {
+    display:block !important;margin:0 !important;
+    font:950 clamp(17px,5.45vw,26px)/1.15 ui-rounded,"Microsoft YaHei",system-ui,sans-serif !important;
+    letter-spacing:.015em !important;white-space:nowrap !important;
+    color:#815034 !important;-webkit-text-fill-color:#815034 !important;
+    -webkit-text-stroke:.3px #fef2df !important;
+    text-shadow:0 1px 0 #fff8e7,0 2px 2px #73503d3b !important;
+  }
+  .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__item .caisha-mode-menu__copy small {
+    display:block !important;max-width:100% !important;margin:0 !important;
+    color:#98775b !important;-webkit-text-fill-color:#98775b !important;
+    font:700 clamp(9px,2.55vw,13px)/1.25 ui-rounded,"Microsoft YaHei",system-ui,sans-serif !important;
+    white-space:nowrap !important;letter-spacing:0 !important;
+    text-shadow:0 1px #fff4e1 !important;
+  }
+  @media(max-width:350px) {
+    .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__copy {
+      left:11.2% !important;width:69% !important;
+      gap:clamp(3px,1svh,7px) !important;
+    }
+    .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__item .caisha-mode-menu__copy small {
+      font-size:9px !important;
+    }
   }
   .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__item:active {
     transform:scale(.977) !important;filter:brightness(.985) !important;
