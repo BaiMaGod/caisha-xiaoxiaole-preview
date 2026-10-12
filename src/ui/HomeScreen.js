@@ -643,7 +643,7 @@ export class HomeScreen {
     this.modeMenu.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') this.closeModeMenu();
     });
-    const topbar=el('div','approved-art__topbar');
+    this.menuTopbar=el('div','approved-art__topbar');
     this.menuBest=el('div','approved-art__record');
     this.menuBest.setAttribute('aria-label','历史最高分');
     this.modeGear=el('button','approved-art__gear','⚙');
@@ -654,12 +654,12 @@ export class HomeScreen {
       const outside=buttons.find(button=>button!==this.modeGear);
       outside?.click();
     });
-    topbar.append(this.modeBack,this.menuBest,this.modeGear);
+    this.menuTopbar.append(this.modeBack);
     this.approvedHead=el('img','approved-art__headline');
     this.approvedHead.src=approvedUiAsset('mode-title.webp');
     this.approvedHead.alt='选择模式';
     this.approvedHead.draggable=false;
-    card.append(topbar,this.approvedHead,illustratedHead,illustratedBrand,this.modeHeadIcon,this.modeTitle,this.modeSubtitle,this.modeItems);
+    card.append(this.menuTopbar,this.approvedHead,illustratedHead,illustratedBrand,this.modeHeadIcon,this.modeTitle,this.modeSubtitle,this.modeItems);
     this.modeMenu.append(card);
     this.root.append(top, brand, actions, this.modeMenu);
     this.container.appendChild(this.root);
@@ -669,6 +669,7 @@ export class HomeScreen {
     this.openModeMenu = () => {
       this.modeMenu.classList.remove('is-level', 'sandworld-v1');
       this.modeMenu.classList.add('is-main','approved-art-v1');
+      this.menuTopbar.replaceChildren(this.modeBack);
       this.approvedHead.src=approvedUiAsset('mode-title.webp');
       this.approvedHead.alt='选择模式';
       this.modeTitle.textContent = '选择模式';
@@ -704,6 +705,7 @@ export class HomeScreen {
     this.openLevelMenu = () => {
       this.modeMenu.classList.remove('is-main');
       this.modeMenu.classList.add('is-level','approved-art-v1');
+      this.menuTopbar.replaceChildren(this.modeBack,this.menuBest,this.modeGear);
       this.approvedHead.src=approvedUiAsset('level-title.webp');
       this.approvedHead.alt='沙画关卡';
       this.modeTitle.textContent = '沙画关卡';
