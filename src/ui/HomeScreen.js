@@ -694,9 +694,9 @@ export class HomeScreen {
         button.addEventListener('click', run);
         this.modeItems.appendChild(button);
       };
+      item('level','🏁','挑战模式','完成关卡，解锁新的沙画挑战',()=>this.openLevelMenu());
       item('endless','∞','无尽模式','不断挑战，创造更高分数',()=>this.selectMode('endless'));
       item('sandArt','🎨','沙画模式','自由创作，绘制独一无二的沙画',()=>this.selectMode('sandArt'));
-      item('level','🏁','挑战模式','完成关卡，解锁新的沙画挑战',()=>this.openLevelMenu());
       // The gallery feature remains in the project; its menu entry is hidden for now.
       this.modeBack.textContent = '⌂ 返回首页';
       this.modeMenu.classList.add('is-open');
