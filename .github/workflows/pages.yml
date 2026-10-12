@@ -2,8 +2,7 @@ name: deploy-pages
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -16,155 +15,75 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Check both Web and Canvas mini-game JavaScript
+      - name: Install browser verifier
         run: |
-          find src -name '*.js' -print0 | xargs -0 -n1 node --check
+          npm install --prefix "$RUNNER_TEMP/preview-qa" --no-package-lock playwright@1.56.1
+          "$RUNNER_TEMP/preview-qa/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Verify compiled preview on mobile and desktop
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/preview-qa/node_modules/playwright/index.mjs
+        run: |
+          test -f web/index.html
+          test -f web/canvas-preview.html
+          test ! -d src
+          test ! -d public
+          mkdir -p "$RUNNER_TEMP/pages-root/caisha-xiaoxiaole-preview"
+          cp -R web/. "$RUNNER_TEMP/pages-root/caisha-xiaoxiaole-preview/"
+          python3 -m http.server 4173 --directory "$RUNNER_TEMP/pages-root" > "$RUNNER_TEMP/preview-http.log" 2>&1 &
+          trap 'kill $!' EXIT
           node --input-type=module <<'NODE'
           import assert from 'node:assert/strict';
-          import { CanvasGame } from './src/runtime/CanvasGame.js';
-          const game = Object.create(CanvasGame.prototype);
-          let stopped = 0;
-          game.platform = {stopSounds:()=>stopped++};
-          game.selectedLevel = 2;
-          game.handleGameOver({mode:'level'});
-          assert.equal(game.screen,'fail','mini-game must use level-specific failure UI');
-          assert.equal(stopped,1);
-          console.log('All JS parses and CanvasGame level failure routes correctly');
-          NODE
-      - name: Run 12-level, art and save-data regressions
-        run: |
-          node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict';
-          import { GameSession, pickRandomLevelColor } from './src/runtime/GameSession.js';
-          import { GAME_MODES, countSand, touchesSupportedFinishLine } from './src/modes/ModeLogic.js';
-          import { getPrototypeLevel } from './src/modes/Levels.js';
-          import { SandGrid } from './src/SandGrid.js';
-          import { CONFIG } from './src/config.js';
-          // Level color draws use every palette color, including colors
-          // absent from the current sand pile; repeated colors are allowed.
-          assert.equal(pickRandomLevelColor([1,3,4],()=>0),1);
-          assert.equal(pickRandomLevelColor([1,3,4],()=>0.99),4);
-          assert.equal(pickRandomLevelColor([1,3,4],()=>0.99),4);
-          const count=new Map([[1,0],[3,0],[4,0]]);
-          for(let i=0;i<3000;i++){
-            const selected=pickRandomLevelColor(
-              [1,3,4],()=> (i+0.5)/3000
-            );
-            count.set(selected,count.get(selected)+1);
-          }
-          assert.deepEqual([...count.values()],[1000,1000,1000],
-            'each palette color must be equally likely');
-
-          let grid = new SandGrid();
-          grid.set(10, CONFIG.DEATH_LINE_Y, 1);
-          assert.equal(touchesSupportedFinishLine(grid), false);
-          for (let y=CONFIG.DEATH_LINE_Y; y<grid.height; y++) grid.set(10,y,1);
-          assert.equal(touchesSupportedFinishLine(grid), true);
-          let artFinishes = 0;
-          const art = new GameSession({onArtComplete:()=>artFinishes++});
-          art.start(GAME_MODES.ART);
-          for(let y=CONFIG.DEATH_LINE_Y; y<art.grid.height; y++){
-            art.grid.set(25,y,2);
-            art.art.fixed[art.grid.index(25,y)] = 1;
-          }
-          for(let i=0; i<4; i++) art.update(50,i*50);
-          assert.equal(art.mode,'over');
-          assert.equal(artFinishes,1);
-          const local = new Map();
-          const storage = {getItem:k=>local.get(k)||null,setItem:(k,v)=>local.set(k,v)};
-          const unfinished = new GameSession({storage});
-          unfinished.start(GAME_MODES.ART);
-          unfinished.grid.set(19, 300, 4);
-          unfinished.art.fixed[unfinished.grid.index(19,300)] = 1;
-          unfinished.goHome();
-          const resumed = new GameSession({storage});
-          resumed.start(GAME_MODES.ART);
-          assert.equal(resumed.grid.get(19,300),4,'draft must restore color');
-          assert.equal(resumed.art.fixed[resumed.grid.index(19,300)],1,
-            'draft must restore fixed grain');
-          const shaped = new GameSession();
-          shaped.start(GAME_MODES.ART);
-          assert.equal(shaped.setArtTool('shape'),true);
-          shaped.setPointerX(110);
-          assert.equal(shaped.releaseFruit(),true);
-          for(let yp=CONFIG.DEATH_LINE_Y;yp<shaped.grid.height;yp++){
-            shaped.grid.set(17,yp,1);
-            shaped.art.fixed[shaped.grid.index(17,yp)]=1;
-          }
-          shaped.update(50,0);
-          assert.equal(shaped.artFinishing,true);
-          assert.equal(shaped.fruitManager.enabled,true,
-            'in-flight shape must remain simulated during finish');
-          for(let n=1;n<150 && shaped.mode==='playing';n++)
-            shaped.update(50,n*50);
-          assert.equal(shaped.mode,'over','art frame must finish after shape falls');
-          assert.ok(countSand(shaped.grid)>shaped.grid.height-CONFIG.DEATH_LINE_Y+100,
-            'art frame includes the shaped sand grain contribution');
-          for(let id=1;id<=12;id++){
-            const level = getPrototypeLevel(id);
-            const s = new GameSession();
-            s.start(GAME_MODES.LEVEL,id);
-            // Run the known solvable reference sequence as an explicit test
-            // override. The real game randomly selects colors after the first drop.
-            let referenceStep=1;
-            s.fruitManager.setSpawnProvider(
-              () => level.solution[referenceStep++] ?? null
-            );
-            let frame=0;
-            for(const action of level.solution){
-              for(let k=0;k<1000 && s.mode==='playing';k++){
-                if(s.fruitManager.current?.state==='CONTROL' &&
-                   !s.settlementGate.isBlocking())break;
-                s.update(50,++frame*50);
-              }
-              if(s.mode!=='playing')break;
-              assert.equal(s.fruitManager.current.color,action.color,'level color');
-              assert.equal(s.fruitManager.current.template.id,action.templateId,'level shape');
-              s.setPointerX(action.centerX);
-              assert.equal(s.releaseFruit(),true);
-              for(let k=0;k<1000 && s.mode==='playing';k++){
-                s.update(50,++frame*50);
-                if(s.fruitManager.current?.state==='CONTROL' &&
-                   !s.settlementGate.isBlocking())break;
-              }
+          const {chromium} = await import(process.env.PLAYWRIGHT_MODULE);
+          const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
+          try {
+            for (const [width,height] of [[390,844],[320,568],[768,1024]]) {
+              const page = await browser.newPage({viewport:{width,height}});
+              const errors=[];
+              page.on('pageerror',error=>errors.push(error.message));
+              await page.goto('http://127.0.0.1:4173/caisha-xiaoxiaole-preview/',{waitUntil:'networkidle'});
+              assert.equal(await page.evaluate(()=>Boolean(window.__legacyGame)),false);
+              await page.locator('.caisha-home__play').click();
+              assert.equal(await page.locator('.caisha-mode-menu__item').count(),3);
+              await page.locator('.approved-art__mode-picture').evaluateAll(images=>Promise.all(images.map(image=>image.decode())));
+              await page.locator('[data-mode="level"]').click();
+              assert.equal(await page.locator('.approved-art__level-card').count(),12);
+              await page.locator('.approved-art__level-card').first().click();
+              await page.getByRole('button',{name:'打开设置'}).click();
+              assert.equal(await page.getByRole('slider').count(),2);
+              await page.getByRole('button',{name:'返回主页'}).click();
+              assert.equal(await page.locator('.caisha-home').isVisible(),true);
+              assert.deepEqual(errors,[]);
+              await page.close();
             }
-            for(let k=0;k<1000 && s.mode==='playing';k++)s.update(50,++frame*50);
-            assert.equal(s.mode,'over','level '+id+' must complete');
-            assert.equal(countSand(s.grid),0,'level '+id+' must be fully empty');
-          }
-          console.log('Shared modes and all 12 verified level solutions passed');
+            const page = await browser.newPage({viewport:{width:390,height:844}});
+            const errors=[];
+            page.on('pageerror',error=>errors.push(error.message));
+            await page.goto('http://127.0.0.1:4173/caisha-xiaoxiaole-preview/canvas-preview.html',{waitUntil:'networkidle'});
+            assert.deepEqual(errors,[]);
+            assert.equal(await page.evaluate(()=>Boolean(window.__canvasGame)),false);
+            await page.close();
+          } finally {await browser.close();}
+          console.log('Verified compiled Web and Canvas preview');
           NODE
-
-      - name: Build
-        run: npm run build
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: web
 
   deploy:
+    needs: verify
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Deploy verified preview
         id: deployment
         uses: actions/deploy-pages@v4
