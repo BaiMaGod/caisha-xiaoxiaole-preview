@@ -13,25 +13,16 @@ import { GAME_MODES, MODE_SETTINGS, ModeProgress, countSand } from '../modes/Mod
 import { SandArtTools } from '../modes/SandArtTools.js';
 import { getPrototypeLevel, createLevelRandom } from '../modes/Levels.js';
 
-// Choose uniformly among the distinct colors remaining on the level board.
-// Each draw is independent: consecutive identical colors are intentionally
-// possible. Never bias the choice by how many grains a color has.
-export function pickRandomLevelColor(grid, palette, random = Math.random) {
-  const allowed = new Set(palette);
-  const present = new Set();
-  for (const color of grid.cells) {
-    if (allowed.has(color)) {
-      present.add(color);
-      if (present.size === allowed.size) break;
-    }
+// After the guided opening piece, every color in the level palette has the
+// same independent probability. Board contents do not affect color selection.
+export function pickRandomLevelColor(palette, random = Math.random) {
+  if (!Array.isArray(palette) || palette.length === 0) {
+    throw new Error('Level palette must contain at least one color');
   }
-  const choices = palette.filter(color => present.has(color));
-  // If the board is empty, allow any stage color until victory completes.
-  const available = choices.length > 0 ? choices : palette;
-  return available[Math.min(available.length - 1,
-    Math.floor(random() * available.length))];
+  return palette[Math.min(
+    palette.length - 1, Math.floor(random() * palette.length)
+  )];
 }
-
 
 // Game rules and progression live here. The host only supplies storage and
 // presentation callbacks; no browser or mini-game API enters this module.
@@ -144,8 +135,8 @@ export class GameSession {
       this.levelData = getPrototypeLevel(level);
       this.grid.cells.set(this.levelData.cells);
       this.grid.revision++;
-      // Only the opening piece is guided. Every later piece is genuinely
-      // randomized from colors still on the board (with replacement).
+      // Only the first drop is guided; every subsequent color is sampled
+      // independently and uniformly from this level's full allowed palette.
       let firstDrop = true;
       const opening = this.levelData.solution[0];
       this.fruitManager.setSpawnProvider(() => {
@@ -155,7 +146,7 @@ export class GameSession {
         }
         return {
           color: pickRandomLevelColor(
-            this.grid, this.levelData.palette, this.fruitManager.random
+            this.levelData.palette, this.fruitManager.random
           )
         };
       });
