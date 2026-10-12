@@ -135,11 +135,16 @@ export function ensureApprovedAssetScreens() {
     overflow:visible !important;margin:0 !important;padding:0 !important;
     border:0 !important;border-radius:0 !important;
     background:none !important;box-shadow:none !important;
-    transform:none;filter:none;cursor:pointer;touch-action:manipulation;
+    transform:none;filter:none;cursor:pointer;touch-action:manipulation;container-type:size;
     -webkit-tap-highlight-color:transparent;
   }
   .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__item::before,
   .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__item::after {display:none !important;content:none !important;}
+  .caisha-mode-menu.approved-art-v1.is-main .approved-art__mode-frame {
+    display:block;position:absolute;left:50%;top:50%;
+    width:min(100cqw,200cqh);aspect-ratio:2/1;transform:translate(-50%,-50%);
+    container-type:inline-size;pointer-events:none;
+  }
   .caisha-mode-menu.approved-art-v1.is-main .approved-art__mode-picture {
     display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
     border:0;border-radius:0;pointer-events:none;user-select:none;
@@ -154,20 +159,20 @@ export function ensureApprovedAssetScreens() {
   .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__copy {
     box-sizing:border-box !important;position:absolute !important;z-index:2 !important;
     display:flex !important;flex-direction:column !important;align-items:flex-start !important;
-    justify-content:center !important;gap:clamp(5px,1.4svh,12px) !important;
-    top:24% !important;left:10.5% !important;width:62% !important;height:auto !important;
+    justify-content:center !important;gap:clamp(4px,2cqw,7px) !important;
+    top:22% !important;left:10.5% !important;width:52% !important;height:auto !important;
     min-width:0 !important;overflow:visible !important;opacity:1 !important;
     text-align:left !important;pointer-events:none !important;
   }
   .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__item[data-mode="level"] .caisha-mode-menu__copy {
-    top:26% !important;
+    top:22% !important;
   }
   .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__item[data-mode="endless"] .caisha-mode-menu__copy {
     top:22% !important;
   }
   .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__item .caisha-mode-menu__copy strong {
     display:block !important;margin:0 !important;
-    font:950 clamp(17px,5.45vw,26px)/1.15 ui-rounded,"Microsoft YaHei",system-ui,sans-serif !important;
+    font:950 clamp(17px,8cqw,26px)/1.15 ui-rounded,"Microsoft YaHei",system-ui,sans-serif !important;
     letter-spacing:.015em !important;white-space:nowrap !important;
     color:#815034 !important;-webkit-text-fill-color:#815034 !important;
     -webkit-text-stroke:.3px #fef2df !important;
@@ -176,14 +181,14 @@ export function ensureApprovedAssetScreens() {
   .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__item .caisha-mode-menu__copy small {
     display:block !important;max-width:100% !important;margin:0 !important;
     color:#98775b !important;-webkit-text-fill-color:#98775b !important;
-    font:700 clamp(9px,2.55vw,13px)/1.25 ui-rounded,"Microsoft YaHei",system-ui,sans-serif !important;
+    font:700 clamp(9px,3.4cqw,12px)/1.25 ui-rounded,"Microsoft YaHei",system-ui,sans-serif !important;
     white-space:nowrap !important;letter-spacing:0 !important;
     text-shadow:0 1px #fff4e1 !important;
   }
   @media(max-width:350px) {
     .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__copy {
-      left:11.2% !important;width:69% !important;
-      gap:clamp(3px,1svh,7px) !important;
+      left:10.5% !important;width:52% !important;
+      gap:clamp(3px,2cqw,7px) !important;
     }
     .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__item .caisha-mode-menu__copy small {
       font-size:9px !important;

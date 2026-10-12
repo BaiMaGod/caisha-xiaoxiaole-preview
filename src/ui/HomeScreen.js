@@ -687,10 +687,12 @@ export class HomeScreen {
         const heading=el('strong','',title);
         copy.append(heading,el('small','',description));
         const art=el('img','approved-art__mode-picture');
-        art.src=approvedUiAsset(mode==='endless'?'mode-endless-bg.svg':mode==='sandArt'?'mode-art-bg.svg':'mode-challenge-bg.svg');
+        art.src=approvedUiAsset(mode==='endless'?'mode-endless.webp':mode==='sandArt'?'mode-art.webp':'mode-challenge.webp');
         art.alt='';art.draggable=false;
         art.setAttribute('aria-hidden','true');
-        button.append(art,icon,copy);
+        const frame=el('span','approved-art__mode-frame');
+        frame.append(art,copy);
+        button.append(frame,icon);
         button.addEventListener('click', run);
         this.modeItems.appendChild(button);
       };
