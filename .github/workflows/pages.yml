@@ -67,6 +67,23 @@ jobs:
               await page.getByRole('button',{name:'确定返回'}).click();
               assert.equal(await page.locator('.caisha-mode-menu.is-open').isVisible(),true);
               await page.locator('[data-mode="endless"]').click();
+              for (const title of ['重新生成沙块', '指定生成沙块']) {
+                await page.locator('.caisha-prop-intro').waitFor({state:'visible'});
+                assert.equal(await page.locator('.caisha-prop-intro h2').textContent(),title);
+                await page.locator('.caisha-prop-intro').click();
+                await page.waitForFunction(title=>document.querySelector('.caisha-prop-intro').hidden||
+                  document.querySelector('.caisha-prop-intro h2').textContent!==title,title);
+              }
+              await page.locator('.caisha-prop-intro').waitFor({state:'hidden'});
+              assert.match(await page.locator('[data-prop="regenerate"]').getAttribute('aria-label'),/剩余3次/);
+              assert.match(await page.locator('[data-prop="specify"]').getAttribute('aria-label'),/剩余1次/);
+              await page.locator('[data-prop="regenerate"]').click();
+              assert.match(await page.locator('[data-prop="regenerate"]').getAttribute('aria-label'),/剩余2次/);
+              await page.locator('[data-prop="specify"]').click();
+              assert.equal(await page.locator('.caisha-prop-color').count(),5);
+              await page.locator('.caisha-prop-shape[aria-pressed="false"]').first().click();
+              await page.getByRole('button',{name:'确认生成'}).click();
+              assert.match(await page.locator('[data-prop="specify"]').getAttribute('aria-label'),/剩余0次/);
               await page.getByRole('button',{name:'打开设置'}).click();
               await page.getByRole('button',{name:'返回主页'}).click();
               assert.equal(await page.getByRole('alertdialog').isVisible(),true);

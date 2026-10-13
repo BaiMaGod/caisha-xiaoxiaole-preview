@@ -1,13 +1,12 @@
 {
-  "source_commit": "07e5ad1026df2447b8cbaaeba3b31b906aa5bdfa",
+  "source_commit": "4d97517feab8045bf32f5d73c6edf7304a7fa918",
   "source_repository": "BaiMaGod/caisha-xiaoxiaole",
-  "feature": "falling-block-props-and-smooth-40px-dock",
+  "feature": "endless-block-props-3-random-1-specified",
   "verified": [
     "rules",
-    "falling-prop-browser",
-    "40px-clearance",
-    "smooth-motion",
-    "production-browser",
-    "canvas"
+    "web-and-canvas-browser",
+    "score-based-color-unlocks",
+    "stock-reset",
+    "production-browser-3-viewports"
   ]
 }
