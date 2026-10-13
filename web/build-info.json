@@ -1,4 +1,13 @@
 {
-  "source_commit": "0261e2abad380df471c065b33afb45f5d1fb4f38",
-  "preview_patch": "sand-art-pastel-controls"
+  "source_commit": "c255cd1205ccd6987938be00e0bc419f3f4ac9a5",
+  "preview_patch": "level-block-props",
+  "source_repository": "BaiMaGod/caisha-xiaoxiaole",
+  "feature": "level-block-props",
+  "verified": [
+    "rules",
+    "production-browser",
+    "mobile-layout",
+    "canvas",
+    "wechat-build"
+  ]
 }

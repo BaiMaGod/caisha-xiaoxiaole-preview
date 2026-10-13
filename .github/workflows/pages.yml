@@ -110,6 +110,49 @@ jobs:
           } finally {await browser.close();}
           console.log('Verified compiled Web and Canvas preview');
           NODE
+      - name: Verify level props in compiled preview
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/preview-qa/node_modules/playwright/index.mjs
+        run: |
+          python3 -m http.server 4173 --directory "$RUNNER_TEMP/pages-root" > "$RUNNER_TEMP/props-http.log" 2>&1 &
+          trap 'kill $!' EXIT
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          const {chromium} = await import(process.env.PLAYWRIGHT_MODULE);
+          const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
+          try {
+            for (const [width,height] of [[320,568],[390,844],[768,1024]]) {
+              const page = await browser.newPage({viewport:{width,height}});
+              const errors=[];
+              page.on('pageerror',error=>errors.push(error.message));
+              await page.addInitScript(()=>localStorage.setItem('qicai-modes-progress-v1',JSON.stringify({unlockedLevel:4})));
+              await page.goto('http://127.0.0.1:4173/caisha-xiaoxiaole-preview/',{waitUntil:'networkidle'});
+              assert.equal(await page.evaluate(()=>Boolean(window.__legacyGame)),false);
+              await page.locator('.caisha-home__play').click();
+              await page.locator('[data-mode="level"]').click();
+              await page.locator('.approved-art__level-card').nth(3).click();
+              for (const name of ['重新生成沙块','指定生成沙块']) {
+                await page.locator('.caisha-prop-intro').waitFor({state:'visible'});
+                assert.equal(await page.locator('.caisha-prop-intro h2').textContent(),name);
+                await page.locator('.caisha-prop-intro').click();
+                await page.waitForFunction(name=>document.querySelector('.caisha-prop-intro').hidden||
+                  document.querySelector('.caisha-prop-intro h2').textContent!==name,name);
+              }
+              await page.locator('.caisha-prop-intro').waitFor({state:'hidden'});
+              await page.locator('[data-prop="regenerate"]').click();
+              assert.match(await page.locator('[data-prop="regenerate"]').getAttribute('aria-label'),/剩余2次/);
+              await page.locator('[data-prop="specify"]').click();
+              assert.equal(await page.locator('.caisha-prop-color').count(),3);
+              await page.locator('.caisha-prop-shape[aria-pressed="false"]').first().click();
+              await page.getByRole('button',{name:'确认生成'}).click();
+              assert.match(await page.locator('[data-prop="specify"]').getAttribute('aria-label'),/剩余0次/);
+              assert.equal(await page.locator('[data-prop="specify"]').isDisabled(),true);
+              assert.deepEqual(errors,[]);
+              await page.close();
+            }
+          } finally {await browser.close();}
+          console.log('Verified level props, unlock intros and stock in production');
+          NODE
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
