@@ -1,13 +1,13 @@
 {
-  "source_commit": "c255cd1205ccd6987938be00e0bc419f3f4ac9a5",
-  "preview_patch": "level-block-props",
+  "source_commit": "07e5ad1026df2447b8cbaaeba3b31b906aa5bdfa",
   "source_repository": "BaiMaGod/caisha-xiaoxiaole",
-  "feature": "level-block-props",
+  "feature": "falling-block-props-and-smooth-40px-dock",
   "verified": [
     "rules",
+    "falling-prop-browser",
+    "40px-clearance",
+    "smooth-motion",
     "production-browser",
-    "mobile-layout",
-    "canvas",
-    "wechat-build"
+    "canvas"
   ]
 }
