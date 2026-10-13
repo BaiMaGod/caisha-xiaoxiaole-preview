@@ -1,12 +1,3 @@
 {
-  "source_commit": "4d97517feab8045bf32f5d73c6edf7304a7fa918",
-  "source_repository": "BaiMaGod/caisha-xiaoxiaole",
-  "feature": "endless-block-props-3-random-1-specified",
-  "verified": [
-    "rules",
-    "web-and-canvas-browser",
-    "score-based-color-unlocks",
-    "stock-reset",
-    "production-browser-3-viewports"
-  ]
+  "source_commit": "ec6ce25ea3d86d5d5331f905978185c5393f171c"
 }
