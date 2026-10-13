@@ -32,6 +32,7 @@ jobs:
         run: |
           test -f web/index.html
           test -f web/canvas-preview.html
+          node --check web/assets/legacy-15ydem0U.js
           test ! -d src
           test ! -d public
           mkdir -p "$RUNNER_TEMP/pages-root/caisha-xiaoxiaole-preview"
@@ -58,6 +59,18 @@ jobs:
               await page.getByRole('button',{name:'打开设置'}).click();
               assert.equal(await page.getByRole('slider').count(),2);
               await page.getByRole('button',{name:'返回主页'}).click();
+              assert.equal(await page.getByRole('alertdialog').isVisible(),true);
+              await page.getByRole('button',{name:'取消'}).click();
+              assert.equal(await page.locator('.caisha-home').isVisible(),false);
+              await page.getByRole('button',{name:'模式选择'}).click();
+              assert.equal(await page.getByRole('alertdialog').isVisible(),true);
+              await page.getByRole('button',{name:'确定返回'}).click();
+              assert.equal(await page.locator('.caisha-mode-menu.is-open').isVisible(),true);
+              await page.locator('[data-mode="endless"]').click();
+              await page.getByRole('button',{name:'打开设置'}).click();
+              await page.getByRole('button',{name:'返回主页'}).click();
+              assert.equal(await page.getByRole('alertdialog').isVisible(),true);
+              await page.getByRole('button',{name:'确定返回'}).click();
               assert.equal(await page.locator('.caisha-home').isVisible(),true);
               assert.deepEqual(errors,[]);
               await page.close();
