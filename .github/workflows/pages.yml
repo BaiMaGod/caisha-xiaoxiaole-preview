@@ -32,7 +32,7 @@ jobs:
         run: |
           test -f web/index.html
           test -f web/canvas-preview.html
-          node --check web/assets/legacy-15ydem0U.js
+          for asset in web/assets/*.js; do node --check "$asset"; done
           test ! -d src
           test ! -d public
           mkdir -p "$RUNNER_TEMP/pages-root/caisha-xiaoxiaole-preview"
@@ -71,6 +71,31 @@ jobs:
               await page.getByRole('button',{name:'返回主页'}).click();
               assert.equal(await page.getByRole('alertdialog').isVisible(),true);
               await page.getByRole('button',{name:'确定返回'}).click();
+              assert.equal(await page.locator('.caisha-home').isVisible(),true);
+              await page.locator('.caisha-home__play').click();
+              await page.locator('[data-mode="sandArt"]').click();
+              const artTools=page.locator('.caisha-art-studio');
+              await artTools.waitFor({state:'visible'});
+              await artTools.getByRole('button',{name:'固沙笔',exact:true}).click();
+              await artTools.getByRole('button',{name:'紫色沙粒',exact:true}).click();
+              await artTools.getByRole('button',{name:'笔刷·中',exact:true}).click();
+              assert.equal(await artTools.locator('[data-tool="fixed"]').getAttribute('aria-pressed'),'true');
+              assert.equal(await artTools.locator('[data-color="7"]').getAttribute('aria-pressed'),'true');
+              assert.equal(await artTools.getByRole('button',{name:'笔刷·粗',exact:true}).isVisible(),true);
+              const bounds=await page.evaluate(()=>{
+                const shell=document.getElementById('game-shell').getBoundingClientRect();
+                const board=document.getElementById('game-root').getBoundingClientRect();
+                const top=document.querySelector('.caisha-art-studio__top').getBoundingClientRect();
+                const bottom=document.querySelector('.caisha-art-studio__bottom').getBoundingClientRect();
+                const clipped=[...document.querySelectorAll('.caisha-art-studio button')].some(button=>{
+                  const r=button.getBoundingClientRect();
+                  return r.left<shell.left||r.right>shell.right||r.top<shell.top||r.bottom>shell.bottom;
+                });
+                return {clipped,clear:board.top>=top.bottom+5&&board.bottom+5<=bottom.top};
+              });
+              assert.equal(bounds.clipped,false);
+              assert.equal(bounds.clear,true);
+              await artTools.getByRole('button',{name:'首页',exact:true}).click();
               assert.equal(await page.locator('.caisha-home').isVisible(),true);
               assert.deepEqual(errors,[]);
               await page.close();
