@@ -1,3 +1,4 @@
 {
-  "source_commit": "9f8a90a2675b9384d757f8be6c705695e7e4205d"
+  "source_commit": "f3a4f15f427296bd658db7e6c7e66a9f5437ea09",
+  "preview_patch": "settings-exit-guard"
 }
