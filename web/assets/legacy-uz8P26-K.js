@@ -1709,8 +1709,9 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
   box-sizing:border-box !important;
   width:var(--art-board-width,auto) !important;
   height:var(--art-board-height,calc(100% - 270px)) !important;
+  left:var(--art-board-left,50%) !important;
   top:var(--art-board-top,76px) !important;
-  transform:translateX(-50%) !important;
+  transform:none !important;
   overflow:hidden;border:4px ridge #e1aa73;border-radius:10px;
   box-shadow:0 0 0 4px #fff8e5,0 0 0 7px #c68d58,0 10px 24px #8f65495c;
 }
@@ -1722,7 +1723,7 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
 .caisha-art-studio__top{
   position:absolute;top:max(17px,calc(env(safe-area-inset-top) + 5px));
   left:max(12px,env(safe-area-inset-left));right:max(76px,calc(env(safe-area-inset-right) + 64px));
-  display:flex;align-items:center;justify-content:space-between;gap:8px;pointer-events:auto;
+  display:flex;align-items:center;justify-content:flex-start;gap:8px;pointer-events:auto;
 }
 .caisha-art-studio__button{
   --art-sand-color:#e4edf3;--art-sand-shade:#bfccd5;--art-sand-ink:#556878;
@@ -1750,34 +1751,30 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
 .caisha-art-studio__home::before{display:none;}
 .caisha-art-studio__home img{width:32px;height:32px;object-fit:contain;}
 .caisha-art-studio__home:active{box-shadow:none;}
-.caisha-art-studio__caption{display:grid;gap:4px;text-align:center;color:#695d66;}
+.caisha-art-studio__caption{position:absolute;left:50%;transform:translateX(-50%);display:grid;gap:4px;text-align:center;color:#695d66;pointer-events:none;}
 .caisha-art-studio__caption strong{font-size:14px;font-weight:700;letter-spacing:.06em;}
 .caisha-art-studio__caption span{font-size:11px;color:#877785;}
-.caisha-art-studio__size{padding:8px 10px;}
-.caisha-art-studio__bottom{
-  position:absolute;bottom:max(12px,env(safe-area-inset-bottom));left:10px;right:10px;
-  display:grid;gap:12px;padding:12px 10px 10px;pointer-events:auto;
-  border:1px solid #eee2d5;border-radius:20px;background:#fff9ef;box-shadow:0 4px 14px #725c6b20;
+.caisha-art-studio__sides{
+  position:absolute;inset:0;pointer-events:none;
 }
-.caisha-art-studio__tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;}
-.caisha-art-studio__tool{min-height:64px;padding:10px 3px 8px;flex-direction:column;gap:7px;}
-.caisha-art-studio__tool svg{width:22px;height:22px;}
-.caisha-art-studio__tool.is-active{
-  transform:translateY(-2px);
-  box-shadow:0 0 0 2px #fff9ef,0 0 0 3px var(--art-sand-ink),0 4px 0 var(--art-sand-shade);
+.caisha-art-studio__palette,
+.caisha-art-studio__controls{
+  position:absolute;top:var(--art-board-top,76px);
+  height:var(--art-board-height,calc(100% - 92px));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  pointer-events:auto;
 }
-.caisha-art-studio__tool.is-active::after{
-  content:"✓";position:absolute;top:4px;right:5px;font-size:11px;pointer-events:none;
+.caisha-art-studio__palette{
+  left:max(3px,env(safe-area-inset-left));width:36px;gap:4px;
 }
-.caisha-art-studio__tool.is-active:active{transform:translateY(0);}
-.caisha-art-studio__palette{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0;}
 .caisha-art-studio__color{
   position:relative;display:flex;align-items:center;justify-content:center;
-  min-width:0;min-height:44px;padding:4px;border:0;background:transparent;
-  cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+  flex:0 0 auto;width:36px;height:40px;padding:3px;
+  border:0;background:transparent;cursor:pointer;touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
 }
 .caisha-art-studio__swatch{
-  position:relative;display:block;width:31px;height:31px;border-radius:50%;
+  position:relative;display:block;width:29px;height:29px;border-radius:50%;
   background:var(--art-sand-grain) repeat,var(--art-sand-color);background-size:96px 96px;
   box-shadow:inset 0 1px 0 #ffffff40,0 2px 0 var(--art-sand-shade);
 }
@@ -1786,27 +1783,235 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
 }
 .caisha-art-studio__color.is-active .caisha-art-studio__swatch::after{
   content:"✓";position:absolute;inset:0;display:grid;place-items:center;
-  font:600 14px/1 system-ui;color:#514355;
+  font:600 13px/1 system-ui;color:#514355;
 }
 .caisha-art-studio__color:active .caisha-art-studio__swatch{transform:translateY(1px);}
-.caisha-art-studio__actions{
-  display:flex;align-items:center;gap:7px;border-top:1px solid #ece0d5;padding-top:10px;
+.caisha-art-studio__controls{
+  right:max(3px,env(safe-area-inset-right));width:50px;gap:9px;
 }
-.caisha-art-studio__clear{margin-left:auto;}
-.caisha-art-studio button:focus-visible{outline:3px solid #4e76bd;outline-offset:3px;}
+.caisha-art-studio__tools,
+.caisha-art-studio__actions{
+  display:flex;flex-direction:column;align-items:stretch;gap:4px;width:100%;
+}
+.caisha-art-studio__actions{
+  padding-top:8px;border-top:1px solid #b99fa880;
+}
+.caisha-art-studio__tool,
+.caisha-art-studio__size,
+.caisha-art-studio__actions .caisha-art-studio__button{
+  flex:0 0 auto;display:flex;flex-direction:column;gap:2px;
+  width:100%;min-height:44px;padding:5px 1px;
+  border-radius:10px;
+}
+.caisha-art-studio__tool svg,
+.caisha-art-studio__size svg,
+.caisha-art-studio__actions svg{width:18px;height:18px;}
+.caisha-art-studio__tools .caisha-art-studio__label,
+.caisha-art-studio__actions .caisha-art-studio__label{
+  font-size:9px;letter-spacing:-.025em;
+}
+.caisha-art-studio__size{min-height:41px;}
+.caisha-art-studio__size .caisha-art-studio__label{font-size:9px;}
+.caisha-art-studio__tool.is-active{
+  transform:translateY(-1px);
+  box-shadow:0 0 0 1px #fff9ef,0 0 0 2px var(--art-sand-ink),0 3px 0 var(--art-sand-shade);
+}
+.caisha-art-studio__tool.is-active::after{
+  content:"✓";position:absolute;top:1px;right:2px;font-size:9px;pointer-events:none;
+}
+.caisha-art-studio__tool.is-active:active{transform:translateY(0);}
+.caisha-art-studio__clear{margin-left:0;}
+.caisha-art-studio button:focus-visible{outline:3px solid #4e76bd;outline-offset:2px;}
 @media(max-width:360px){
   .caisha-art-studio__top{left:max(9px,env(safe-area-inset-left));gap:5px;}
-  .caisha-art-studio__bottom{left:8px;right:8px;padding-inline:8px;}
-  .caisha-art-studio__tools{gap:7px;}
-  .caisha-art-studio__actions .caisha-art-studio__button{padding-inline:9px;}
+  .caisha-art-studio__palette{left:max(2px,env(safe-area-inset-left));width:34px;}
+  .caisha-art-studio__color{width:34px;}
+  .caisha-art-studio__swatch{width:27px;height:27px;}
+  .caisha-art-studio__controls{right:max(2px,env(safe-area-inset-right));width:47px;}
 }
 @media(max-height:620px){
-  .caisha-art-studio__bottom{bottom:max(8px,env(safe-area-inset-bottom));padding-block:9px 7px;gap:8px;}
-  .caisha-art-studio__tool{min-height:56px;padding-block:7px 5px;gap:5px;}
-  .caisha-art-studio__actions{padding-top:7px;}
+  .caisha-art-studio__controls{gap:6px;}
+  .caisha-art-studio__tools,.caisha-art-studio__actions{gap:3px;}
+  .caisha-art-studio__actions{padding-top:5px;}
+  .caisha-art-studio__tool,
+  .caisha-art-studio__size,
+  .caisha-art-studio__actions .caisha-art-studio__button{
+    min-height:37px;padding-block:3px;gap:1px;
+  }
+  .caisha-art-studio__color{height:35px;}
+  .caisha-art-studio__tool svg,.caisha-art-studio__actions svg{width:16px;height:16px;}
+}
+@media(max-height:450px){
+  .caisha-art-studio__controls{gap:3px;}
+  .caisha-art-studio__tools,.caisha-art-studio__actions{gap:2px;}
+  .caisha-art-studio__tool,
+  .caisha-art-studio__size,
+  .caisha-art-studio__actions .caisha-art-studio__button{min-height:30px;padding-block:1px;}
+  .caisha-art-studio__color{height:29px;}
+  .caisha-art-studio__swatch{width:23px;height:23px;}
+  .caisha-art-studio__tool svg,.caisha-art-studio__actions svg{width:13px;height:13px;}
+  .caisha-art-studio__tools .caisha-art-studio__label,
+  .caisha-art-studio__actions .caisha-art-studio__label{font-size:8px;}
 }
 @media(prefers-reduced-motion:reduce){.caisha-art-studio__button{transition:none;}}
-`}var lt=`caisha-art-studio-visuals-v1`;function ut(){if(document.getElementById(lt))return;let e=document.createElement(`style`);e.id=lt,e.textContent=ct(),document.head.appendChild(e)}var dt={brush:`<path d="m13 3 8 8-9 9-4-4Z"/><path d="m13 3 2-2 8 8-2 2M8 16c-5-1-6 2-6 6 4 0 7-1 6-6Z"/>`,pen:`<path d="m12 3 8 6-4 10-8 2-5-6 2-8Z"/><path d="m12 3-1 9M8 21l3-9"/><circle cx="11" cy="12" r="2"/>`,shapes:`<path d="m6 3 5 8H1Z"/><circle cx="17" cy="7" r="4"/><rect x="3" y="15" width="7" height="7" rx="1"/><path d="m17 14 5 4-5 4-5-4Z"/>`,eraser:`<path d="m15 3 7 7-11 11H7l-5-5Z"/><path d="m8 10 7 7M11 21h11"/>`,undo:`<path d="m8 4-5 5 5 5M3 9h11a7 7 0 0 1 0 14"/>`,redo:`<path d="m16 4 5 5-5 5M21 9H10a7 7 0 0 0 0 14"/>`,trash:`<path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/>`};function ft(e){let t=document.createElementNS(`http://www.w3.org/2000/svg`,`svg`);return t.setAttribute(`viewBox`,`0 0 24 24`),t.setAttribute(`fill`,`none`),t.setAttribute(`stroke`,`currentColor`),t.setAttribute(`stroke-width`,`1.6`),t.setAttribute(`stroke-linecap`,`round`),t.setAttribute(`stroke-linejoin`,`round`),t.setAttribute(`aria-hidden`,`true`),t.innerHTML=dt[e]||``,t}var X;function pt(){if(X)return X;let e=document.createElement(`canvas`);e.width=e.height=96;let t=e.getContext(`2d`);for(let e=0;e<96;e++)for(let n=0;n<96;n++)t.fillStyle=((n*73856093^e*19349663)>>>0)%2?`rgba(255,255,255,.22)`:`rgba(72,55,83,.13)`,t.fillRect(n,e,1,1);return X=e.toDataURL(),X}function Z(e,t){let n=h(t);e.style.setProperty(`--art-sand-color`,u(n)),e.style.setProperty(`--art-sand-shade`,u(n.map(e=>Math.round(e*.82)))),e.style.setProperty(`--art-sand-ink`,u(n.map(e=>Math.round(e*.38))))}var mt=[`红`,`橙`,`黄`,`绿`,`青`,`蓝`,`紫`],ht=[[`flow`,`流沙笔`,`brush`,6],[`fixed`,`固沙笔`,`pen`,4],[`shape`,`形状`,`shapes`,7],[`erase`,`橡皮擦`,`eraser`,3]],gt=class{constructor(e,{onHome:t,onTool:n,onColor:r,onSize:i,onUndo:a,onRedo:o,onClear:s}={}){ut(),this.container=e,this.root=document.createElement(`section`),this.root.className=`caisha-art-studio`,this.root.setAttribute(`aria-label`,`沙画创作工具栏`),this.root.style.display=`none`,this.root.style.setProperty(`--art-sand-grain`,`url("`+pt()+`")`);let c=(e,t)=>{let n=document.createElement(`div`);return n.className=`caisha-art-studio__`+e,t&&(n.setAttribute(`role`,`group`),n.setAttribute(`aria-label`,t)),n},l=(e,t,n,r=``,i)=>{let a=document.createElement(`button`);a.type=`button`,a.className=(`caisha-art-studio__button `+r).trim(),i&&a.appendChild(ft(i));let o=document.createElement(`span`);return o.className=`caisha-art-studio__label`,o.textContent=t,a.appendChild(o),a.addEventListener(`click`,n),e.appendChild(a),a};this.top=c(`top`);let u=l(this.top,`首页`,t,`caisha-art-studio__home`),d=document.createElement(`img`);d.src=`./images/approved-ui/back-arrow-pastel-sand.webp`,d.alt=``,d.draggable=!1,u.prepend(d);let f=c(`caption`),p=document.createElement(`strong`);p.textContent=`沙画工坊`;let m=document.createElement(`span`);m.textContent=`堆到完成线`,f.append(p,m),this.top.appendChild(f);let h=1,g=[1,2,4],_=l(this.top,`笔刷·中`,()=>{h=(h+1)%g.length,_.querySelector(`.caisha-art-studio__label`).textContent=`笔刷·`+[`细`,`中`,`粗`][h],i?.(g[h])},`caisha-art-studio__size`);Z(_,2),this.bottom=c(`bottom`);let v=c(`tools`,`绘画工具`);this.toolButtons=[];for(let[e,t,r,i]of ht){let a=l(v,t,()=>{this.setTool(e),n?.(e)},`caisha-art-studio__tool`,r);a.dataset.tool=e,Z(a,i),this.toolButtons.push({tool:e,button:a})}let y=c(`palette`,`彩沙颜色`);this.colorButtons=[];for(let e=0;e<se.length;e++){let t=se[e],n=document.createElement(`button`);n.type=`button`,n.className=`caisha-art-studio__color`,n.setAttribute(`aria-label`,mt[e]+`色沙粒`),n.dataset.color=String(t),Z(n,t);let i=document.createElement(`span`);i.className=`caisha-art-studio__swatch`,i.setAttribute(`aria-hidden`,`true`),n.appendChild(i),n.addEventListener(`click`,()=>{this.setColor(t),r?.(t)}),y.appendChild(n),this.colorButtons.push({color:t,button:n})}let b=c(`actions`,`编辑操作`);l(b,`撤销`,a,``,`undo`),l(b,`重做`,o,``,`redo`),Z(l(b,`清空`,()=>{confirm(`确定清空当前沙画吗？`)&&s?.()},`caisha-art-studio__clear`,`trash`),1),this.bottom.append(v,y,b),this.root.append(this.top,this.bottom),e.appendChild(this.root),this.setTool(`flow`),this.setColor(1),this.resizeObserver=new ResizeObserver(()=>this.updateLayout());for(let t of[e,this.top,this.bottom])this.resizeObserver.observe(t)}setTool(e){for(let t of this.toolButtons){let n=t.tool===e;t.button.classList.toggle(`is-active`,n),t.button.setAttribute(`aria-pressed`,String(n))}}setColor(e){for(let t of this.colorButtons){let n=t.color===e;t.button.classList.toggle(`is-active`,n),t.button.setAttribute(`aria-pressed`,String(n))}}updateLayout(){if(this.root.style.display===`none`)return;let e=this.container.getBoundingClientRect(),t=this.top.getBoundingClientRect().bottom-e.top+12,n=e.bottom-this.bottom.getBoundingClientRect().top+16,r=Math.max(0,e.height-t-n),i=Math.max(0,Math.min(e.width-28,r*9/16)),a=i*16/9;this.container.style.setProperty(`--art-board-width`,i+`px`),this.container.style.setProperty(`--art-board-height`,a+`px`),this.container.style.setProperty(`--art-board-top`,t+(r-a)/2+`px`)}show(e){this.root.style.display=e?`block`:`none`,e&&this.updateLayout()}};function Q(e,t){let n=document.createElement(`button`);return n.textContent=e,n.type=`button`,n.className=`caisha-mode-panel__button`,n.style.cssText=`border:0;background:linear-gradient(120deg,#ffad7d,#f17f61);color:white;border-radius:15px;padding:13px 17px;margin:5px;font:900 15px system-ui;`,n.addEventListener(`click`,t),n}var _t=class{constructor(e){U(),this.root=document.createElement(`div`),this.root.style.cssText=`position:absolute;inset:0;z-index:51;background:rgba(40,28,33,.69);padding:max(28px,env(safe-area-inset-top)) 20px;overflow:auto;font:800 14px system-ui,sans-serif;color:#664832;display:none;align-items:center;justify-content:center;`,this.root.classList.add(`caisha-mode-panel`),this.card=document.createElement(`div`),this.card.classList.add(`caisha-mode-panel__card`),this.card.style.cssText=`width:min(100%,380px);margin:auto;padding:22px 16px;text-align:center;background:#fff9ec;border-radius:24px;box-shadow:0 16px 44px #35232380;`,this.root.appendChild(this.card),e.appendChild(this.root)}hide(){this.root.style.display=`none`}showWin({level:e,stars:t,drops:n,next:r,retry:i,home:a}){this.card.replaceChildren();let o=document.createElement(`h2`);o.textContent=`🎉 第 `+e+` 关挑战成功！`,this.card.append(o);let s=document.createElement(`p`);s.textContent=`⭐`.repeat(t)+` · 使用 `+n+` 个沙块 · 全部清空`,this.card.append(s),r&&this.card.appendChild(Q(`下一关`,()=>{this.hide(),r()})),this.card.appendChild(Q(`再玩一次`,()=>{this.hide(),i()})),this.card.appendChild(Q(`返回首页`,()=>{this.hide(),a()})),this.root.style.display=`flex`}showLose({level:e,remaining:t,retry:n,home:r}){this.card.replaceChildren();let i=document.createElement(`h2`);i.textContent=`第 `+e+` 关挑战失败`,i.style.cssText=`font-size:25px;margin:6px 0 12px;color:#a55342;`;let a=document.createElement(`p`);a.textContent=`沙堆触碰了失败线 · 尚余 `+Number(t).toLocaleString()+` 粒`,a.style.cssText=`font-size:13px;line-height:1.8;color:#96745e;`;let o=document.createElement(`p`);o.textContent=`调整下一块沙子的落点，再试一次吧！`,o.style.cssText=`font-size:12px;color:#9b8874;`,this.card.append(i,a,o),this.card.appendChild(Q(`重试本关`,()=>{this.hide(),n()})),this.card.appendChild(Q(`返回首页`,()=>{this.hide(),r()})),this.root.style.display=`flex`}showGallery(e,{onClose:t,onView:n}){this.card.replaceChildren();let r=document.createElement(`h2`);if(r.textContent=`🖼 我的沙画`,this.card.append(r),!e.length){let e=document.createElement(`p`);e.textContent=`还没有作品。到沙画模式完成一幅吧！`,this.card.append(e)}for(let t of e.slice(0,10))try{let{cells:e}=he(t.runs,t.width*t.height),r=document.createElement(`canvas`);r.width=t.width,r.height=t.height,r.style.cssText=`width:82px;height:146px;object-fit:contain;border:5px solid #dfb888;border-radius:5px;background:#fff8ea;`;let i=r.getContext(`2d`);for(let n=0;n<e.length;n++){if(!e[n])continue;let r=n%t.width,a=Math.floor(n/t.width);i.fillStyle=`rgb(`+_(r,a,e[n]).join(`,`)+`)`,i.fillRect(r+o,a+o,g,g)}let a=document.createElement(`button`);a.type=`button`,a.style.cssText=`display:flex;align-items:center;gap:16px;width:100%;margin:8px 0;padding:8px;border:1px solid #eedac7;border-radius:16px;background:white;color:#76563d;text-align:left;`,a.append(r,document.createTextNode(new Date(t.date).toLocaleString()+` · 查看作品`)),a.addEventListener(`click`,()=>{this.hide(),n?.(r,t)}),this.card.append(a)}catch{}this.card.appendChild(Q(`关闭`,()=>{this.hide(),t?.()})),this.root.style.display=`flex`}};function vt(e){e.setArtTool=function(t){return e.artFinishing||!e.art.active||e.fruitManager.current&&![`CONTROL`,`SAND`].includes(e.fruitManager.current.state)?!1:(e.art.setTool(t),t===`shape`?(e.fruitManager.setSpawnProvider(()=>({color:e.art.color})),e.fruitManager.reset()):(e.fruitManager.setEnabled(!1),e.fruitManager.current=null),e.renderGameCanvas(!0),!0)},e.getArtPos=function(t){let n=e.sandRenderer.canvas.getBoundingClientRect();return{x:(t.clientX-n.left)/Math.max(1,n.width)*e.grid.width,y:(t.clientY-n.top)/Math.max(1,n.height)*e.grid.height}},e.captureArtPointer=function(t){if(!(e.currentMode!==x.ART||e.art.tool===`shape`||!e.art.active||e.artFinishing||e.homeScreen.isOpen()||e.gameOver||e.gameOverArtwork.isOpen())){if(t.type===`pointerdown`){t.preventDefault(),t.stopImmediatePropagation(),e.drawingArt=!0;let n=e.getArtPos(t);e.art.beginStroke(n.x,n.y),e.sandRenderer.canvas.setPointerCapture?.(t.pointerId)}else if(e.drawingArt&&t.type===`pointermove`){t.preventDefault(),t.stopImmediatePropagation();let n=e.getArtPos(t);e.art.strokeTo(n.x,n.y)}else e.drawingArt&&(t.type===`pointerup`||t.type===`pointercancel`)&&(t.preventDefault(),t.stopImmediatePropagation(),e.drawingArt=!1,e.art.endStroke())}},e.openArtworkGallery=function(){e.modePanels.showGallery(e.modeProgress.artworks,{onClose:()=>{},onView:t=>{e.currentMode=x.ART,e.homeDemo.hide(),e.gameOver=!0,e.gameOverArtwork.show({mode:`sandArt`,artworkCanvas:t})}})}}function yt(e){e.triggerGameOver=function(){if(e.gameOver)return;if(e.gameOver=!0,e.blockPropPanel.hide(),e.fruitManager.setEnabled(!1),e.audio.playGameOver(),e.currentMode===x.LEVEL){e.levelStatus.style.display=`none`,e.clearEffects.clear(),e.modePanels.showLose({level:e.currentLevel,remaining:D(e.grid),retry:()=>e.restartGame(x.LEVEL,e.currentLevel),home:()=>e.returnHome()});return}e.currentMode===x.ENDLESS&&(e.progress.recordGameOver(e.clearSystem.score),e.unlockManager.checkAll());let t=e.sandRenderer.createArtworkCanvas({scale:3});e.gameOverArtwork.show({score:e.clearSystem.score,rating:p(e.clearSystem.score),artworkCanvas:t})},e.resetHomeDemoWorld=function(t=null){e.art.stop(),e.art.fixed.fill(0),e.clearEffects.clear(),e.audio.stopTransient(),e.grid.clear(),t&&(e.grid.cells.set(t),e.grid.revision+=1),e.simulation.reset(),e.clearSystem.reset(),e.rules.reset(),e.settlementGate.reset(),e.fruitManager.reset(),e.gameOver=!1,e.lastFruitState=e.fruitManager.current?.state??null;let n=performance.now();e.lastSimulation=n,e.lastFrame=n,e.renderGameCanvas(!0)},e.prepareFirstDropGuide=function(){if(e.fruitManager.setSpawnProvider(null),!E.FIRST_DROP_GUIDE_ENABLED)return;let t=d(e.grid),n=!0;e.fruitManager.setSpawnProvider(()=>n?(n=!1,e.fruitManager.setSpawnProvider(null),{templateId:t.templateId,color:t.color,centerX:t.centerX}):null)},e.restartGame=function(t=e.currentMode,n=e.currentLevel){if(e.blockPropPanel.hide(),e.currentMode=t,e.currentLevel=n,e.levelData=null,e.levelVictoryPending=!1,e.lastDraftSaveTime=0,e.artFinishing=!1,e.artFinishElapsed=0,e.artFinishStableTicks=0,e.art.stop(),e.art.fixed.fill(0),e.modePanels.hide(),e.gameShell.classList.toggle(`caisha-art-mode`,t===x.ART),e.artToolbar.show(t===x.ART),e.levelStatus.style.display=t===x.LEVEL?`block`:`none`,e.lastLevelStatusRevision=-1,e.sandRenderer.lineMode=t===x.ART?`finish`:`failure`,e.settingsPanel.close({silent:!0}),e.gameOverArtwork.hide(),e.hud.setGameVisible(!1),e.grid.clear(),t===x.ENDLESS)e.prepareFirstDropGuide();else if(t===x.LEVEL)e.levelData=le(n),e.grid.cells.set(e.levelData.cells),e.grid.revision++,e.fruitManager.setSpawnProvider(ee(e.levelData,()=>e.fruitManager.random())),e.simulation.setRandom(re(e.levelData.runtimeSeed));else{e.fruitManager.setSpawnProvider(null),e.art.reset();let t=e.modeProgress.readDraft(e.grid.width,e.grid.height);t&&e.art.restore(t)}e.simulation.reset(),e.clearSystem.reset(),e.rules.reset(),e.fruitManager.reset(),t===x.ART&&e.setArtTool(`flow`),e.hud.reset(),e.clearEffects.clear(),e.audio.stopTransient(),e.settlementGate.reset(),e.hud.setGameVisible(t===x.ENDLESS),e.gameOver=!1,e.lastFruitState=e.fruitManager.current?.state??null;let r=performance.now();e.lastSimulation=r,e.lastFrame=r,e.blockProps.begin(e.levelData,{endless:t===x.ENDLESS}),(t===x.LEVEL||t===x.ENDLESS)&&e.blockPropPanel.start(),e.renderGameCanvas(!0)},e.returnHome=function(){e.blockPropPanel.hide(),e.blockProps.begin(null),e.currentMode===x.ART&&!e.gameOver&&(D(e.grid)>0?e.modeProgress.saveDraft(e.grid,e.art.fixed):e.modeProgress.clearDraft()),e.drawingArt=!1,e.artFinishing=!1,e.art.stop(),e.art.fixed.fill(0),e.fruitManager.setSpawnProvider(null),e.artToolbar.show(!1),e.gameShell.classList.remove(`caisha-art-mode`),e.levelStatus.style.display=`none`,e.modePanels.hide(),e.sandRenderer.lineMode=`failure`,e.hud.setGameVisible(!1),e.audio.stopTransient(),e.clearEffects.clear(),e.effectPanel.close(),e.settingsPanel.close({silent:!0}),e.gameOverArtwork.hide(),e.homeScreen.show(),e.homeDemo.show()},e.returnModeSelect=function(){e.returnHome(),e.homeScreen.openModeMenu()},e.triggerArtComplete=function(){if(e.gameOver||e.currentMode!==x.ART)return;e.artFinishing=!1,e.gameOver=!0,e.drawingArt=!1,e.art.stop(),e.fruitManager.setEnabled(!1),e.artToolbar.show(!1),e.audio.stopTransient(),e.modeProgress.saveArtwork(e.grid,e.art.fixed),e.modeProgress.clearDraft();let t=e.sandRenderer.createArtworkCanvas({scale:3});e.gameOverArtwork.show({mode:`sandArt`,artworkCanvas:t})},e.triggerLevelComplete=function(){if(e.gameOver||e.currentMode!==x.LEVEL)return;e.gameOver=!0,e.blockPropPanel.hide(),e.fruitManager.setEnabled(!1),e.levelStatus.style.display=`none`;let t=e.modeProgress.winLevel(e.currentLevel,e.hud.dropHintCount,e.levelData?.referenceDrops||1);e.modePanels.showWin({level:e.currentLevel,stars:t,drops:e.hud.dropHintCount,next:e.currentLevel<b?()=>e.restartGame(x.LEVEL,e.currentLevel+1):null,retry:()=>e.restartGame(x.LEVEL,e.currentLevel),home:()=>e.returnHome()})}}function bt(e){e.getFruitRenderKey=function(e){return e?[e.state,e.x,e.y,e.color,Math.round(e.impactTimer??0),Math.round(e.breakTimer??0),e.dissolvedCount??0].join(`:`):``},e.renderGameCanvas=function(t=!1){let n=e.fruitManager.current,r=e.getFruitRenderKey(n);(t||e.grid.revision!==e.lastRenderedGridRevision||n!==e.lastRenderedFruit||r!==e.lastRenderedFruitKey)&&(e.sandRenderer.update(n),e.lastRenderedGridRevision=e.grid.revision,e.lastRenderedFruit=n,e.lastRenderedFruitKey=r)},e.canResolveConnectivity=function(e){return e!==`IMPACT`&&e!==`BREAKING`},e.loop=function(t){requestAnimationFrame(e.loop);let n=Math.min(50,t-e.lastFrame);e.lastFrame=t;let r=e.homeDemo.isRunning(),i=!e.homeScreen.isOpen()||r;if(!e.gameOver&&!e.effectPanel.isOpen()&&!e.settingsPanel.isOpen()&&!e.blockPropPanel.isBlocking()&&i){if(e.clearEffects.isBusy())e.audio.updateSandFlow(0),e.lastSimulation=t;else{let i=e.lastFruitState;r&&e.homeDemo.update(t),!r&&e.currentMode===x.ART&&(e.art.update(n),e.lastDraftSaveTime===0&&(e.lastDraftSaveTime=t),t-e.lastDraftSaveTime>7e3&&D(e.grid)>0&&(e.modeProgress.saveDraft(e.grid,e.art.fixed),e.lastDraftSaveTime=t)),e.fruitManager.update(n);let a=e.fruitManager.current?.state??null;if(a!==i&&a===`FALLING`&&(e.clearSystem.resetCombo(),r||e.audio.playFallStart()),!r&&i===`FALLING`&&a===`IMPACT`&&e.audio.playImpact(),!r&&i===`IMPACT`&&a===`BREAKING`&&e.audio.playCrumble(),i===`BREAKING`&&a===null&&e.settlementGate.begin(),e.lastFruitState=a,!r&&e.currentMode!==x.ART&&e.rules.checkDeathLine()&&e.triggerGameOver(),!e.gameOver&&t-e.lastSimulation>=E.UPDATE_INTERVAL){if(e.simulation.update(()=>!r&&e.currentMode!==x.ART&&e.rules.checkDeathLine()?(e.triggerGameOver(),!1):!e.gameOver),e.audio.updateSandFlow(!r&&!e.gameOver?e.simulation.movedCount:0),!e.gameOver&&e.currentMode===x.ART){if(!e.artFinishing&&e.art.isComplete()){e.artFinishing=!0,e.artFinishElapsed=0,e.artFinishStableTicks=0,e.drawingArt=!1,e.art.stop();let t=e.fruitManager.current?.state;(!t||t===`CONTROL`||t===`SAND`)&&e.fruitManager.setEnabled(!1)}if(e.artFinishing){e.fruitManager.current||e.fruitManager.setEnabled(!1),e.artFinishElapsed+=n;let t=e.fruitManager.current&&![`SAND`,`CONTROL`].includes(e.fruitManager.current.state);e.simulation.movedCount===0&&!t?e.artFinishStableTicks++:e.artFinishStableTicks=0,(e.artFinishStableTicks>=4||e.artFinishElapsed>=2e3&&!t||e.artFinishElapsed>=5e3)&&e.triggerArtComplete()}}!e.gameOver&&e.currentMode!==x.ART&&e.settlementGate.isBlocking()&&e.settlementGate.observe(e.simulation.movedCount)&&e.canResolveConnectivity(a)&&e.clearSystem.resolve({maxGroups:r?1:1/0})>0&&e.settlementGate.begin(),!r&&!e.gameOver&&e.currentMode===x.LEVEL&&e.levelVictoryPending&&!e.settlementGate.isBlocking()&&!e.clearEffects.isBusy()&&D(e.grid)===0&&e.triggerLevelComplete(),e.lastSimulation=t}}}else e.audio.updateSandFlow(0);!e.gameOver&&!e.homeScreen.isOpen()&&e.currentMode===x.LEVEL&&e.lastLevelStatusRevision!==e.grid.revision&&(e.levelStatus.textContent=`第 `+e.currentLevel+` 关
+`}var lt=`caisha-art-studio-visuals-v1`;function ut(){if(document.getElementById(lt))return;let e=document.createElement(`style`);e.id=lt,e.textContent=ct(),document.head.appendChild(e)}var dt={brush:`<path d="m13 3 8 8-9 9-4-4Z"/><path d="m13 3 2-2 8 8-2 2M8 16c-5-1-6 2-6 6 4 0 7-1 6-6Z"/>`,pen:`<path d="m12 3 8 6-4 10-8 2-5-6 2-8Z"/><path d="m12 3-1 9M8 21l3-9"/><circle cx="11" cy="12" r="2"/>`,shapes:`<path d="m6 3 5 8H1Z"/><circle cx="17" cy="7" r="4"/><rect x="3" y="15" width="7" height="7" rx="1"/><path d="m17 14 5 4-5 4-5-4Z"/>`,eraser:`<path d="m15 3 7 7-11 11H7l-5-5Z"/><path d="m8 10 7 7M11 21h11"/>`,undo:`<path d="m8 4-5 5 5 5M3 9h11a7 7 0 0 1 0 14"/>`,redo:`<path d="m16 4 5 5-5 5M21 9H10a7 7 0 0 0 0 14"/>`,trash:`<path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/>`};function ft(e){let t=document.createElementNS(`http://www.w3.org/2000/svg`,`svg`);return t.setAttribute(`viewBox`,`0 0 24 24`),t.setAttribute(`fill`,`none`),t.setAttribute(`stroke`,`currentColor`),t.setAttribute(`stroke-width`,`1.6`),t.setAttribute(`stroke-linecap`,`round`),t.setAttribute(`stroke-linejoin`,`round`),t.setAttribute(`aria-hidden`,`true`),t.innerHTML=dt[e]||``,t}var X;function pt(){if(X)return X;let e=document.createElement(`canvas`);e.width=e.height=96;let t=e.getContext(`2d`);for(let e=0;e<96;e++)for(let n=0;n<96;n++)t.fillStyle=((n*73856093^e*19349663)>>>0)%2?`rgba(255,255,255,.22)`:`rgba(72,55,83,.13)`,t.fillRect(n,e,1,1);return X=e.toDataURL(),X}function Z(e,t){let n=h(t);e.style.setProperty(`--art-sand-color`,u(n)),e.style.setProperty(`--art-sand-shade`,u(n.map(e=>Math.round(e*.82)))),e.style.setProperty(`--art-sand-ink`,u(n.map(e=>Math.round(e*.38))))}var mt=[`红`,`橙`,`黄`,`绿`,`青`,`蓝`,`紫`],ht=[[`flow`,`流沙笔`,`brush`,6],[`fixed`,`固沙笔`,`pen`,4],[`shape`,`形状`,`shapes`,7],[`erase`,`橡皮擦`,`eraser`,3]],gt=class ArtToolbar {
+  constructor(container, { onHome, onTool, onColor, onSize, onUndo, onRedo, onClear } = {}) {
+    ut();
+    this.container = container;
+    this.root = document.createElement('section');
+    this.root.className = 'caisha-art-studio';
+    this.root.setAttribute('aria-label', '沙画创作工具栏');
+    this.root.style.display = 'none';
+    this.root.style.setProperty('--art-sand-grain', 'url("' + pt() + '")');
+
+    const group = (className, label) => {
+      const element = document.createElement('div');
+      element.className = 'caisha-art-studio__' + className;
+      if (label) {
+        element.setAttribute('role', 'group');
+        element.setAttribute('aria-label', label);
+      }
+      return element;
+    };
+    const button = (parent, text, handler, className = '', icon) => {
+      const element = document.createElement('button');
+      element.type = 'button';
+      element.className = ('caisha-art-studio__button ' + className).trim();
+      if (icon) element.appendChild(ft(icon));
+      const label = document.createElement('span');
+      label.className = 'caisha-art-studio__label';
+      label.textContent = text;
+      element.appendChild(label);
+      element.addEventListener('click', handler);
+      parent.appendChild(element);
+      return element;
+    };
+
+    this.top = group('top');
+    const home = button(this.top, '首页', onHome, 'caisha-art-studio__home');
+    const arrow = document.createElement('img');
+    arrow.src = './' + 'images/approved-ui/back-arrow-pastel-sand.webp';
+    arrow.alt = '';
+    arrow.draggable = false;
+    home.prepend(arrow);
+    const caption = group('caption');
+    const title = document.createElement('strong');
+    title.textContent = '沙画工坊';
+    const hint = document.createElement('span');
+    hint.textContent = '堆到完成线';
+    caption.append(title, hint);
+    this.top.appendChild(caption);
+
+    this.sides = group('sides');
+    const tools = group('tools', '绘画工具');
+    this.toolButtons = [];
+    for (const [tool, title, icon, color] of ht) {
+      const element = button(tools, title, () => {
+        this.setTool(tool);
+        onTool?.(tool);
+      }, 'caisha-art-studio__tool', icon);
+      element.dataset.tool = tool;
+      Z(element, color);
+      this.toolButtons.push({ tool, button: element });
+    }
+    // Brush size belongs with the drawing tools, not in the header.
+    let radiusIndex = 1;
+    const radii = [1, 2, 4];
+    const sizeButton = button(tools, '笔刷·中', () => {
+      radiusIndex = (radiusIndex + 1) % radii.length;
+      sizeButton.querySelector('.caisha-art-studio__label').textContent =
+        '笔刷·' + ['细', '中', '粗'][radiusIndex];
+      onSize?.(radii[radiusIndex]);
+    }, 'caisha-art-studio__size');
+    Z(sizeButton, 2);
+
+    const palette = group('palette', '彩沙颜色');
+    this.colorButtons = [];
+    for (let index = 0; index < se.length; index++) {
+      const color = se[index];
+      const element = document.createElement('button');
+      element.type = 'button';
+      element.className = 'caisha-art-studio__color';
+      element.setAttribute('aria-label', mt[index] + '色沙粒');
+      element.dataset.color = String(color);
+      Z(element, color);
+      const swatch = document.createElement('span');
+      swatch.className = 'caisha-art-studio__swatch';
+      swatch.setAttribute('aria-hidden', 'true');
+      element.appendChild(swatch);
+      element.addEventListener('click', () => {
+        this.setColor(color);
+        onColor?.(color);
+      });
+      palette.appendChild(element);
+      this.colorButtons.push({ color, button: element });
+    }
+
+    const actions = group('actions', '编辑操作');
+    button(actions, '撤销', onUndo, '', 'undo');
+    button(actions, '重做', onRedo, '', 'redo');
+    const clear = button(actions, '清空', () => {
+      if (confirm('确定清空当前沙画吗？')) onClear?.();
+    }, 'caisha-art-studio__clear', 'trash');
+    Z(clear, 1);
+    this.palette = palette;
+    this.controls = group('controls', '绘画与编辑操作');
+    this.controls.append(tools, actions);
+    this.sides.append(palette, this.controls);
+    this.root.append(this.top, this.sides);
+    container.appendChild(this.root);
+    this.setTool('flow');
+    this.setColor(1);
+
+    // Size the 9:16 board from the actual left/right rail bounds, not a
+    // hard-coded bottom toolbar height. ResizeObserver handles mobile rotation.
+    this.resizeObserver = new ResizeObserver(() => this.updateLayout());
+    for (const element of [container, this.top, this.palette, this.controls])
+      this.resizeObserver.observe(element);
+  }
+
+  setTool(tool) {
+    for (const item of this.toolButtons) {
+      const active = item.tool === tool;
+      item.button.classList.toggle('is-active', active);
+      item.button.setAttribute('aria-pressed', String(active));
+    }
+  }
+
+  setColor(color) {
+    for (const item of this.colorButtons) {
+      const active = item.color === color;
+      item.button.classList.toggle('is-active', active);
+      item.button.setAttribute('aria-pressed', String(active));
+    }
+  }
+
+  updateLayout() {
+    if (this.root.style.display === 'none') return;
+    const shell = this.container.getBoundingClientRect();
+    const topSpace = Math.max(0, this.top.getBoundingClientRect().bottom - shell.top + 12);
+    const bottomSpace = 12;
+    const palette = this.palette.getBoundingClientRect();
+    const controls = this.controls.getBoundingClientRect();
+    const leftSpace = Math.max(0, palette.right - shell.left + 4);
+    const rightSpace = Math.max(0, shell.right - controls.left + 4);
+    const availableWidth = Math.max(0, shell.width - leftSpace - rightSpace);
+    const availableHeight = Math.max(0, shell.height - topSpace - bottomSpace);
+    const width = Math.max(0, Math.min(availableWidth, availableHeight * 9 / 16));
+    const height = width * 16 / 9;
+    const left = leftSpace + (availableWidth - width) / 2;
+    const top = topSpace + Math.max(0, (availableHeight - height) * .2);
+    this.container.style.setProperty('--art-board-left', left + 'px');
+    this.container.style.setProperty('--art-board-width', width + 'px');
+    this.container.style.setProperty('--art-board-height', height + 'px');
+    this.container.style.setProperty('--art-board-top', top + 'px');
+  }
+
+  show(visible) {
+    this.root.style.display = visible ? 'block' : 'none';
+    if (visible) this.updateLayout();
+  }
+};function Q(e,t){let n=document.createElement(`button`);return n.textContent=e,n.type=`button`,n.className=`caisha-mode-panel__button`,n.style.cssText=`border:0;background:linear-gradient(120deg,#ffad7d,#f17f61);color:white;border-radius:15px;padding:13px 17px;margin:5px;font:900 15px system-ui;`,n.addEventListener(`click`,t),n}var _t=class{constructor(e){U(),this.root=document.createElement(`div`),this.root.style.cssText=`position:absolute;inset:0;z-index:51;background:rgba(40,28,33,.69);padding:max(28px,env(safe-area-inset-top)) 20px;overflow:auto;font:800 14px system-ui,sans-serif;color:#664832;display:none;align-items:center;justify-content:center;`,this.root.classList.add(`caisha-mode-panel`),this.card=document.createElement(`div`),this.card.classList.add(`caisha-mode-panel__card`),this.card.style.cssText=`width:min(100%,380px);margin:auto;padding:22px 16px;text-align:center;background:#fff9ec;border-radius:24px;box-shadow:0 16px 44px #35232380;`,this.root.appendChild(this.card),e.appendChild(this.root)}hide(){this.root.style.display=`none`}showWin({level:e,stars:t,drops:n,next:r,retry:i,home:a}){this.card.replaceChildren();let o=document.createElement(`h2`);o.textContent=`🎉 第 `+e+` 关挑战成功！`,this.card.append(o);let s=document.createElement(`p`);s.textContent=`⭐`.repeat(t)+` · 使用 `+n+` 个沙块 · 全部清空`,this.card.append(s),r&&this.card.appendChild(Q(`下一关`,()=>{this.hide(),r()})),this.card.appendChild(Q(`再玩一次`,()=>{this.hide(),i()})),this.card.appendChild(Q(`返回首页`,()=>{this.hide(),a()})),this.root.style.display=`flex`}showLose({level:e,remaining:t,retry:n,home:r}){this.card.replaceChildren();let i=document.createElement(`h2`);i.textContent=`第 `+e+` 关挑战失败`,i.style.cssText=`font-size:25px;margin:6px 0 12px;color:#a55342;`;let a=document.createElement(`p`);a.textContent=`沙堆触碰了失败线 · 尚余 `+Number(t).toLocaleString()+` 粒`,a.style.cssText=`font-size:13px;line-height:1.8;color:#96745e;`;let o=document.createElement(`p`);o.textContent=`调整下一块沙子的落点，再试一次吧！`,o.style.cssText=`font-size:12px;color:#9b8874;`,this.card.append(i,a,o),this.card.appendChild(Q(`重试本关`,()=>{this.hide(),n()})),this.card.appendChild(Q(`返回首页`,()=>{this.hide(),r()})),this.root.style.display=`flex`}showGallery(e,{onClose:t,onView:n}){this.card.replaceChildren();let r=document.createElement(`h2`);if(r.textContent=`🖼 我的沙画`,this.card.append(r),!e.length){let e=document.createElement(`p`);e.textContent=`还没有作品。到沙画模式完成一幅吧！`,this.card.append(e)}for(let t of e.slice(0,10))try{let{cells:e}=he(t.runs,t.width*t.height),r=document.createElement(`canvas`);r.width=t.width,r.height=t.height,r.style.cssText=`width:82px;height:146px;object-fit:contain;border:5px solid #dfb888;border-radius:5px;background:#fff8ea;`;let i=r.getContext(`2d`);for(let n=0;n<e.length;n++){if(!e[n])continue;let r=n%t.width,a=Math.floor(n/t.width);i.fillStyle=`rgb(`+_(r,a,e[n]).join(`,`)+`)`,i.fillRect(r+o,a+o,g,g)}let a=document.createElement(`button`);a.type=`button`,a.style.cssText=`display:flex;align-items:center;gap:16px;width:100%;margin:8px 0;padding:8px;border:1px solid #eedac7;border-radius:16px;background:white;color:#76563d;text-align:left;`,a.append(r,document.createTextNode(new Date(t.date).toLocaleString()+` · 查看作品`)),a.addEventListener(`click`,()=>{this.hide(),n?.(r,t)}),this.card.append(a)}catch{}this.card.appendChild(Q(`关闭`,()=>{this.hide(),t?.()})),this.root.style.display=`flex`}};function vt(e){e.setArtTool=function(t){return e.artFinishing||!e.art.active||e.fruitManager.current&&![`CONTROL`,`SAND`].includes(e.fruitManager.current.state)?!1:(e.art.setTool(t),t===`shape`?(e.fruitManager.setSpawnProvider(()=>({color:e.art.color})),e.fruitManager.reset()):(e.fruitManager.setEnabled(!1),e.fruitManager.current=null),e.renderGameCanvas(!0),!0)},e.getArtPos=function(t){let n=e.sandRenderer.canvas.getBoundingClientRect();return{x:(t.clientX-n.left)/Math.max(1,n.width)*e.grid.width,y:(t.clientY-n.top)/Math.max(1,n.height)*e.grid.height}},e.captureArtPointer=function(t){if(!(e.currentMode!==x.ART||e.art.tool===`shape`||!e.art.active||e.artFinishing||e.homeScreen.isOpen()||e.gameOver||e.gameOverArtwork.isOpen())){if(t.type===`pointerdown`){t.preventDefault(),t.stopImmediatePropagation(),e.drawingArt=!0;let n=e.getArtPos(t);e.art.beginStroke(n.x,n.y),e.sandRenderer.canvas.setPointerCapture?.(t.pointerId)}else if(e.drawingArt&&t.type===`pointermove`){t.preventDefault(),t.stopImmediatePropagation();let n=e.getArtPos(t);e.art.strokeTo(n.x,n.y)}else e.drawingArt&&(t.type===`pointerup`||t.type===`pointercancel`)&&(t.preventDefault(),t.stopImmediatePropagation(),e.drawingArt=!1,e.art.endStroke())}},e.openArtworkGallery=function(){e.modePanels.showGallery(e.modeProgress.artworks,{onClose:()=>{},onView:t=>{e.currentMode=x.ART,e.homeDemo.hide(),e.gameOver=!0,e.gameOverArtwork.show({mode:`sandArt`,artworkCanvas:t})}})}}function yt(e){e.triggerGameOver=function(){if(e.gameOver)return;if(e.gameOver=!0,e.blockPropPanel.hide(),e.fruitManager.setEnabled(!1),e.audio.playGameOver(),e.currentMode===x.LEVEL){e.levelStatus.style.display=`none`,e.clearEffects.clear(),e.modePanels.showLose({level:e.currentLevel,remaining:D(e.grid),retry:()=>e.restartGame(x.LEVEL,e.currentLevel),home:()=>e.returnHome()});return}e.currentMode===x.ENDLESS&&(e.progress.recordGameOver(e.clearSystem.score),e.unlockManager.checkAll());let t=e.sandRenderer.createArtworkCanvas({scale:3});e.gameOverArtwork.show({score:e.clearSystem.score,rating:p(e.clearSystem.score),artworkCanvas:t})},e.resetHomeDemoWorld=function(t=null){e.art.stop(),e.art.fixed.fill(0),e.clearEffects.clear(),e.audio.stopTransient(),e.grid.clear(),t&&(e.grid.cells.set(t),e.grid.revision+=1),e.simulation.reset(),e.clearSystem.reset(),e.rules.reset(),e.settlementGate.reset(),e.fruitManager.reset(),e.gameOver=!1,e.lastFruitState=e.fruitManager.current?.state??null;let n=performance.now();e.lastSimulation=n,e.lastFrame=n,e.renderGameCanvas(!0)},e.prepareFirstDropGuide=function(){if(e.fruitManager.setSpawnProvider(null),!E.FIRST_DROP_GUIDE_ENABLED)return;let t=d(e.grid),n=!0;e.fruitManager.setSpawnProvider(()=>n?(n=!1,e.fruitManager.setSpawnProvider(null),{templateId:t.templateId,color:t.color,centerX:t.centerX}):null)},e.restartGame=function(t=e.currentMode,n=e.currentLevel){if(e.blockPropPanel.hide(),e.currentMode=t,e.currentLevel=n,e.levelData=null,e.levelVictoryPending=!1,e.lastDraftSaveTime=0,e.artFinishing=!1,e.artFinishElapsed=0,e.artFinishStableTicks=0,e.art.stop(),e.art.fixed.fill(0),e.modePanels.hide(),e.gameShell.classList.toggle(`caisha-art-mode`,t===x.ART),e.artToolbar.show(t===x.ART),e.levelStatus.style.display=t===x.LEVEL?`block`:`none`,e.lastLevelStatusRevision=-1,e.sandRenderer.lineMode=t===x.ART?`finish`:`failure`,e.settingsPanel.close({silent:!0}),e.gameOverArtwork.hide(),e.hud.setGameVisible(!1),e.grid.clear(),t===x.ENDLESS)e.prepareFirstDropGuide();else if(t===x.LEVEL)e.levelData=le(n),e.grid.cells.set(e.levelData.cells),e.grid.revision++,e.fruitManager.setSpawnProvider(ee(e.levelData,()=>e.fruitManager.random())),e.simulation.setRandom(re(e.levelData.runtimeSeed));else{e.fruitManager.setSpawnProvider(null),e.art.reset();let t=e.modeProgress.readDraft(e.grid.width,e.grid.height);t&&e.art.restore(t)}e.simulation.reset(),e.clearSystem.reset(),e.rules.reset(),e.fruitManager.reset(),t===x.ART&&e.setArtTool(`flow`),e.hud.reset(),e.clearEffects.clear(),e.audio.stopTransient(),e.settlementGate.reset(),e.hud.setGameVisible(t===x.ENDLESS),e.gameOver=!1,e.lastFruitState=e.fruitManager.current?.state??null;let r=performance.now();e.lastSimulation=r,e.lastFrame=r,e.blockProps.begin(e.levelData,{endless:t===x.ENDLESS}),(t===x.LEVEL||t===x.ENDLESS)&&e.blockPropPanel.start(),e.renderGameCanvas(!0)},e.returnHome=function(){e.blockPropPanel.hide(),e.blockProps.begin(null),e.currentMode===x.ART&&!e.gameOver&&(D(e.grid)>0?e.modeProgress.saveDraft(e.grid,e.art.fixed):e.modeProgress.clearDraft()),e.drawingArt=!1,e.artFinishing=!1,e.art.stop(),e.art.fixed.fill(0),e.fruitManager.setSpawnProvider(null),e.artToolbar.show(!1),e.gameShell.classList.remove(`caisha-art-mode`),e.levelStatus.style.display=`none`,e.modePanels.hide(),e.sandRenderer.lineMode=`failure`,e.hud.setGameVisible(!1),e.audio.stopTransient(),e.clearEffects.clear(),e.effectPanel.close(),e.settingsPanel.close({silent:!0}),e.gameOverArtwork.hide(),e.homeScreen.show(),e.homeDemo.show()},e.returnModeSelect=function(){e.returnHome(),e.homeScreen.openModeMenu()},e.triggerArtComplete=function(){if(e.gameOver||e.currentMode!==x.ART)return;e.artFinishing=!1,e.gameOver=!0,e.drawingArt=!1,e.art.stop(),e.fruitManager.setEnabled(!1),e.artToolbar.show(!1),e.audio.stopTransient(),e.modeProgress.saveArtwork(e.grid,e.art.fixed),e.modeProgress.clearDraft();let t=e.sandRenderer.createArtworkCanvas({scale:3});e.gameOverArtwork.show({mode:`sandArt`,artworkCanvas:t})},e.triggerLevelComplete=function(){if(e.gameOver||e.currentMode!==x.LEVEL)return;e.gameOver=!0,e.blockPropPanel.hide(),e.fruitManager.setEnabled(!1),e.levelStatus.style.display=`none`;let t=e.modeProgress.winLevel(e.currentLevel,e.hud.dropHintCount,e.levelData?.referenceDrops||1);e.modePanels.showWin({level:e.currentLevel,stars:t,drops:e.hud.dropHintCount,next:e.currentLevel<b?()=>e.restartGame(x.LEVEL,e.currentLevel+1):null,retry:()=>e.restartGame(x.LEVEL,e.currentLevel),home:()=>e.returnHome()})}}function bt(e){e.getFruitRenderKey=function(e){return e?[e.state,e.x,e.y,e.color,Math.round(e.impactTimer??0),Math.round(e.breakTimer??0),e.dissolvedCount??0].join(`:`):``},e.renderGameCanvas=function(t=!1){let n=e.fruitManager.current,r=e.getFruitRenderKey(n);(t||e.grid.revision!==e.lastRenderedGridRevision||n!==e.lastRenderedFruit||r!==e.lastRenderedFruitKey)&&(e.sandRenderer.update(n),e.lastRenderedGridRevision=e.grid.revision,e.lastRenderedFruit=n,e.lastRenderedFruitKey=r)},e.canResolveConnectivity=function(e){return e!==`IMPACT`&&e!==`BREAKING`},e.loop=function(t){requestAnimationFrame(e.loop);let n=Math.min(50,t-e.lastFrame);e.lastFrame=t;let r=e.homeDemo.isRunning(),i=!e.homeScreen.isOpen()||r;if(!e.gameOver&&!e.effectPanel.isOpen()&&!e.settingsPanel.isOpen()&&!e.blockPropPanel.isBlocking()&&i){if(e.clearEffects.isBusy())e.audio.updateSandFlow(0),e.lastSimulation=t;else{let i=e.lastFruitState;r&&e.homeDemo.update(t),!r&&e.currentMode===x.ART&&(e.art.update(n),e.lastDraftSaveTime===0&&(e.lastDraftSaveTime=t),t-e.lastDraftSaveTime>7e3&&D(e.grid)>0&&(e.modeProgress.saveDraft(e.grid,e.art.fixed),e.lastDraftSaveTime=t)),e.fruitManager.update(n);let a=e.fruitManager.current?.state??null;if(a!==i&&a===`FALLING`&&(e.clearSystem.resetCombo(),r||e.audio.playFallStart()),!r&&i===`FALLING`&&a===`IMPACT`&&e.audio.playImpact(),!r&&i===`IMPACT`&&a===`BREAKING`&&e.audio.playCrumble(),i===`BREAKING`&&a===null&&e.settlementGate.begin(),e.lastFruitState=a,!r&&e.currentMode!==x.ART&&e.rules.checkDeathLine()&&e.triggerGameOver(),!e.gameOver&&t-e.lastSimulation>=E.UPDATE_INTERVAL){if(e.simulation.update(()=>!r&&e.currentMode!==x.ART&&e.rules.checkDeathLine()?(e.triggerGameOver(),!1):!e.gameOver),e.audio.updateSandFlow(!r&&!e.gameOver?e.simulation.movedCount:0),!e.gameOver&&e.currentMode===x.ART){if(!e.artFinishing&&e.art.isComplete()){e.artFinishing=!0,e.artFinishElapsed=0,e.artFinishStableTicks=0,e.drawingArt=!1,e.art.stop();let t=e.fruitManager.current?.state;(!t||t===`CONTROL`||t===`SAND`)&&e.fruitManager.setEnabled(!1)}if(e.artFinishing){e.fruitManager.current||e.fruitManager.setEnabled(!1),e.artFinishElapsed+=n;let t=e.fruitManager.current&&![`SAND`,`CONTROL`].includes(e.fruitManager.current.state);e.simulation.movedCount===0&&!t?e.artFinishStableTicks++:e.artFinishStableTicks=0,(e.artFinishStableTicks>=4||e.artFinishElapsed>=2e3&&!t||e.artFinishElapsed>=5e3)&&e.triggerArtComplete()}}!e.gameOver&&e.currentMode!==x.ART&&e.settlementGate.isBlocking()&&e.settlementGate.observe(e.simulation.movedCount)&&e.canResolveConnectivity(a)&&e.clearSystem.resolve({maxGroups:r?1:1/0})>0&&e.settlementGate.begin(),!r&&!e.gameOver&&e.currentMode===x.LEVEL&&e.levelVictoryPending&&!e.settlementGate.isBlocking()&&!e.clearEffects.isBusy()&&D(e.grid)===0&&e.triggerLevelComplete(),e.lastSimulation=t}}}else e.audio.updateSandFlow(0);!e.gameOver&&!e.homeScreen.isOpen()&&e.currentMode===x.LEVEL&&e.lastLevelStatusRevision!==e.grid.revision&&(e.levelStatus.textContent=`第 `+e.currentLevel+` 关
 剩余 `+D(e.grid).toLocaleString()+` 粒`,e.lastLevelStatusRevision=e.grid.revision),e.stats.update(),e.blockPropPanel.update(t),e.renderGameCanvas()}}var xt=`
 .caisha-props[hidden],.caisha-prop-overlay[hidden]{display:none!important}
 .caisha-props{position:absolute;right:max(9px,env(safe-area-inset-right));z-index:16;display:flex;flex-direction:column;gap:10px;transition:top .36s cubic-bezier(.22,.61,.36,1);touch-action:none}

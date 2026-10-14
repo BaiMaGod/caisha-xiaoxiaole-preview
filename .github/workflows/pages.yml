@@ -114,12 +114,13 @@ jobs:
                 const shell=document.getElementById('game-shell').getBoundingClientRect();
                 const board=document.getElementById('game-root').getBoundingClientRect();
                 const top=document.querySelector('.caisha-art-studio__top').getBoundingClientRect();
-                const bottom=document.querySelector('.caisha-art-studio__bottom').getBoundingClientRect();
+                const palette=document.querySelector('.caisha-art-studio__palette').getBoundingClientRect();
+                const controls=document.querySelector('.caisha-art-studio__controls').getBoundingClientRect();
                 const clipped=[...document.querySelectorAll('.caisha-art-studio button')].some(button=>{
                   const r=button.getBoundingClientRect();
                   return r.left<shell.left||r.right>shell.right||r.top<shell.top||r.bottom>shell.bottom;
                 });
-                return {clipped,clear:board.top>=top.bottom+5&&board.bottom+5<=bottom.top};
+                return {clipped,clear:board.top>=top.bottom+5&&board.left>=palette.right+2&&board.right<=controls.left-2};
               });
               assert.equal(bounds.clipped,false);
               assert.equal(bounds.clear,true);
