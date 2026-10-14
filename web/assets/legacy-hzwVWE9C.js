@@ -654,14 +654,15 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     background:transparent !important;box-shadow:none !important;overflow:visible !important;
   }
   .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__items {
-    display:grid !important;grid-template-rows:repeat(3,minmax(0,1fr));
-    flex:1 1 0 !important;width:min(100%,330px) !important;margin:0 auto !important;
+    display:flex !important;flex-direction:column !important;justify-content:center !important;
+    flex:1 1 0 !important;width:min(100%,330px,calc(59svh - 86px)) !important;margin:0 auto !important;
+    /* Cards use their real image height; distributing three equal-height grid rows hid gap changes. */
     gap:clamp(2px,0.45svh,4.5px);padding-bottom:clamp(6px,3svh,24px) !important;
   }
   .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__item {
     box-sizing:border-box !important;position:relative !important;display:block !important;
-    flex:0 0 auto !important;width:100% !important;height:100% !important;
-    min-height:0 !important;max-height:none !important;aspect-ratio:auto !important;
+    flex:0 0 auto !important;width:100% !important;height:auto !important;
+    min-height:0 !important;max-height:none !important;aspect-ratio:1672/941 !important;
     overflow:visible !important;margin:0 !important;padding:0 !important;
     border:0 !important;border-radius:0 !important;
     background:none !important;box-shadow:none !important;
