@@ -1789,35 +1789,47 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
 .caisha-art-studio__controls{
   right:max(3px,env(safe-area-inset-right));width:50px;gap:9px;
 }
-.caisha-art-studio__tools,
 .caisha-art-studio__actions{
-  display:flex;flex-direction:column;align-items:stretch;gap:4px;width:100%;
+  display:flex;flex-direction:column;align-items:stretch;
+  gap:5px;width:100%;padding-top:8px;border-top:1px solid #b99fa880;
 }
-.caisha-art-studio__actions{
-  padding-top:8px;border-top:1px solid #b99fa880;
-}
-.caisha-art-studio__tool,
 .caisha-art-studio__size,
 .caisha-art-studio__actions .caisha-art-studio__button{
   flex:0 0 auto;display:flex;flex-direction:column;gap:2px;
-  width:100%;min-height:44px;padding:5px 1px;
-  border-radius:10px;
+  width:100%;min-height:44px;padding:5px 1px;border-radius:10px;
 }
-.caisha-art-studio__tool svg,
-.caisha-art-studio__size svg,
-.caisha-art-studio__actions svg{width:18px;height:18px;}
-.caisha-art-studio__tools .caisha-art-studio__label,
+.caisha-art-studio__size{min-height:41px;}
+.caisha-art-studio__size .caisha-art-studio__label,
 .caisha-art-studio__actions .caisha-art-studio__label{
   font-size:9px;letter-spacing:-.025em;
 }
-.caisha-art-studio__size{min-height:41px;}
-.caisha-art-studio__size .caisha-art-studio__label{font-size:9px;}
+.caisha-art-studio__actions svg{width:18px;height:18px;}
+.caisha-art-studio__bottom{
+  position:absolute;bottom:max(10px,env(safe-area-inset-bottom));
+  left:max(9px,env(safe-area-inset-left));
+  right:max(9px,env(safe-area-inset-right));
+  padding:6px;pointer-events:auto;
+  border:1px solid #eee2d5;border-radius:15px;
+  background:#fff9ef;box-shadow:0 4px 14px #725c6b20;
+}
+.caisha-art-studio__tools{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  align-items:stretch;gap:7px;width:100%;
+}
+.caisha-art-studio__tool{
+  display:flex;flex-direction:column;gap:4px;
+  min-width:0;min-height:57px;padding:7px 2px 5px;border-radius:11px;
+}
+.caisha-art-studio__tool svg{width:21px;height:21px;}
+.caisha-art-studio__tool .caisha-art-studio__label{
+  font-size:11px;letter-spacing:0;
+}
 .caisha-art-studio__tool.is-active{
   transform:translateY(-1px);
   box-shadow:0 0 0 1px #fff9ef,0 0 0 2px var(--art-sand-ink),0 3px 0 var(--art-sand-shade);
 }
 .caisha-art-studio__tool.is-active::after{
-  content:"✓";position:absolute;top:1px;right:2px;font-size:9px;pointer-events:none;
+  content:"✓";position:absolute;top:2px;right:4px;font-size:10px;pointer-events:none;
 }
 .caisha-art-studio__tool.is-active:active{transform:translateY(0);}
 .caisha-art-studio__clear{margin-left:0;}
@@ -1828,30 +1840,34 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
   .caisha-art-studio__color{width:34px;}
   .caisha-art-studio__swatch{width:27px;height:27px;}
   .caisha-art-studio__controls{right:max(2px,env(safe-area-inset-right));width:47px;}
+  .caisha-art-studio__bottom{left:6px;right:6px;padding:5px;}
+  .caisha-art-studio__tools{gap:5px;}
 }
 @media(max-height:620px){
   .caisha-art-studio__controls{gap:6px;}
-  .caisha-art-studio__tools,.caisha-art-studio__actions{gap:3px;}
-  .caisha-art-studio__actions{padding-top:5px;}
-  .caisha-art-studio__tool,
+  .caisha-art-studio__actions{gap:3px;padding-top:5px;}
   .caisha-art-studio__size,
   .caisha-art-studio__actions .caisha-art-studio__button{
     min-height:37px;padding-block:3px;gap:1px;
   }
   .caisha-art-studio__color{height:35px;}
-  .caisha-art-studio__tool svg,.caisha-art-studio__actions svg{width:16px;height:16px;}
+  .caisha-art-studio__actions svg{width:16px;height:16px;}
+  .caisha-art-studio__bottom{bottom:max(7px,env(safe-area-inset-bottom));padding:4px;}
+  .caisha-art-studio__tool{min-height:49px;padding-block:4px 3px;gap:2px;}
+  .caisha-art-studio__tool svg{width:18px;height:18px;}
 }
 @media(max-height:450px){
   .caisha-art-studio__controls{gap:3px;}
-  .caisha-art-studio__tools,.caisha-art-studio__actions{gap:2px;}
-  .caisha-art-studio__tool,
+  .caisha-art-studio__actions{gap:2px;}
   .caisha-art-studio__size,
   .caisha-art-studio__actions .caisha-art-studio__button{min-height:30px;padding-block:1px;}
   .caisha-art-studio__color{height:29px;}
   .caisha-art-studio__swatch{width:23px;height:23px;}
-  .caisha-art-studio__tool svg,.caisha-art-studio__actions svg{width:13px;height:13px;}
-  .caisha-art-studio__tools .caisha-art-studio__label,
+  .caisha-art-studio__actions svg{width:13px;height:13px;}
   .caisha-art-studio__actions .caisha-art-studio__label{font-size:8px;}
+  .caisha-art-studio__tool{min-height:38px;padding-block:2px;gap:1px;}
+  .caisha-art-studio__tool svg{width:15px;height:15px;}
+  .caisha-art-studio__tool .caisha-art-studio__label{font-size:9px;}
 }
 @media(prefers-reduced-motion:reduce){.caisha-art-studio__button{transition:none;}}
 `}var lt=`caisha-art-studio-visuals-v1`;function ut(){if(document.getElementById(lt))return;let e=document.createElement(`style`);e.id=lt,e.textContent=ct(),document.head.appendChild(e)}var dt={brush:`<path d="m13 3 8 8-9 9-4-4Z"/><path d="m13 3 2-2 8 8-2 2M8 16c-5-1-6 2-6 6 4 0 7-1 6-6Z"/>`,pen:`<path d="m12 3 8 6-4 10-8 2-5-6 2-8Z"/><path d="m12 3-1 9M8 21l3-9"/><circle cx="11" cy="12" r="2"/>`,shapes:`<path d="m6 3 5 8H1Z"/><circle cx="17" cy="7" r="4"/><rect x="3" y="15" width="7" height="7" rx="1"/><path d="m17 14 5 4-5 4-5-4Z"/>`,eraser:`<path d="m15 3 7 7-11 11H7l-5-5Z"/><path d="m8 10 7 7M11 21h11"/>`,undo:`<path d="m8 4-5 5 5 5M3 9h11a7 7 0 0 1 0 14"/>`,redo:`<path d="m16 4 5 5-5 5M21 9H10a7 7 0 0 0 0 14"/>`,trash:`<path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/>`};function ft(e){let t=document.createElementNS(`http://www.w3.org/2000/svg`,`svg`);return t.setAttribute(`viewBox`,`0 0 24 24`),t.setAttribute(`fill`,`none`),t.setAttribute(`stroke`,`currentColor`),t.setAttribute(`stroke-width`,`1.6`),t.setAttribute(`stroke-linecap`,`round`),t.setAttribute(`stroke-linejoin`,`round`),t.setAttribute(`aria-hidden`,`true`),t.innerHTML=dt[e]||``,t}var X;function pt(){if(X)return X;let e=document.createElement(`canvas`);e.width=e.height=96;let t=e.getContext(`2d`);for(let e=0;e<96;e++)for(let n=0;n<96;n++)t.fillStyle=((n*73856093^e*19349663)>>>0)%2?`rgba(255,255,255,.22)`:`rgba(72,55,83,.13)`,t.fillRect(n,e,1,1);return X=e.toDataURL(),X}function Z(e,t){let n=h(t);e.style.setProperty(`--art-sand-color`,u(n)),e.style.setProperty(`--art-sand-shade`,u(n.map(e=>Math.round(e*.82)))),e.style.setProperty(`--art-sand-ink`,u(n.map(e=>Math.round(e*.38))))}var mt=[`红`,`橙`,`黄`,`绿`,`青`,`蓝`,`紫`],ht=[[`flow`,`流沙笔`,`brush`,6],[`fixed`,`固沙笔`,`pen`,4],[`shape`,`形状`,`shapes`,7],[`erase`,`橡皮擦`,`eraser`,3]],gt=class ArtToolbar {
@@ -1903,6 +1919,7 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     this.top.appendChild(caption);
 
     this.sides = group('sides');
+    this.bottom = group('bottom');
     const tools = group('tools', '绘画工具');
     this.toolButtons = [];
     for (const [tool, title, icon, color] of ht) {
@@ -1914,10 +1931,11 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
       Z(element, color);
       this.toolButtons.push({ tool, button: element });
     }
-    // Brush size belongs with the drawing tools, not in the header.
+    // Brush size stays in the right-side edit rail.
+    this.controls = group('controls', '笔刷与编辑操作');
     let radiusIndex = 1;
     const radii = [1, 2, 4];
-    const sizeButton = button(tools, '笔刷·中', () => {
+    const sizeButton = button(this.controls, '笔刷·中', () => {
       radiusIndex = (radiusIndex + 1) % radii.length;
       sizeButton.querySelector('.caisha-art-studio__label').textContent =
         '笔刷·' + ['细', '中', '粗'][radiusIndex];
@@ -1955,18 +1973,19 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     }, 'caisha-art-studio__clear', 'trash');
     Z(clear, 1);
     this.palette = palette;
-    this.controls = group('controls', '绘画与编辑操作');
-    this.controls.append(tools, actions);
+    this.tools = tools;
+    this.controls.append(actions);
+    this.bottom.append(tools);
     this.sides.append(palette, this.controls);
-    this.root.append(this.top, this.sides);
+    this.root.append(this.top, this.sides, this.bottom);
     container.appendChild(this.root);
     this.setTool('flow');
     this.setColor(1);
 
-    // Size the 9:16 board from the actual left/right rail bounds, not a
-    // hard-coded bottom toolbar height. ResizeObserver handles mobile rotation.
+    // Keep the 9:16 board clear of the header, side rails, and bottom tools.
+    // ResizeObserver recalculates placement when mobile viewports rotate.
     this.resizeObserver = new ResizeObserver(() => this.updateLayout());
-    for (const element of [container, this.top, this.palette, this.controls])
+    for (const element of [container, this.top, this.palette, this.controls, this.bottom])
       this.resizeObserver.observe(element);
   }
 
@@ -1990,7 +2009,7 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     if (this.root.style.display === 'none') return;
     const shell = this.container.getBoundingClientRect();
     const topSpace = Math.max(0, this.top.getBoundingClientRect().bottom - shell.top + 12);
-    const bottomSpace = 12;
+    const bottomSpace = Math.max(0, shell.bottom - this.bottom.getBoundingClientRect().top + 10);
     const palette = this.palette.getBoundingClientRect();
     const controls = this.controls.getBoundingClientRect();
     const leftSpace = Math.max(0, palette.right - shell.left + 4);
@@ -2000,7 +2019,7 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     const width = Math.max(0, Math.min(availableWidth, availableHeight * 9 / 16));
     const height = width * 16 / 9;
     const left = leftSpace + (availableWidth - width) / 2;
-    const top = topSpace + Math.max(0, (availableHeight - height) * .2);
+    const top = topSpace + Math.max(0, (availableHeight - height) / 2);
     this.container.style.setProperty('--art-board-left', left + 'px');
     this.container.style.setProperty('--art-board-width', width + 'px');
     this.container.style.setProperty('--art-board-height', height + 'px');

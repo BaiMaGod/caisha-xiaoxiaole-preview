@@ -116,13 +116,20 @@ jobs:
                 const top=document.querySelector('.caisha-art-studio__top').getBoundingClientRect();
                 const palette=document.querySelector('.caisha-art-studio__palette').getBoundingClientRect();
                 const controls=document.querySelector('.caisha-art-studio__controls').getBoundingClientRect();
+                const bottom=document.querySelector('.caisha-art-studio__bottom').getBoundingClientRect();
+                const toolRects=[...document.querySelectorAll('.caisha-art-studio__tool')]
+                  .map(button=>button.getBoundingClientRect());
+                const bottomTools=toolRects.length===4&&toolRects.every(r=>
+                  Math.abs(r.top-toolRects[0].top)<2&&r.bottom<=bottom.bottom+1);
                 const clipped=[...document.querySelectorAll('.caisha-art-studio button')].some(button=>{
                   const r=button.getBoundingClientRect();
                   return r.left<shell.left||r.right>shell.right||r.top<shell.top||r.bottom>shell.bottom;
                 });
-                return {clipped,clear:board.top>=top.bottom+5&&board.left>=palette.right+2&&board.right<=controls.left-2};
+                return {clipped,bottomTools,clear:board.top>=top.bottom+5&&
+                  board.left>=palette.right+2&&board.right<=controls.left-2&&board.bottom+5<=bottom.top};
               });
               assert.equal(bounds.clipped,false);
+              assert.equal(bounds.bottomTools,true);
               assert.equal(bounds.clear,true);
               await artTools.getByRole('button',{name:'首页',exact:true}).click();
               assert.equal(await page.locator('.caisha-home').isVisible(),true);
