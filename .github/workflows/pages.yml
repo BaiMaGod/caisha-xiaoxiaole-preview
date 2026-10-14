@@ -53,6 +53,17 @@ jobs:
               await page.locator('.caisha-home__play').click();
               assert.equal(await page.locator('.caisha-mode-menu__item').count(),3);
               await page.locator('.approved-art__mode-picture').evaluateAll(images=>Promise.all(images.map(image=>image.decode())));
+              // Check the visible illustration frames, not just CSS gap: fractional grid rows
+              // previously expanded to absorb reduced gaps on mobile.
+              const modeFrames = await page.locator('.approved-art__mode-frame').evaluateAll(nodes=>
+                nodes.map(node=>{const r=node.getBoundingClientRect();return {top:r.top,bottom:r.bottom};}));
+              assert.equal(modeFrames.length,3);
+              for(let i=1;i<modeFrames.length;i++) {
+                const visibleGap=modeFrames[i].top-modeFrames[i-1].bottom;
+                assert.ok(visibleGap>=-1&&visibleGap<=7,`mode card visual gap ${visibleGap}px on ${width}x${height}`);
+              }
+              assert.equal(await page.locator('[data-mode="endless"] small').textContent(),
+                '保持沙堆在红线之下，挑战高分。');
               await page.locator('[data-mode="level"]').click();
               assert.equal(await page.locator('.approved-art__level-card').count(),24);
               await page.locator('.approved-art__level-card').first().click();
