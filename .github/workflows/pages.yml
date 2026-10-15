@@ -105,6 +105,19 @@ jobs:
               }))), 'PAGE_ERRORS',JSON.stringify(errors));
               await page.getByRole('button',{name:'打开设置'}).click();
               assert.equal(await page.getByRole('slider').count(),2);
+              const navStyles=await page.evaluate(()=>{
+                return ['返回主页','模式选择'].map(name=>{
+                  const button=document.querySelector(`button[aria-label="${name}"]`);
+                  const css=getComputedStyle(button);
+                  return {color:css.backgroundColor,radius:css.borderRadius,
+                    height:css.height,top:button.getBoundingClientRect().top,
+                    grain:getComputedStyle(button,'::before').backgroundImage.includes('data:image/')};
+                });
+              });
+              assert.deepEqual(navStyles.map(item=>item.color),
+                ['rgb(228, 237, 243)','rgb(241, 180, 169)']);
+              assert.ok(navStyles.every(item=>item.radius==='12px'&&item.height==='45px'&&item.grain));
+              assert.ok(Math.abs(navStyles[0].top-navStyles[1].top)<1);
               if(await page.getByRole('button',{name:'返回主页'}).count()===0){
                 console.log('SETTINGS_NAV_DEBUG',JSON.stringify(await page.evaluate(()=>({
                   shell:document.querySelector('#game-shell')?.className,
