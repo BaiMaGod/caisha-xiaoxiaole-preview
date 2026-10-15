@@ -100,6 +100,17 @@ jobs:
               await page.locator('.approved-art__level-card').first().click();
               await page.getByRole('button',{name:'打开设置'}).click();
               assert.equal(await page.getByRole('slider').count(),2);
+              if(await page.getByRole('button',{name:'返回主页'}).count()===0){
+                console.log('SETTINGS_NAV_DEBUG',JSON.stringify(await page.evaluate(()=>({
+                  shell:document.querySelector('#game-shell')?.className,
+                  settingLabels:[...document.querySelectorAll('button')].filter(b=>/主页|模式选择|返回/.test(b.textContent)).map(b=>({
+                    name:b.getAttribute('aria-label'),text:b.textContent,
+                    visible:b.getBoundingClientRect().height>0,
+                    display:getComputedStyle(b).display
+                  })).slice(-14),
+                  settingsText:[...document.querySelectorAll('[class*="setting"]')].filter(e=>e.getBoundingClientRect().height>0).map(e=>e.className).slice(-12),
+                }))));
+              }
               await page.getByRole('button',{name:'返回主页'}).click();
               assert.equal(await page.getByRole('alertdialog').isVisible(),true);
               await page.getByRole('button',{name:'取消'}).click();
