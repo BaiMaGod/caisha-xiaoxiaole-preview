@@ -118,6 +118,13 @@ jobs:
               }
               await page.getByRole('button',{name:'返回主页'}).click();
               assert.equal(await page.getByRole('alertdialog').isVisible(),true);
+              const confirmVisual=await page.locator('[role="alertdialog"] > div').evaluate(el=>({
+                background:getComputedStyle(el).backgroundColor,
+                radius:getComputedStyle(el).borderRadius,
+                border:getComputedStyle(el).borderTopColor,
+              }));
+              assert.equal(confirmVisual.background,'rgb(255, 248, 235)');
+              assert.equal(confirmVisual.radius,'18px');
               await page.getByRole('button',{name:'取消'}).click();
               assert.equal(await page.locator('.caisha-home').isVisible(),false);
               await page.getByRole('button',{name:'模式选择'}).click();
@@ -193,8 +200,20 @@ jobs:
                 'wide sand art canvas must reclaim former left palette space');
               assert.equal(await artTools.locator('.caisha-art-studio__caption').textContent(),'沙画工坊');
               assert.equal(await artTools.locator('.caisha-art-studio__home .caisha-art-studio__label').isVisible(),false);
+              await artTools.getByRole('button',{name:'清空',exact:true}).click();
+              const clearDialog=page.getByRole('alertdialog',{name:'确认清空沙画'});
+              assert.equal(await clearDialog.isVisible(),true);
+              assert.equal(await clearDialog.getByRole('button',{name:'确认清空'}).isVisible(),true);
+              await clearDialog.getByRole('button',{name:'取消'}).click();
+              assert.equal(await clearDialog.isVisible(),false);
               await artTools.getByRole('button',{name:'返回模式选择',exact:true}).click();
               assert.equal(await page.getByRole('alertdialog',{name:'确认返回模式选择'}).isVisible(),true);
+              const artVisual=await page.locator('.caisha-art-studio__back-confirm-card').evaluate(el=>({
+                background:getComputedStyle(el).backgroundColor,
+                radius:getComputedStyle(el).borderRadius,
+                border:getComputedStyle(el).borderTopColor,
+              }));
+              assert.deepEqual(artVisual,confirmVisual);
               await page.getByRole('button',{name:'取消',exact:true}).click();
               assert.equal(await page.getByRole('alertdialog').isVisible(),false);
               await artTools.getByRole('button',{name:'返回模式选择',exact:true}).click();
