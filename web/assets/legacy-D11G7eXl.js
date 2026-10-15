@@ -1759,21 +1759,15 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
  -webkit-text-stroke:.28px #997b8a44;
  filter:drop-shadow(0 1px 0 #fff8eb) drop-shadow(0 2px 1px #917a8555);
 }
-.caisha-art-studio__sides{
-  position:absolute;inset:0;pointer-events:none;
-}
 .caisha-art-studio__palette{
-  position:absolute;top:var(--art-board-top,76px);
-  height:var(--art-board-height,calc(100% - 92px));
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:static;width:100%;height:auto;min-width:0;
+  display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
+  align-items:center;justify-items:center;gap:4px;
   pointer-events:auto;
-}
-.caisha-art-studio__palette{
-  left:max(3px,env(safe-area-inset-left));width:36px;gap:4px;
 }
 .caisha-art-studio__color{
   position:relative;display:flex;align-items:center;justify-content:center;
-  flex:0 0 auto;width:36px;height:40px;padding:3px;
+  flex:0 0 auto;width:36px;height:34px;padding:2px;
   border:0;background:transparent;cursor:pointer;touch-action:manipulation;
   -webkit-tap-highlight-color:transparent;
 }
@@ -1794,28 +1788,28 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
   position:absolute;bottom:max(8px,env(safe-area-inset-bottom));
   left:max(8px,env(safe-area-inset-left));
   right:max(8px,env(safe-area-inset-right));
-  padding:6px;display:grid;gap:7px;pointer-events:auto;
+  padding:5px;display:grid;gap:5px;pointer-events:auto;
   border:1px solid #eee2d5;border-radius:15px;
   background:#fff9ef;box-shadow:0 4px 14px #725c6b20;
 }
 .caisha-art-studio__tools{
   display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
-  align-items:stretch;gap:7px;width:100%;
+  align-items:stretch;gap:6px;width:100%;
 }
 .caisha-art-studio__controls{
   position:static;width:100%;height:auto;
   display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
-  gap:7px;align-items:stretch;pointer-events:auto;
+  gap:6px;align-items:stretch;pointer-events:auto;
 }
 .caisha-art-studio__actions{
   grid-column:span 4;min-width:0;
   display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:7px;
+  gap:6px;
 }
 .caisha-art-studio__size,
 .caisha-art-studio__actions .caisha-art-studio__button{
   flex:0 0 auto;display:flex;flex-direction:column;gap:3px;
-  width:100%;min-width:0;min-height:45px;padding:4px 1px;border-radius:10px;
+  width:100%;min-width:0;min-height:41px;padding:3px 1px;border-radius:10px;
 }
 .caisha-art-studio__size .caisha-art-studio__label,
 .caisha-art-studio__actions .caisha-art-studio__label{
@@ -1851,9 +1845,9 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
 .caisha-art-studio__back-accept{background:#f1b4a9;border-color:#d99a94;color:#724856;}
 .caisha-art-studio__tool{
   display:flex;flex-direction:column;gap:4px;
-  min-width:0;min-height:57px;padding:7px 2px 5px;border-radius:11px;
+  min-width:0;min-height:46px;padding:4px 2px 3px;border-radius:11px;
 }
-.caisha-art-studio__tool svg{width:21px;height:21px;}
+.caisha-art-studio__tool svg{width:19px;height:19px;}
 .caisha-art-studio__tool .caisha-art-studio__label{
   font-size:11px;letter-spacing:0;
 }
@@ -1867,27 +1861,27 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
 .caisha-art-studio__tool.is-active:active{transform:translateY(0);}
 .caisha-art-studio button:focus-visible{outline:3px solid #4e76bd;outline-offset:2px;}
 @media(max-width:360px){
-  .caisha-art-studio__palette{left:max(2px,env(safe-area-inset-left));width:34px;}
+  .caisha-art-studio__palette{gap:2px;}
   .caisha-art-studio__color{width:34px;}
   .caisha-art-studio__swatch{width:27px;height:27px;}
-  .caisha-art-studio__bottom{left:5px;right:5px;padding:4px;gap:5px;}
+  .caisha-art-studio__bottom{left:5px;right:5px;padding:4px;gap:4px;}
   .caisha-art-studio__tools,.caisha-art-studio__controls,.caisha-art-studio__actions{gap:4px;}
   .caisha-art-studio__size .caisha-art-studio__label,
   .caisha-art-studio__actions .caisha-art-studio__label{font-size:9px;}
 }
 @media(max-height:620px){
   .caisha-art-studio__bottom{bottom:max(5px,env(safe-area-inset-bottom));padding:4px;gap:5px;}
-  .caisha-art-studio__color{height:34px;}
-  .caisha-art-studio__tool{min-height:45px;padding-block:3px;gap:2px;}
+  .caisha-art-studio__color{height:30px;}
+  .caisha-art-studio__tool{min-height:39px;padding-block:2px;gap:1px;}
   .caisha-art-studio__tool svg{width:17px;height:17px;}
   .caisha-art-studio__size,
   .caisha-art-studio__actions .caisha-art-studio__button{
-    min-height:39px;padding-block:2px;gap:1px;
+    min-height:35px;padding-block:2px;gap:1px;
   }
   .caisha-art-studio__size svg,.caisha-art-studio__actions svg{width:15px;height:15px;}
 }
 @media(max-height:450px){
-  .caisha-art-studio__color{height:29px;}
+  .caisha-art-studio__color{height:27px;}
   .caisha-art-studio__swatch{width:23px;height:23px;}
   .caisha-art-studio__tool{min-height:34px;padding-block:1px;gap:0;}
   .caisha-art-studio__tool svg{width:13px;height:13px;}
@@ -1944,7 +1938,6 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     caption.append(title);
     this.top.appendChild(caption);
 
-    this.sides = group('sides');
     this.bottom = group('bottom');
     const tools = group('tools', '绘画工具');
     this.toolButtons = [];
@@ -1957,7 +1950,7 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
       Z(element, color);
       this.toolButtons.push({ tool, button: element });
     }
-    // Brush size and edit actions share the second row below drawing tools.
+    // Brush size and edit actions share the third row below the color palette and drawing tools.
     this.controls = group('controls', '笔刷与编辑操作');
     let radiusIndex = 1;
     const radii = [1, 2, 4];
@@ -2003,9 +1996,9 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     this.palette = palette;
     this.tools = tools;
     this.controls.append(actions);
-    this.bottom.append(tools, this.controls);
-    this.sides.append(palette);
-    this.root.append(this.top, this.sides, this.bottom);
+    // Colors, drawing tools, and editing actions form three independent rows.
+    this.bottom.append(palette, tools, this.controls);
+    this.root.append(this.top, this.bottom);
     // Exit confirmation stays independent of the settings panel.
     this.backConfirm = group('back-confirm');
     this.backConfirm.setAttribute('role', 'alertdialog');
@@ -2041,10 +2034,10 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     this.setTool('flow');
     this.setColor(1);
 
-    // Keep the 9:16 board clear of the header, side rails, and bottom tools.
+    // Keep the 9:16 board clear of the header and the three bottom rows.
     // ResizeObserver recalculates placement when mobile viewports rotate.
     this.resizeObserver = new ResizeObserver(() => this.updateLayout());
-    for (const element of [container, this.top, this.palette, this.bottom])
+    for (const element of [container, this.top, this.bottom])
       this.resizeObserver.observe(element);
   }
 
@@ -2067,11 +2060,11 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
   updateLayout() {
     if (this.root.style.display === 'none') return;
     const shell = this.container.getBoundingClientRect();
-    const topSpace = Math.max(0, this.top.getBoundingClientRect().bottom - shell.top + 12);
-    const bottomSpace = Math.max(0, shell.bottom - this.bottom.getBoundingClientRect().top + 10);
-    const palette = this.palette.getBoundingClientRect();
-    const leftSpace = Math.max(0, palette.right - shell.left + 5);
-    const rightSpace = Math.max(8, shell.width * .025);
+    const topSpace = Math.max(0, this.top.getBoundingClientRect().bottom - shell.top + 9);
+    const bottomSpace = Math.max(0, shell.bottom - this.bottom.getBoundingClientRect().top + 7);
+    // No side tools: the drawing canvas can use the full horizontal area.
+    const leftSpace = Math.max(7, shell.width * .02);
+    const rightSpace = leftSpace;
     const availableWidth = Math.max(0, shell.width - leftSpace - rightSpace);
     const availableHeight = Math.max(0, shell.height - topSpace - bottomSpace);
     const width = Math.max(0, Math.min(availableWidth, availableHeight * 9 / 16));

@@ -162,6 +162,7 @@ jobs:
                 const shell=r('#game-shell'),board=r('#game-root');
                 const top=r('.caisha-art-studio__top'),palette=r('.caisha-art-studio__palette');
                 const bottom=r('.caisha-art-studio__bottom'),title=r('.caisha-art-studio__caption');
+                const colors=[...document.querySelectorAll('.caisha-art-studio__color')].map(n=>n.getBoundingClientRect());
                 const tools=[...document.querySelectorAll('.caisha-art-studio__tool')].map(n=>n.getBoundingClientRect());
                 const edit=[document.querySelector('.caisha-art-studio__size'),
                   ...document.querySelectorAll('.caisha-art-studio__actions button')]
@@ -172,18 +173,24 @@ jobs:
                   return a.left<shell.left-1||a.right>shell.right+1||
                     a.top<shell.top-1||a.bottom>shell.bottom+1;
                 });
-                return {clipped,
+                return {clipped,boardWidth:board.width,shellWidth:shell.width,
                   centered:Math.abs((title.left+title.right)/2-(shell.left+shell.right)/2)<1.5,
-                  tools:tools.length===4&&tools.every(t=>Math.abs(t.top-tools[0].top)<2),
-                  actions:edit.length===5&&edit.every(t=>Math.abs(t.top-edit[0].top)<2&&t.top>tools[0].bottom),
-                  clear:board.top>=top.bottom+5&&board.left>=palette.right+2&&
-                    board.right<=shell.right-6&&board.bottom+5<=bottom.top};
+                  centeredBoard:Math.abs((board.left+board.right)/2-(shell.left+shell.right)/2)<1.5,
+                  colors:colors.length===7&&colors.every(t=>Math.abs(t.top-colors[0].top)<2&&t.top>=palette.top)&&colors[0].bottom<tools[0].top,
+                  tools:tools.length===4&&tools.every(t=>Math.abs(t.top-tools[0].top)<2)&&tools[0].bottom<edit[0].top,
+                  actions:edit.length===5&&edit.every(t=>Math.abs(t.top-edit[0].top)<2),
+                  clear:board.top>=top.bottom+5&&board.left>=shell.left+5&&
+                    board.right<=shell.right-5&&board.bottom+5<=bottom.top};
               });
               assert.equal(bounds.clipped,false);
               assert.equal(bounds.centered,true);
+              assert.equal(bounds.centeredBoard,true);
+              assert.equal(bounds.colors,true);
               assert.equal(bounds.tools,true);
               assert.equal(bounds.actions,true);
               assert.equal(bounds.clear,true);
+              if(width<=520&&height>=750)assert.ok(bounds.boardWidth>=bounds.shellWidth*.85,
+                'wide sand art canvas must reclaim former left palette space');
               assert.equal(await artTools.locator('.caisha-art-studio__caption').textContent(),'沙画工坊');
               assert.equal(await artTools.locator('.caisha-art-studio__home .caisha-art-studio__label').isVisible(),false);
               await artTools.getByRole('button',{name:'返回模式选择',exact:true}).click();
