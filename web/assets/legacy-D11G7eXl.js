@@ -1948,8 +1948,8 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
 
     const palette = group('palette', '彩沙颜色');
     this.colorButtons = [];
-    for (let index = 0; index < se.length; index++) {
-      const color = se[index];
+    for (let index = 0; index < C.length; index++) {
+      const color = C[index];
       const element = document.createElement('button');
       element.type = 'button';
       element.className = 'caisha-art-studio__color';
