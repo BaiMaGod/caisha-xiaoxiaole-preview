@@ -168,6 +168,7 @@ jobs:
                   .map(n=>n.getBoundingClientRect());
                 const clipped=[...document.querySelectorAll('.caisha-art-studio button')].some(n=>{
                   const a=n.getBoundingClientRect();
+                  if(a.width===0||a.height===0)return false;
                   return a.left<shell.left-1||a.right>shell.right+1||
                     a.top<shell.top-1||a.bottom>shell.bottom+1;
                 });
