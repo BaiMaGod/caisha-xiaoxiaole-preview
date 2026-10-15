@@ -98,6 +98,11 @@ jobs:
               await page.locator('[data-mode="level"]').click();
               assert.equal(await page.locator('.approved-art__level-card').count(),24);
               await page.locator('.approved-art__level-card').first().click();
+              console.log('LEVEL_ENTRY_DEBUG',JSON.stringify(await page.evaluate(()=>({
+                levelMenuOpen:document.querySelector('.caisha-mode-menu')?.className,
+                shell:document.getElementById('game-shell')?.className,
+                boardRect:document.querySelector('#game-root')?.getBoundingClientRect().toJSON(),
+              }))), 'PAGE_ERRORS',JSON.stringify(errors));
               await page.getByRole('button',{name:'打开设置'}).click();
               assert.equal(await page.getByRole('slider').count(),2);
               if(await page.getByRole('button',{name:'返回主页'}).count()===0){
