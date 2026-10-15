@@ -622,10 +622,13 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     border:0 !important;box-shadow:none !important;pointer-events:none;
   }
   .caisha-mode-menu.approved-art-v1 .caisha-mode-menu__subtitle {display:none !important;}
-  .caisha-mode-menu.approved-art-v1 .approved-art__heading {display:contents;}
-  .caisha-mode-menu.approved-art-v1.is-level .approved-art__heading {
-    flex:0 0 auto;display:block;width:min(100%,314px);aspect-ratio:auto;
-    margin:0 auto;overflow:visible;
+  /* The two title assets share the same aspect ratio and visual width on all screens. */
+  .caisha-mode-menu.approved-art-v1 .approved-art__heading {
+    flex:0 0 auto;display:block;width:min(calc(100% - 94px),300px);
+    aspect-ratio:auto;margin:0 auto;overflow:visible;
+  }
+  .caisha-mode-menu.approved-art-v1.is-main .approved-art__heading {
+    margin:6px auto clamp(7px,1.9svh,20px);
   }
   .caisha-mode-menu.approved-art-v1.is-level .caisha-mode-menu__subtitle {
     display:block !important;position:static;width:auto;height:auto;
@@ -634,15 +637,9 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     text-align:center;
   }
   .caisha-mode-menu.approved-art-v1 .approved-art__headline {
-    flex:0 0 auto;display:block;max-width:100%;height:auto;object-fit:contain;
+    flex:0 0 auto;display:block;width:100%;max-width:100%;
+    height:auto;max-height:none;object-fit:contain;margin:0;
     pointer-events:none;user-select:none;-webkit-user-drag:none;
-  }
-  .caisha-mode-menu.approved-art-v1.is-main .approved-art__headline {
-    width:min(calc(100% - 94px),308px);max-height:clamp(85px,15svh,128px);
-    margin:6px auto clamp(7px,1.9svh,20px);
-  }
-  .caisha-mode-menu.approved-art-v1.is-level .approved-art__headline {
-    width:100%;height:auto;max-height:none;margin:0;
   }
   .caisha-mode-menu.approved-art-v1 .caisha-mode-menu__items {
     box-sizing:border-box !important;display:flex !important;align-items:stretch !important;
@@ -797,9 +794,9 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     .caisha-mode-menu.approved-art-v1 .approved-art__gear{width:40px !important;height:40px !important;min-height:40px !important;}
     .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__back,
     .caisha-mode-menu.approved-art-v1.is-level .caisha-mode-menu__back {top:7px;}
-    .caisha-mode-menu.approved-art-v1.is-main .approved-art__headline {max-height:70px;margin:1px auto 4px;}
+    .caisha-mode-menu.approved-art-v1 .approved-art__heading {width:min(calc(100% - 94px),226px);}
+    .caisha-mode-menu.approved-art-v1.is-main .approved-art__heading {margin:1px auto 4px;}
     .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__items {gap:2px;}
-    .caisha-mode-menu.approved-art-v1.is-level .approved-art__heading {width:min(100%,226px);}
     .caisha-mode-menu.approved-art-v1 .approved-art__level-grid{--level-card-gap:7px;gap:10px var(--level-card-gap);}
   }
   @media(max-width:350px){
