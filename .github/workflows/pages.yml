@@ -52,6 +52,20 @@ jobs:
               assert.equal(await page.evaluate(()=>Boolean(window.__legacyGame)),false);
               await page.locator('.caisha-home__play').click();
               assert.equal(await page.locator('.caisha-mode-menu__item').count(),3);
+              // Both illustrated titles must render at the same width on every viewport.
+              const getTitleSize = () => page.locator('.approved-art__headline').evaluate(async img => {
+                await img.decode();
+                const rect=img.getBoundingClientRect();
+                return {width:rect.width,height:rect.height};
+              });
+              const modeTitle=await getTitleSize();
+              await page.locator('[data-mode="level"]').click();
+              const levelTitle=await getTitleSize();
+              assert.ok(Math.abs(modeTitle.width-levelTitle.width)<1,
+                `title width mismatch on ${width}x${height}: ${modeTitle.width} vs ${levelTitle.width}`);
+              assert.ok(Math.abs(modeTitle.height-levelTitle.height)<2,
+                `title height mismatch on ${width}x${height}: ${modeTitle.height} vs ${levelTitle.height}`);
+              await page.locator('.caisha-mode-menu__back').click();
               await page.locator('.approved-art__mode-picture').evaluateAll(images=>Promise.all(images.map(image=>image.decode())));
               // Check the visible illustration frames, not just CSS gap: fractional grid rows
               // previously expanded to absorb reduced gaps on mobile.
