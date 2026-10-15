@@ -26,275 +26,53 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/preview-qa" --no-package-lock playwright@1.56.1
           "$RUNNER_TEMP/preview-qa/node_modules/.bin/playwright" install --with-deps chromium
-      - name: Verify compiled preview on mobile and desktop
+      - name: Verify shared compiled game
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/preview-qa/node_modules/playwright/index.mjs
         run: |
           test -f web/index.html
-          test -f web/canvas-preview.html
-          for asset in web/assets/*.js; do node --check "$asset"; done
+          test -f web/build-info.json
           test ! -d src
           test ! -d public
+          for asset in web/assets/*.js; do node --check "$asset"; done
           mkdir -p "$RUNNER_TEMP/pages-root/caisha-xiaoxiaole-preview"
           cp -R web/. "$RUNNER_TEMP/pages-root/caisha-xiaoxiaole-preview/"
           python3 -m http.server 4173 --directory "$RUNNER_TEMP/pages-root" > "$RUNNER_TEMP/preview-http.log" 2>&1 &
           trap 'kill $!' EXIT
           node --input-type=module <<'NODE'
           import assert from 'node:assert/strict';
-          const {chromium} = await import(process.env.PLAYWRIGHT_MODULE);
-          const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
+          import {readFileSync} from 'node:fs';
+          const info=JSON.parse(readFileSync('web/build-info.json','utf8'));
+          assert.match(info.sourceHash,/^[a-f0-9]{64}$/);
+          const {chromium}=await import(process.env.PLAYWRIGHT_MODULE);
+          const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+          async function click(page,id) {
+            await page.waitForFunction(id=>globalThis.__canvasGame?.buttons.some(b=>b.id===id&&!b.disabled),id);
+            const p=await page.evaluate(id=>{const g=globalThis.__canvasGame,b=g.buttons.find(b=>b.id===id),s=g.metrics.uiScale;return{x:(b.x+b.w/2)*s,y:(b.y+b.h/2)*s};},id);
+            await page.mouse.click(p.x,p.y);await page.waitForTimeout(50);
+          }
           try {
-            for (const [width,height] of [[390,844],[320,568],[768,1024]]) {
-              const page = await browser.newPage({viewport:{width,height}});
-              const errors=[];
-              page.on('pageerror',error=>errors.push(error.message));
-              await page.goto('http://127.0.0.1:4173/caisha-xiaoxiaole-preview/',{waitUntil:'networkidle'});
-              assert.equal(await page.evaluate(()=>Boolean(window.__legacyGame)),false);
-              await page.locator('.caisha-home__play').click();
-              assert.equal(await page.locator('.caisha-mode-menu__item').count(),3);
-              // Both illustrated titles must render at the same width on every viewport.
-              const getTitleSize = () => page.locator('.approved-art__headline').evaluate(async img => {
-                await img.decode();
-                const rect=img.getBoundingClientRect();
-                const canvas=document.createElement('canvas');
-                canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
-                const ctx=canvas.getContext('2d',{willReadFrequently:true});
-                ctx.drawImage(img,0,0);
-                const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
-                const bounds={left:canvas.width,top:canvas.height,right:-1,bottom:-1};
-                let count=0;
-                for(let y=0;y<canvas.height;y++) for(let x=0;x<canvas.width;x++) {
-                  if(pixels[(y*canvas.width+x)*4+3]<64)continue;
-                  count++;
-                  bounds.left=Math.min(bounds.left,x);bounds.right=Math.max(bounds.right,x);
-                  bounds.top=Math.min(bounds.top,y);bounds.bottom=Math.max(bounds.bottom,y);
-                }
-                const visibleWidth=(bounds.right-bounds.left+1)*rect.width/canvas.width;
-                const visibleHeight=(bounds.bottom-bounds.top+1)*rect.height/canvas.height;
-                return {width:rect.width,height:rect.height,visibleWidth,visibleHeight,bounds,count,
-                  naturalWidth:canvas.width,naturalHeight:canvas.height};
-              });
-              const modeTitle=await getTitleSize();
-              await page.locator('[data-mode="level"]').click();
-              const levelTitle=await getTitleSize();
-              console.log('TITLE_METRICS',JSON.stringify({viewport:[width,height],modeTitle,levelTitle}));
-              assert.ok(Math.abs(modeTitle.width-levelTitle.width)<1,
-                `title width mismatch on ${width}x${height}: ${modeTitle.width} vs ${levelTitle.width}`);
-              assert.ok(Math.abs(modeTitle.height-levelTitle.height)<2,
-                `title height mismatch on ${width}x${height}: ${modeTitle.height} vs ${levelTitle.height}`);
-              await page.locator('.caisha-mode-menu__back').click();
-              await page.locator('.approved-art__mode-picture').evaluateAll(images=>Promise.all(images.map(image=>image.decode())));
-              // Check the visible illustration frames, not just CSS gap: fractional grid rows
-              // previously expanded to absorb reduced gaps on mobile.
-              const modeFrames = await page.locator('.approved-art__mode-frame').evaluateAll(nodes=>
-                nodes.map(node=>{const r=node.getBoundingClientRect();return {top:r.top,bottom:r.bottom};}));
-              assert.equal(modeFrames.length,3);
-              for(let i=1;i<modeFrames.length;i++) {
-                const visibleGap=modeFrames[i].top-modeFrames[i-1].bottom;
-                assert.ok(visibleGap>=-1&&visibleGap<=7,`mode card visual gap ${visibleGap}px on ${width}x${height}`);
-              }
-              assert.equal(await page.locator('[data-mode="endless"] small').textContent(),
-                '保持沙堆在红线之下，挑战高分。');
-              await page.locator('[data-mode="level"]').click();
-              assert.equal(await page.locator('.approved-art__level-card').count(),24);
-              await page.locator('.approved-art__level-card').first().click();
-              console.log('LEVEL_ENTRY_DEBUG',JSON.stringify(await page.evaluate(()=>({
-                levelMenuOpen:document.querySelector('.caisha-mode-menu')?.className,
-                shell:document.getElementById('game-shell')?.className,
-                boardRect:document.querySelector('#game-root')?.getBoundingClientRect().toJSON(),
-              }))), 'PAGE_ERRORS',JSON.stringify(errors));
-              await page.getByRole('button',{name:'打开设置'}).click();
-              assert.equal(await page.getByRole('slider').count(),2);
-              const navStyles=await page.evaluate(()=>{
-                return ['返回主页','模式选择'].map(name=>{
-                  const button=document.querySelector(`button[aria-label="${name}"]`);
-                  const css=getComputedStyle(button);
-                  return {color:css.backgroundColor,radius:css.borderRadius,
-                    height:css.height,top:button.getBoundingClientRect().top,
-                    grain:getComputedStyle(button,'::before').backgroundImage.includes('data:image/')};
-                });
-              });
-              assert.deepEqual(navStyles.map(item=>item.color),
-                ['rgb(228, 237, 243)','rgb(241, 180, 169)']);
-              assert.ok(navStyles.every(item=>item.radius==='12px'&&item.height==='45px'&&item.grain));
-              assert.ok(Math.abs(navStyles[0].top-navStyles[1].top)<1);
-              if(await page.getByRole('button',{name:'返回主页'}).count()===0){
-                console.log('SETTINGS_NAV_DEBUG',JSON.stringify(await page.evaluate(()=>({
-                  shell:document.querySelector('#game-shell')?.className,
-                  settingLabels:[...document.querySelectorAll('button')].filter(b=>/主页|模式选择|返回/.test(b.textContent)).map(b=>({
-                    name:b.getAttribute('aria-label'),text:b.textContent,
-                    visible:b.getBoundingClientRect().height>0,
-                    display:getComputedStyle(b).display
-                  })).slice(-14),
-                  settingsText:[...document.querySelectorAll('[class*="setting"]')].filter(e=>e.getBoundingClientRect().height>0).map(e=>e.className).slice(-12),
-                }))));
-              }
-              await page.getByRole('button',{name:'返回主页'}).click();
-              assert.equal(await page.getByRole('alertdialog').isVisible(),true);
-              const confirmVisual=await page.locator('[role="alertdialog"] > div').evaluate(el=>({
-                background:getComputedStyle(el).backgroundColor,
-                radius:getComputedStyle(el).borderRadius,
-                border:getComputedStyle(el).borderTopColor,
-              }));
-              assert.equal(confirmVisual.background,'rgb(255, 248, 235)');
-              assert.equal(confirmVisual.radius,'18px');
-              await page.getByRole('button',{name:'取消'}).click();
-              assert.equal(await page.locator('.caisha-home').isVisible(),false);
-              await page.getByRole('button',{name:'模式选择'}).click();
-              assert.equal(await page.getByRole('alertdialog').isVisible(),true);
-              await page.getByRole('button',{name:'确定返回'}).click();
-              assert.equal(await page.locator('.caisha-mode-menu.is-open').isVisible(),true);
-              await page.locator('[data-mode="endless"]').click();
-              for (const title of ['重新生成沙块', '指定生成沙块']) {
-                await page.locator('.caisha-prop-intro').waitFor({state:'visible'});
-                assert.equal(await page.locator('.caisha-prop-intro h2').textContent(),title);
-                await page.locator('.caisha-prop-intro').click();
-                await page.waitForFunction(title=>document.querySelector('.caisha-prop-intro').hidden||
-                  document.querySelector('.caisha-prop-intro h2').textContent!==title,title);
-              }
-              await page.locator('.caisha-prop-intro').waitFor({state:'hidden'});
-              assert.match(await page.locator('[data-prop="regenerate"]').getAttribute('aria-label'),/剩余3次/);
-              assert.match(await page.locator('[data-prop="specify"]').getAttribute('aria-label'),/剩余1次/);
-              await page.locator('[data-prop="regenerate"]').click();
-              assert.match(await page.locator('[data-prop="regenerate"]').getAttribute('aria-label'),/剩余2次/);
-              await page.locator('[data-prop="specify"]').click();
-              assert.equal(await page.locator('.caisha-prop-color').count(),5);
-              await page.locator('.caisha-prop-shape[aria-pressed="false"]').first().click();
-              await page.getByRole('button',{name:'确认生成'}).click();
-              assert.match(await page.locator('[data-prop="specify"]').getAttribute('aria-label'),/剩余0次/);
-              await page.getByRole('button',{name:'打开设置'}).click();
-              await page.getByRole('button',{name:'返回主页'}).click();
-              assert.equal(await page.getByRole('alertdialog').isVisible(),true);
-              await page.getByRole('button',{name:'确定返回'}).click();
-              assert.equal(await page.locator('.caisha-home').isVisible(),true);
-              await page.locator('.caisha-home__play').click();
-              await page.locator('[data-mode="sandArt"]').click();
-              const artTools=page.locator('.caisha-art-studio');
-              await artTools.waitFor({state:'visible'});
-              await artTools.getByRole('button',{name:'固沙笔',exact:true}).click();
-              await artTools.getByRole('button',{name:'紫色沙粒',exact:true}).click();
-              await artTools.getByRole('button',{name:'笔刷·中',exact:true}).click();
-              assert.equal(await artTools.locator('[data-tool="fixed"]').getAttribute('aria-pressed'),'true');
-              assert.equal(await artTools.locator('[data-color="7"]').getAttribute('aria-pressed'),'true');
-              assert.equal(await artTools.getByRole('button',{name:'笔刷·粗',exact:true}).isVisible(),true);
-              const bounds=await page.evaluate(()=>{
-                const r=s=>document.querySelector(s).getBoundingClientRect();
-                const shell=r('#game-shell'),board=r('#game-root');
-                const top=r('.caisha-art-studio__top'),palette=r('.caisha-art-studio__palette');
-                const bottom=r('.caisha-art-studio__bottom'),title=r('.caisha-art-studio__caption');
-                const colors=[...document.querySelectorAll('.caisha-art-studio__color')].map(n=>n.getBoundingClientRect());
-                const tools=[...document.querySelectorAll('.caisha-art-studio__tool')].map(n=>n.getBoundingClientRect());
-                const edit=[document.querySelector('.caisha-art-studio__size'),
-                  ...document.querySelectorAll('.caisha-art-studio__actions button')]
-                  .map(n=>n.getBoundingClientRect());
-                const clipped=[...document.querySelectorAll('.caisha-art-studio button')].some(n=>{
-                  const a=n.getBoundingClientRect();
-                  if(a.width===0||a.height===0)return false;
-                  return a.left<shell.left-1||a.right>shell.right+1||
-                    a.top<shell.top-1||a.bottom>shell.bottom+1;
-                });
-                return {clipped,boardWidth:board.width,shellWidth:shell.width,
-                  centered:Math.abs((title.left+title.right)/2-(shell.left+shell.right)/2)<1.5,
-                  centeredBoard:Math.abs((board.left+board.right)/2-(shell.left+shell.right)/2)<1.5,
-                  colors:colors.length===7&&colors.every(t=>Math.abs(t.top-colors[0].top)<2&&t.top>=palette.top)&&colors[0].bottom<tools[0].top,
-                  tools:tools.length===4&&tools.every(t=>Math.abs(t.top-tools[0].top)<2)&&tools[0].bottom<edit[0].top,
-                  actions:edit.length===5&&edit.every(t=>Math.abs(t.top-edit[0].top)<2),
-                  clear:board.top>=top.bottom+5&&board.left>=shell.left+5&&
-                    board.right<=shell.right-5&&board.bottom+5<=bottom.top};
-              });
-              assert.equal(bounds.clipped,false);
-              assert.equal(bounds.centered,true);
-              assert.equal(bounds.centeredBoard,true);
-              assert.equal(bounds.colors,true);
-              assert.equal(bounds.tools,true);
-              assert.equal(bounds.actions,true);
-              assert.equal(bounds.clear,true);
-              if(width<=520&&height>=750)assert.ok(bounds.boardWidth>=bounds.shellWidth*.85,
-                'wide sand art canvas must reclaim former left palette space');
-              assert.equal(await artTools.locator('.caisha-art-studio__caption').textContent(),'沙画工坊');
-              assert.equal(await artTools.locator('.caisha-art-studio__home .caisha-art-studio__label').isVisible(),false);
-              await artTools.getByRole('button',{name:'清空',exact:true}).click();
-              const clearDialog=page.getByRole('alertdialog',{name:'确认清空沙画'});
-              assert.equal(await clearDialog.isVisible(),true);
-              assert.equal(await clearDialog.getByRole('button',{name:'确认清空'}).isVisible(),true);
-              await clearDialog.getByRole('button',{name:'取消'}).click();
-              assert.equal(await clearDialog.isVisible(),false);
-              await artTools.getByRole('button',{name:'返回模式选择',exact:true}).click();
-              assert.equal(await page.getByRole('alertdialog',{name:'确认返回模式选择'}).isVisible(),true);
-              const artVisual=await page.locator('.caisha-art-studio__back-confirm-card').evaluate(el=>({
-                background:getComputedStyle(el).backgroundColor,
-                radius:getComputedStyle(el).borderRadius,
-                border:getComputedStyle(el).borderTopColor,
-              }));
-              assert.deepEqual(artVisual,confirmVisual);
-              await page.getByRole('button',{name:'取消',exact:true}).click();
-              assert.equal(await page.getByRole('alertdialog').isVisible(),false);
-              await artTools.getByRole('button',{name:'返回模式选择',exact:true}).click();
-              await page.getByRole('button',{name:'确定返回',exact:true}).click();
-              assert.equal(await page.locator('.caisha-mode-menu.is-open').isVisible(),true);
-              await page.locator('[data-mode="sandArt"]').click();
-              const artBoard=await page.locator('.game-canvas').boundingBox();
-              await page.mouse.move(artBoard.x+artBoard.width*.5,artBoard.y+artBoard.height*.7);
-              await page.mouse.down();
-              await page.mouse.move(artBoard.x+artBoard.width*.54,artBoard.y+artBoard.height*.72,{steps:5});
-              await page.mouse.up();
-              await artTools.getByRole('button',{name:'完成',exact:true}).click();
-              await page.locator('.caisha-result__headline').filter({hasText:'你的沙画完成啦！'}).waitFor();
-              assert.deepEqual(errors,[]);
-              await page.close();
-            }
-            const page = await browser.newPage({viewport:{width:390,height:844}});
-            const errors=[];
-            page.on('pageerror',error=>errors.push(error.message));
-            await page.goto('http://127.0.0.1:4173/caisha-xiaoxiaole-preview/canvas-preview.html',{waitUntil:'networkidle'});
-            assert.deepEqual(errors,[]);
-            assert.equal(await page.evaluate(()=>Boolean(window.__canvasGame)),false);
-            await page.close();
-          } finally {await browser.close();}
-          console.log('Verified compiled Web and Canvas preview');
-          NODE
-      - name: Verify level props in compiled preview
-        env:
-          PLAYWRIGHT_MODULE: ${{ runner.temp }}/preview-qa/node_modules/playwright/index.mjs
-        run: |
-          python3 -m http.server 4173 --directory "$RUNNER_TEMP/pages-root" > "$RUNNER_TEMP/props-http.log" 2>&1 &
-          trap 'kill $!' EXIT
-          node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict';
-          const {chromium} = await import(process.env.PLAYWRIGHT_MODULE);
-          const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
-          try {
-            for (const [width,height] of [[320,568],[390,844],[768,1024]]) {
-              const page = await browser.newPage({viewport:{width,height}});
-              const errors=[];
-              page.on('pageerror',error=>errors.push(error.message));
-              await page.addInitScript(()=>localStorage.setItem('qicai-modes-progress-v1',JSON.stringify({unlockedLevel:4})));
-              await page.goto('http://127.0.0.1:4173/caisha-xiaoxiaole-preview/',{waitUntil:'networkidle'});
-              assert.equal(await page.evaluate(()=>Boolean(window.__legacyGame)),false);
-              await page.locator('.caisha-home__play').click();
-              await page.locator('[data-mode="level"]').click();
-              await page.locator('.approved-art__level-card').nth(3).click();
-              for (const name of ['重新生成沙块','指定生成沙块']) {
-                await page.locator('.caisha-prop-intro').waitFor({state:'visible'});
-                assert.equal(await page.locator('.caisha-prop-intro h2').textContent(),name);
-                await page.locator('.caisha-prop-intro').click();
-                await page.waitForFunction(name=>document.querySelector('.caisha-prop-intro').hidden||
-                  document.querySelector('.caisha-prop-intro h2').textContent!==name,name);
-              }
-              await page.locator('.caisha-prop-intro').waitFor({state:'hidden'});
-              await page.locator('[data-prop="regenerate"]').click();
-              assert.match(await page.locator('[data-prop="regenerate"]').getAttribute('aria-label'),/剩余2次/);
-              await page.locator('[data-prop="specify"]').click();
-              assert.equal(await page.locator('.caisha-prop-color').count(),3);
-              await page.locator('.caisha-prop-shape[aria-pressed="false"]').first().click();
-              await page.getByRole('button',{name:'确认生成'}).click();
-              assert.match(await page.locator('[data-prop="specify"]').getAttribute('aria-label'),/剩余0次/);
-              assert.equal(await page.locator('[data-prop="specify"]').isDisabled(),true);
-              assert.deepEqual(errors,[]);
-              await page.close();
+            for(const [width,height] of [[390,844],[320,568],[1440,900],[844,390]]) {
+              const page=await browser.newPage({viewport:{width,height}}),errors=[];
+              page.on('pageerror',e=>errors.push(e.message));
+              page.on('response',r=>{if(r.status()>=400)errors.push(r.status()+' '+r.url());});
+              const url='http://127.0.0.1:4173/caisha-xiaoxiaole-preview/';
+              await page.goto(url,{waitUntil:'networkidle'});
+              assert.equal(await page.evaluate(()=>typeof globalThis.__canvasGame),'undefined');
+              await page.goto(url+'?debug=1',{waitUntil:'networkidle'});
+              await click(page,'start');await click(page,'mode-level');await click(page,'level-1');
+              await click(page,'settings');await click(page,'settings-modes');
+              await click(page,'confirm-cancel');await click(page,'settings-modes');await click(page,'confirm-accept');
+              await click(page,'mode-sandArt');await click(page,'art-tool-fixed');
+              const p=await page.evaluate(()=>{const g=globalThis.__canvasGame,b=g.metrics.board,s=g.metrics.uiScale;return{x:(b.x+b.width*.5)*s,y:(b.y+b.height*.6)*s};});
+              await page.mouse.move(p.x,p.y);await page.mouse.down();await page.mouse.move(p.x+3,p.y+3);await page.mouse.up();
+              assert.ok(await page.evaluate(()=>globalThis.__canvasGame.session.grid.cells.some(v=>v>0)));
+              await click(page,'art-finish');await click(page,'home');
+              assert.equal(await page.evaluate(()=>globalThis.__canvasGame.screen),'home');
+              assert.deepEqual(errors,[]);await page.close();
             }
           } finally {await browser.close();}
-          console.log('Verified level props, unlock intros and stock in production');
+          console.log('Verified shared compiled preview',info);
           NODE
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
@@ -311,4 +89,3 @@ jobs:
       - name: Deploy verified preview
         id: deployment
         uses: actions/deploy-pages@v4
-

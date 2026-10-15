@@ -1,1 +1,7 @@
-{"source_commit":"b385c0241e48a45fad68814cf7bc5c9ab5806578"}
+{
+  "game": "七彩沙画消除",
+  "version": "0.1.0",
+  "channel": "web",
+  "sourceHash": "495c7bef7a62972299ee64e77df100286e9729ad8483004d03475fa0109280c0",
+  "commit": "39b87d908721f3ceeb1fe86be87173902dcfa1cd"
+}
