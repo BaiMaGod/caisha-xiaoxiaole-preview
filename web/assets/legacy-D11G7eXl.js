@@ -622,9 +622,9 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     border:0 !important;box-shadow:none !important;pointer-events:none;
   }
   .caisha-mode-menu.approved-art-v1 .caisha-mode-menu__subtitle {display:none !important;}
-  /* The two title assets share the same aspect ratio and visual width on all screens. */
+  /* Use identical title widths despite the level selector's wider desktop shell. */
   .caisha-mode-menu.approved-art-v1 .approved-art__heading {
-    flex:0 0 auto;display:block;width:min(calc(100% - 94px),300px);
+    flex:0 0 auto;display:block;width:min(300px,calc(100% - 36px));
     aspect-ratio:auto;margin:0 auto;overflow:visible;
   }
   .caisha-mode-menu.approved-art-v1.is-main .approved-art__heading {
@@ -794,7 +794,7 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     .caisha-mode-menu.approved-art-v1 .approved-art__gear{width:40px !important;height:40px !important;min-height:40px !important;}
     .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__back,
     .caisha-mode-menu.approved-art-v1.is-level .caisha-mode-menu__back {top:7px;}
-    .caisha-mode-menu.approved-art-v1 .approved-art__heading {width:min(calc(100% - 94px),226px);}
+    .caisha-mode-menu.approved-art-v1 .approved-art__heading {width:min(226px,calc(100% - 36px));}
     .caisha-mode-menu.approved-art-v1.is-main .approved-art__heading {margin:1px auto 4px;}
     .caisha-mode-menu.approved-art-v1.is-main .caisha-mode-menu__items {gap:2px;}
     .caisha-mode-menu.approved-art-v1 .approved-art__level-grid{--level-card-gap:7px;gap:10px var(--level-card-gap);}
