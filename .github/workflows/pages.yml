@@ -162,8 +162,16 @@ jobs:
               assert.equal(bounds.clipped,false);
               assert.equal(bounds.bottomTools,true);
               assert.equal(bounds.clear,true);
-              await artTools.getByRole('button',{name:'首页',exact:true}).click();
-              assert.equal(await page.locator('.caisha-home').isVisible(),true);
+              assert.equal(await artTools.locator('.caisha-art-studio__caption').textContent(),'沙画工坊');
+              assert.ok(await artTools.locator('.caisha-art-studio__controls').evaluate(
+                el=>el.getBoundingClientRect().width<=40));
+              const artBoard=await page.locator('.game-canvas').boundingBox();
+              await page.mouse.move(artBoard.x+artBoard.width*.5,artBoard.y+artBoard.height*.7);
+              await page.mouse.down();
+              await page.mouse.move(artBoard.x+artBoard.width*.54,artBoard.y+artBoard.height*.72,{steps:5});
+              await page.mouse.up();
+              await artTools.getByRole('button',{name:'完成',exact:true}).click();
+              await page.locator('.caisha-result__headline').filter({hasText:'你的沙画完成啦！'}).waitFor();
               assert.deepEqual(errors,[]);
               await page.close();
             }
