@@ -1719,8 +1719,8 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
 .caisha-art-studio *{box-sizing:border-box;}
 .caisha-art-studio__top{
   position:absolute;top:max(17px,calc(env(safe-area-inset-top) + 5px));
-  left:max(12px,env(safe-area-inset-left));right:max(76px,calc(env(safe-area-inset-right) + 64px));
-  display:flex;align-items:center;justify-content:flex-start;gap:8px;pointer-events:auto;
+  left:0;right:0;padding-left:max(10px,env(safe-area-inset-left));
+  display:flex;align-items:center;justify-content:flex-start;gap:8px;pointer-events:none;
 }
 .caisha-art-studio__button{
   --art-sand-color:#e4edf3;--art-sand-shade:#bfccd5;--art-sand-ink:#556878;
@@ -1744,7 +1744,9 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
 .caisha-art-studio__label{white-space:nowrap;}
 .caisha-art-studio__home{
   padding:0 2px;border:0;background:transparent;color:#695d66;box-shadow:none;
+  width:43px;min-height:40px;pointer-events:auto;
 }
+.caisha-art-studio__home .caisha-art-studio__label{display:none;}
 .caisha-art-studio__home::before{display:none;}
 .caisha-art-studio__home img{width:32px;height:32px;object-fit:contain;}
 .caisha-art-studio__home:active{box-shadow:none;}
@@ -1760,8 +1762,7 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
 .caisha-art-studio__sides{
   position:absolute;inset:0;pointer-events:none;
 }
-.caisha-art-studio__palette,
-.caisha-art-studio__controls{
+.caisha-art-studio__palette{
   position:absolute;top:var(--art-board-top,76px);
   height:var(--art-board-height,calc(100% - 92px));
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -1789,31 +1790,11 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
   font:600 13px/1 system-ui;color:#514355;
 }
 .caisha-art-studio__color:active .caisha-art-studio__swatch{transform:translateY(1px);}
-.caisha-art-studio__controls{
-  right:max(3px,env(safe-area-inset-right));width:39px;gap:8px;
-}
-.caisha-art-studio__actions{
-  display:flex;flex-direction:column;align-items:stretch;
-  gap:5px;width:100%;padding-top:8px;border-top:1px solid #b99fa880;
-}
-.caisha-art-studio__size,
-.caisha-art-studio__actions .caisha-art-studio__button{
-  flex:0 0 auto;display:flex;flex-direction:column;gap:2px;
-  width:100%;min-height:60px;padding:9px 0;border-radius:9px;
-}
-.caisha-art-studio__size{min-height:60px;}
-.caisha-art-studio__size .caisha-art-studio__label,
-.caisha-art-studio__actions .caisha-art-studio__label{
-  font-size:9px;letter-spacing:-.025em;
-}
-.caisha-art-studio__actions svg{width:18px;height:18px;}
-.caisha-art-studio__finish{background:linear-gradient(#b8debd,#83bf9c);border-color:#75aa8e;color:#315b49;box-shadow:inset 0 1px 0 #ffffff99,0 3px 0 #75a78a;}
-.caisha-art-studio__finish .caisha-art-studio__label{font-weight:900;font-size:10px;}
 .caisha-art-studio__bottom{
-  position:absolute;bottom:max(10px,env(safe-area-inset-bottom));
-  left:max(9px,env(safe-area-inset-left));
-  right:max(9px,env(safe-area-inset-right));
-  padding:6px;pointer-events:auto;
+  position:absolute;bottom:max(8px,env(safe-area-inset-bottom));
+  left:max(8px,env(safe-area-inset-left));
+  right:max(8px,env(safe-area-inset-right));
+  padding:6px;display:grid;gap:7px;pointer-events:auto;
   border:1px solid #eee2d5;border-radius:15px;
   background:#fff9ef;box-shadow:0 4px 14px #725c6b20;
 }
@@ -1821,6 +1802,53 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
   display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
   align-items:stretch;gap:7px;width:100%;
 }
+.caisha-art-studio__controls{
+  position:static;width:100%;height:auto;
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:7px;align-items:stretch;pointer-events:auto;
+}
+.caisha-art-studio__actions{
+  grid-column:span 4;min-width:0;
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:7px;
+}
+.caisha-art-studio__size,
+.caisha-art-studio__actions .caisha-art-studio__button{
+  flex:0 0 auto;display:flex;flex-direction:column;gap:3px;
+  width:100%;min-width:0;min-height:45px;padding:4px 1px;border-radius:10px;
+}
+.caisha-art-studio__size .caisha-art-studio__label,
+.caisha-art-studio__actions .caisha-art-studio__label{
+  font-size:10px;letter-spacing:-.02em;
+}
+.caisha-art-studio__size svg,.caisha-art-studio__actions svg{width:17px;height:17px;}
+.caisha-art-studio__finish{
+  background:linear-gradient(#b8debd,#83bf9c);border-color:#75aa8e;
+  color:#315b49;box-shadow:inset 0 1px 0 #ffffff99,0 3px 0 #75a78a;
+}
+.caisha-art-studio__finish .caisha-art-studio__label{font-weight:900;}
+.caisha-art-studio__clear{margin-left:0;}
+.caisha-art-studio__back-confirm[hidden]{display:none!important;}
+.caisha-art-studio__back-confirm{
+  position:absolute;inset:0;z-index:35;
+  background:rgba(49,34,54,.48);
+  display:flex;justify-content:center;align-items:center;
+  padding:18px;pointer-events:auto;
+}
+.caisha-art-studio__back-confirm-card{
+  background:#fff8eb;border:2px solid #e5bea1;border-radius:18px;
+  box-shadow:0 12px 30px #3b234953;padding:20px 16px;
+  display:grid;gap:10px;max-width:310px;width:100%;text-align:center;
+}
+.caisha-art-studio__back-confirm-card strong{
+  font-size:19px;color:#74556d;font-weight:900;
+}
+.caisha-art-studio__back-confirm-card p{
+  margin:0;font-size:13px;color:#947e82;
+}
+.caisha-art-studio__back-confirm-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;}
+.caisha-art-studio__back-confirm-buttons button{min-height:45px;}
+.caisha-art-studio__back-accept{background:#f1b4a9;border-color:#d99a94;color:#724856;}
 .caisha-art-studio__tool{
   display:flex;flex-direction:column;gap:4px;
   min-width:0;min-height:57px;padding:7px 2px 5px;border-radius:11px;
@@ -1837,42 +1865,36 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
   content:"✓";position:absolute;top:2px;right:4px;font-size:10px;pointer-events:none;
 }
 .caisha-art-studio__tool.is-active:active{transform:translateY(0);}
-.caisha-art-studio__clear{margin-left:0;}
 .caisha-art-studio button:focus-visible{outline:3px solid #4e76bd;outline-offset:2px;}
 @media(max-width:360px){
-  .caisha-art-studio__top{left:max(9px,env(safe-area-inset-left));gap:5px;}
   .caisha-art-studio__palette{left:max(2px,env(safe-area-inset-left));width:34px;}
   .caisha-art-studio__color{width:34px;}
   .caisha-art-studio__swatch{width:27px;height:27px;}
-  .caisha-art-studio__controls{right:max(2px,env(safe-area-inset-right));width:37px;}
-  .caisha-art-studio__bottom{left:6px;right:6px;padding:5px;}
-  .caisha-art-studio__tools{gap:5px;}
+  .caisha-art-studio__bottom{left:5px;right:5px;padding:4px;gap:5px;}
+  .caisha-art-studio__tools,.caisha-art-studio__controls,.caisha-art-studio__actions{gap:4px;}
+  .caisha-art-studio__size .caisha-art-studio__label,
+  .caisha-art-studio__actions .caisha-art-studio__label{font-size:9px;}
 }
 @media(max-height:620px){
-  .caisha-art-studio__controls{gap:6px;}
-  .caisha-art-studio__actions{gap:3px;padding-top:5px;}
+  .caisha-art-studio__bottom{bottom:max(5px,env(safe-area-inset-bottom));padding:4px;gap:5px;}
+  .caisha-art-studio__color{height:34px;}
+  .caisha-art-studio__tool{min-height:45px;padding-block:3px;gap:2px;}
+  .caisha-art-studio__tool svg{width:17px;height:17px;}
   .caisha-art-studio__size,
   .caisha-art-studio__actions .caisha-art-studio__button{
-    min-height:45px;padding-block:4px;gap:2px;
+    min-height:39px;padding-block:2px;gap:1px;
   }
-  .caisha-art-studio__color{height:35px;}
-  .caisha-art-studio__actions svg{width:16px;height:16px;}
-  .caisha-art-studio__bottom{bottom:max(7px,env(safe-area-inset-bottom));padding:4px;}
-  .caisha-art-studio__tool{min-height:49px;padding-block:4px 3px;gap:2px;}
-  .caisha-art-studio__tool svg{width:18px;height:18px;}
+  .caisha-art-studio__size svg,.caisha-art-studio__actions svg{width:15px;height:15px;}
 }
 @media(max-height:450px){
-  .caisha-art-studio__controls{gap:3px;}
-  .caisha-art-studio__actions{gap:2px;}
-  .caisha-art-studio__size,
-  .caisha-art-studio__actions .caisha-art-studio__button{min-height:34px;padding-block:2px;}
   .caisha-art-studio__color{height:29px;}
   .caisha-art-studio__swatch{width:23px;height:23px;}
-  .caisha-art-studio__actions svg{width:13px;height:13px;}
-  .caisha-art-studio__actions .caisha-art-studio__label{font-size:8px;}
-  .caisha-art-studio__tool{min-height:38px;padding-block:2px;gap:1px;}
-  .caisha-art-studio__tool svg{width:15px;height:15px;}
+  .caisha-art-studio__tool{min-height:34px;padding-block:1px;gap:0;}
+  .caisha-art-studio__tool svg{width:13px;height:13px;}
   .caisha-art-studio__tool .caisha-art-studio__label{font-size:9px;}
+  .caisha-art-studio__size,
+  .caisha-art-studio__actions .caisha-art-studio__button{min-height:33px;padding-block:1px;}
+  .caisha-art-studio__size svg,.caisha-art-studio__actions svg{width:12px;height:12px;}
 }
 @media(prefers-reduced-motion:reduce){.caisha-art-studio__button{transition:none;}}
 `}var Y=`caisha-art-studio-visuals-v1`;function ut(){if(document.getElementById(Y))return;let e=document.createElement(`style`);e.id=Y,e.textContent=lt(),document.head.appendChild(e)}var dt={check:`<path d="m4 12 5 5L20 6"/>`,brush:`<path d="m13 3 8 8-9 9-4-4Z"/><path d="m13 3 2-2 8 8-2 2M8 16c-5-1-6 2-6 6 4 0 7-1 6-6Z"/>`,pen:`<path d="m12 3 8 6-4 10-8 2-5-6 2-8Z"/><path d="m12 3-1 9M8 21l3-9"/><circle cx="11" cy="12" r="2"/>`,shapes:`<path d="m6 3 5 8H1Z"/><circle cx="17" cy="7" r="4"/><rect x="3" y="15" width="7" height="7" rx="1"/><path d="m17 14 5 4-5 4-5-4Z"/>`,eraser:`<path d="m15 3 7 7-11 11H7l-5-5Z"/><path d="m8 10 7 7M11 21h11"/>`,undo:`<path d="m8 4-5 5 5 5M3 9h11a7 7 0 0 1 0 14"/>`,redo:`<path d="m16 4 5 5-5 5M21 9H10a7 7 0 0 0 0 14"/>`,trash:`<path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/>`};function ft(e){let t=document.createElementNS(`http://www.w3.org/2000/svg`,`svg`);return t.setAttribute(`viewBox`,`0 0 24 24`),t.setAttribute(`fill`,`none`),t.setAttribute(`stroke`,`currentColor`),t.setAttribute(`stroke-width`,`1.6`),t.setAttribute(`stroke-linecap`,`round`),t.setAttribute(`stroke-linejoin`,`round`),t.setAttribute(`aria-hidden`,`true`),t.innerHTML=dt[e]||``,t}var X;function pt(){if(X)return X;let e=document.createElement(`canvas`);e.width=e.height=96;let t=e.getContext(`2d`);for(let e=0;e<96;e++)for(let n=0;n<96;n++)t.fillStyle=((n*73856093^e*19349663)>>>0)%2?`rgba(255,255,255,.22)`:`rgba(72,55,83,.13)`,t.fillRect(n,e,1,1);return X=e.toDataURL(),X}function Z(e,t){let n=h(t);e.style.setProperty(`--art-sand-color`,u(n)),e.style.setProperty(`--art-sand-shade`,u(n.map(e=>Math.round(e*.82)))),e.style.setProperty(`--art-sand-ink`,u(n.map(e=>Math.round(e*.38))))}var mt=[`红`,`橙`,`黄`,`绿`,`青`,`蓝`,`紫`],ht=[[`flow`,`流沙笔`,`brush`,6],[`fixed`,`固沙笔`,`pen`,4],[`shape`,`形状`,`shapes`,7],[`erase`,`橡皮擦`,`eraser`,3]],gt=class ArtToolbar {
@@ -1909,7 +1931,8 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     };
 
     this.top = group('top');
-    const home = button(this.top, '首页', onHome, 'caisha-art-studio__home');
+    const home = button(this.top, '', () => this.showBackConfirm(), 'caisha-art-studio__home');
+    home.setAttribute('aria-label', '返回模式选择');
     const arrow = document.createElement('img');
     arrow.src = './' + 'images/approved-ui/back-arrow-pastel-sand.webp';
     arrow.alt = '';
@@ -1934,7 +1957,7 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
       Z(element, color);
       this.toolButtons.push({ tool, button: element });
     }
-    // Brush size stays in the right-side edit rail.
+    // Brush size and edit actions share the second row below drawing tools.
     this.controls = group('controls', '笔刷与编辑操作');
     let radiusIndex = 1;
     const radii = [1, 2, 4];
@@ -1980,9 +2003,40 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     this.palette = palette;
     this.tools = tools;
     this.controls.append(actions);
-    this.bottom.append(tools);
-    this.sides.append(palette, this.controls);
+    this.bottom.append(tools, this.controls);
+    this.sides.append(palette);
     this.root.append(this.top, this.sides, this.bottom);
+    // Exit confirmation stays independent of the settings panel.
+    this.backConfirm = group('back-confirm');
+    this.backConfirm.setAttribute('role', 'alertdialog');
+    this.backConfirm.setAttribute('aria-modal', 'true');
+    this.backConfirm.setAttribute('aria-label', '确认返回模式选择');
+    this.backConfirm.hidden = true;
+    const confirmCard = group('back-confirm-card');
+    const confirmTitle = document.createElement('strong');
+    confirmTitle.textContent = '确定返回模式选择吗？';
+    const confirmHint = document.createElement('p');
+    confirmHint.textContent = '返回后将结束当前创作。';
+    const confirmButtons = group('back-confirm-buttons');
+    this.backCancel = button(confirmButtons, '取消', () => this.hideBackConfirm(),
+      'caisha-art-studio__back-cancel');
+    button(confirmButtons, '确定返回', () => {
+      this.hideBackConfirm(false);
+      onHome?.();
+    }, 'caisha-art-studio__back-accept');
+    confirmCard.append(confirmTitle, confirmHint, confirmButtons);
+    this.backConfirm.append(confirmCard);
+    this.backConfirm.addEventListener('pointerdown', (event) => {
+      if (event.target === this.backConfirm) this.hideBackConfirm();
+    });
+    this.root.append(this.backConfirm);
+    this.onExitKeyDown = (event) => {
+      if (event.key === 'Escape' && !this.backConfirm.hidden) {
+        event.preventDefault();
+        this.hideBackConfirm();
+      }
+    };
+    document.addEventListener('keydown', this.onExitKeyDown);
     container.appendChild(this.root);
     this.setTool('flow');
     this.setColor(1);
@@ -1990,7 +2044,7 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     // Keep the 9:16 board clear of the header, side rails, and bottom tools.
     // ResizeObserver recalculates placement when mobile viewports rotate.
     this.resizeObserver = new ResizeObserver(() => this.updateLayout());
-    for (const element of [container, this.top, this.palette, this.controls, this.bottom])
+    for (const element of [container, this.top, this.palette, this.bottom])
       this.resizeObserver.observe(element);
   }
 
@@ -2016,9 +2070,8 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     const topSpace = Math.max(0, this.top.getBoundingClientRect().bottom - shell.top + 12);
     const bottomSpace = Math.max(0, shell.bottom - this.bottom.getBoundingClientRect().top + 10);
     const palette = this.palette.getBoundingClientRect();
-    const controls = this.controls.getBoundingClientRect();
-    const leftSpace = Math.max(0, palette.right - shell.left + 4);
-    const rightSpace = Math.max(0, shell.right - controls.left + 4);
+    const leftSpace = Math.max(0, palette.right - shell.left + 5);
+    const rightSpace = Math.max(8, shell.width * .025);
     const availableWidth = Math.max(0, shell.width - leftSpace - rightSpace);
     const availableHeight = Math.max(0, shell.height - topSpace - bottomSpace);
     const width = Math.max(0, Math.min(availableWidth, availableHeight * 9 / 16));
@@ -2031,7 +2084,21 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
     this.container.style.setProperty('--art-board-top', top + 'px');
   }
 
+  showBackConfirm() {
+    if (this.backConfirm.hidden) {
+      this.backConfirm.hidden = false;
+      this.backCancel.focus({ preventScroll: true });
+    }
+  }
+
+  hideBackConfirm(restoreFocus = true) {
+    this.backConfirm.hidden = true;
+    if (restoreFocus) this.top.querySelector('.caisha-art-studio__home')
+      ?.focus({ preventScroll: true });
+  }
+
   show(visible) {
+    if (!visible) this.hideBackConfirm(false);
     this.root.style.display = visible ? 'block' : 'none';
     if (visible) this.updateLayout();
   }
@@ -2074,4 +2141,4 @@ import{$ as e,A as t,C as n,D as r,E as i,G as a,J as o,K as s,M as c,P as l,Q a
 .caisha-prop-actions button{flex:1;min-height:42px;border:0;border-radius:14px;background:#e4d4ef;color:#6b5275;font-weight:700;font-size:14px;cursor:pointer}
 .caisha-prop-actions button:first-child{background:#eee2d1;color:#8b7461}
 .caisha-prop-actions button:disabled{opacity:.4;cursor:default}
-`,St={1:`红`,2:`橙`,3:`黄`,4:`绿`,5:`青`,6:`蓝`,7:`紫`};function $(e,t,n){let r=document.createElement(`canvas`),i=Math.min(3,devicePixelRatio||1);r.width=e*i,r.height=t*i;let a=r.getContext(`2d`);return a.scale(i,i),n?.(a),r.setAttribute(`aria-hidden`,`true`),r}var Ct=class{constructor(e,t){this.game=e,this.props=t,this.epoch=0,this.introId=null,this.flying=!1,this.picking=!1;let n=document.createElement(`style`);n.textContent=xt,e.gameShell.appendChild(n),this.dock=document.createElement(`div`),this.dock.className=`caisha-props`,this.dock.hidden=!0,this.buttons={};for(let[e,n]of Object.entries(S)){let r=document.createElement(`button`);r.type=`button`,r.className=`caisha-prop-button`,r.dataset.prop=e;let i=$(44,44,t=>ue(t,e,0,0,44)),a=document.createElement(`span`);a.className=`caisha-prop-dots`,a.setAttribute(`aria-hidden`,`true`);for(let e=0;e<n.count;e++){let e=document.createElement(`i`);e.className=`caisha-prop-dot`,a.appendChild(e)}r.append(i,a),r.addEventListener(`click`,n=>{n.stopPropagation(),!this.isBlocking()&&(e===`regenerate`?t.regenerate()&&this.changed():this.openPicker())}),this.dock.appendChild(r),this.buttons[e]=r}this.intro=document.createElement(`div`),this.intro.className=`caisha-prop-overlay caisha-prop-intro`,this.intro.hidden=!0,this.intro.tabIndex=0,this.intro.setAttribute(`role`,`dialog`),this.intro.setAttribute(`aria-modal`,`true`),this.intro.addEventListener(`click`,e=>{e.stopPropagation(),this.flyIntro()}),this.intro.addEventListener(`keydown`,e=>{(e.key===`Enter`||e.key===` `)&&(e.preventDefault(),this.flyIntro())}),this.picker=document.createElement(`div`),this.picker.className=`caisha-prop-overlay`,this.picker.hidden=!0,this.picker.setAttribute(`role`,`dialog`),this.picker.setAttribute(`aria-modal`,`true`),this.picker.setAttribute(`aria-label`,`指定生成沙块`),this.picker.addEventListener(`keydown`,e=>{e.key===`Escape`&&this.closePicker()});for(let e of[this.dock,this.intro,this.picker])for(let t of[`pointerdown`,`pointermove`,`pointerup`,`pointercancel`])e.addEventListener(t,e=>e.stopPropagation());e.gameShell.append(this.dock,this.intro,this.picker)}isBlocking(){return!!(this.introId||this.picking)}start(){this.hide(),this.dock.hidden=!this.props.available().length;for(let[e,t]of Object.entries(this.buttons))t.hidden=!this.props.available().includes(e);this.top=null,this.layoutKey=``,this.update(performance.now(),!0),this.introQueue=this.props.pendingIntroductions(),this.showNextIntro()}hide(){this.epoch++,this.flight?.cancel(),this.flight=null,this.introId=null,this.flying=!1,this.picking=!1,this.intro.hidden=!0,this.picker.hidden=!0,this.dock.hidden=!0;for(let e of Object.values(this.buttons))e.style.visibility=``}showNextIntro(){let e=this.introQueue.shift();if(!e){this.game.lastFrame=this.game.lastSimulation=performance.now();return}this.introId=e,this.flying=!1,this.intro.classList.remove(`is-flying`);let t=S[e];this.intro.replaceChildren($(138,138,t=>ue(t,e,0,0,138)));for(let[e,n]of[[`h2`,t.name],[`p`,t.description],[`small`,`点击屏幕继续`]]){let t=document.createElement(e);t.textContent=n,this.intro.appendChild(t)}this.intro.setAttribute(`aria-label`,t.name+`：`+t.description),this.buttons[e].style.visibility=`hidden`,this.intro.hidden=!1,this.intro.focus(),this.update(performance.now())}async flyIntro(){if(!this.introId||this.flying)return;this.flying=!0;let e=this.introId,t=this.epoch;this.intro.classList.add(`is-flying`);let n=this.intro.querySelector(`canvas`),r=n.getBoundingClientRect(),i=this.buttons[e].querySelector(`canvas`).getBoundingClientRect();this.flight=n.animate([{transform:`translate(0,0) scale(1)`},{transform:`translate(`+(i.x+i.width/2-r.x-r.width/2)+`px,`+(i.y+i.height/2-r.y-r.height/2)+`px) scale(`+i.width/r.width+`)`}],{duration:520,easing:`cubic-bezier(.25,.7,.3,1)`,fill:`forwards`});try{await this.flight.finished}catch{return}t===this.epoch&&(this.props.markIntroduced(e),this.buttons[e].style.visibility=``,this.intro.hidden=!0,this.introId=null,this.flying=!1,this.showNextIntro())}changed(){this.game.renderGameCanvas(!0),this.update(performance.now())}openPicker(){if(!this.props.isReady(`specify`))return;this.picking=!0,this.choice={...this.props.selection()};let e=document.createElement(`section`);e.className=`caisha-prop-picker`;let t=document.createElement(`h2`);t.textContent=`指定生成沙块`,this.preview=$(128,82),this.preview.className=`caisha-prop-preview`,e.append(t,this.preview);let n=document.createElement(`div`);n.className=`caisha-prop-colors`,this.colorButtons=[];for(let e of this.props.palette){let t=document.createElement(`button`);t.type=`button`,t.className=`caisha-prop-color`,t.style.setProperty(`--sand-color`,u(h(e))),t.setAttribute(`aria-label`,St[e]+`色沙块`),t.dataset.color=e,t.onclick=()=>{this.choice.color=e,this.renderChoice()},n.appendChild(t),this.colorButtons.push(t)}let r=document.createElement(`div`);r.className=`caisha-prop-shapes`,this.shapeButtons=[];for(let e of this.props.manager.templates){let t=document.createElement(`button`);t.type=`button`,t.className=`caisha-prop-shape`,t.setAttribute(`aria-label`,e.name),t.dataset.shape=e.id,t.appendChild($(80,44,t=>w(t,e,this.choice.color,80,44))),t.onclick=()=>{this.choice.templateId=e.id,this.renderChoice()},r.appendChild(t),this.shapeButtons.push(t)}for(let[t,i]of[[`选择颜色`,n],[`选择形状`,r]]){let n=document.createElement(`p`);n.textContent=t,e.append(n,i)}let i=document.createElement(`div`);i.className=`caisha-prop-actions`;let a=document.createElement(`button`);a.textContent=`取消`,a.onclick=()=>this.closePicker(),this.confirm=document.createElement(`button`),this.confirm.textContent=`确认生成`,this.confirm.onclick=()=>{this.props.specify(this.choice.color,this.choice.templateId)&&(this.closePicker(),this.changed())},i.append(a,this.confirm),e.appendChild(i),this.picker.replaceChildren(e),this.renderChoice(),this.picker.hidden=!1,a.focus()}renderChoice(){let e=this.props.manager.templates.find(e=>e.id===this.choice.templateId),t=this.preview.getContext(`2d`);w(t,e,this.choice.color,128,82);for(let e of this.colorButtons)e.setAttribute(`aria-pressed`,Number(e.dataset.color)===this.choice.color);for(let e of this.shapeButtons){e.setAttribute(`aria-pressed`,e.dataset.shape===this.choice.templateId);let t=this.props.manager.templates.find(t=>t.id===e.dataset.shape);w(e.firstChild.getContext(`2d`),t,this.choice.color,80,44)}this.confirm.disabled=this.props.isUnchanged(this.choice.color,this.choice.templateId)}closePicker(){this.picking=!1,this.picker.hidden=!0,this.game.lastFrame=this.game.lastSimulation=performance.now(),this.buttons.specify.focus()}update(e,t=!1){if(this.dock.hidden)return;let n=Object.keys(this.buttons).map(e=>[e,this.props.counts[e],this.isBlocking()||!this.props.isReady(e)].join(`:`)).join(`|`);if(n!==this.stateKey){this.stateKey=n;for(let[e,t]of Object.entries(this.buttons))t.disabled=this.isBlocking()||!this.props.isReady(e),t.setAttribute(`aria-label`,S[e].name+(this.props.unlimited?`，无限次数`:`，剩余`+this.props.counts[e]+`次`)),t.querySelectorAll(`i`).forEach((t,n)=>t.classList.toggle(`is-empty`,n>=this.props.counts[e]))}let r=this.game.gameShell.getBoundingClientRect(),i=this.game.gameRoot.getBoundingClientRect(),a=[this.game.grid.revision,r.width,r.height,i.x,i.y,i.width,i.height].join(`:`);if(a!==this.layoutKey){this.layoutKey=a;let n=(this.dock.getBoundingClientRect().left-i.left-15)/i.width*this.game.grid.width,o=de(this.game.grid,n),s=i.top-r.top+o/this.game.grid.height*i.height,c=this.game.settingsPanel.gearButton.getBoundingClientRect(),l=Math.max(12,c.bottom-r.top+4),u=this.props.available().length,d=u*54+(u-1)*10,f=s-40-l<d;this.dock.classList.toggle(`is-compact`,f);let p=f&&s-l-u*48<12;this.dock.classList.toggle(`is-top-row`,p);let m=s;if(p){l=Math.max(8,c.top-r.top);let e=(this.dock.getBoundingClientRect().left-i.left-15)/i.width*this.game.grid.width;m=i.top-r.top+de(this.game.grid,e)/this.game.grid.height*i.height}let h=se({height:r.height,groupHeight:p?48:f?u*48:d,minTop:l,sandTop:m});this.top===null||h<this.top||t?(this.top=h,this.dock.style.top=h+`px`,this.returnAt=0):h>this.top+1&&(this.returnTarget=h,this.returnAt=e+600)}this.returnAt&&e>=this.returnAt&&(this.top=this.returnTarget,this.dock.style.top=this.top+`px`,this.returnAt=0)}};function wt(){let t={};if(t.debugMode=fe(),vt(t),yt(t),bt(t),t.gameShell=document.getElementById(`game-shell`),t.gameRoot=document.getElementById(`game-root`),!t.gameShell||!t.gameRoot)throw Error(`Missing mobile game container`);t.grid=new ne,t.simulation=new e(t.grid),t.art=new oe(t.grid,t.simulation),t.modeProgress=new v,t.currentMode=x.ENDLESS,t.currentLevel=1,t.levelData=null,t.levelVictoryPending=!1,t.lastDraftSaveTime=0,t.artFinishing=!1,t.artFinishElapsed=0,t.artFinishStableTicks=0,t.sandRenderer=new le(t.grid),t.sandRenderer.canvas.className=`game-canvas`,t.sandRenderer.canvas.setAttribute(`aria-label`,`七彩沙画消除游戏画布`),t.gameRoot.appendChild(t.sandRenderer.canvas),t.stats=new ve(t.simulation),t.progress=new me,t.unlockManager=new n(t.progress),t.unlockManager.checkAll(),t.clearSystem=new s(t.grid,t.simulation),t.fruitManager=new f(t.grid,t.simulation,{getScore:()=>t.clearSystem.score}),t.rules=new m(t.grid),t.hud=new ye(t.gameShell),t.clearEffects=new be(t.gameRoot,t.grid,t.sandRenderer.canvas,{getEffectId:()=>t.progress.getSelectedEffectId()}),t.audio=new Fe(t.gameShell),t.settingsPanel=new ct(t.gameShell,{audio:t.audio,onHome:()=>t.returnHome(),canGoHome:()=>!t.homeScreen.isOpen(),onModeSelect:()=>t.returnModeSelect(),canGoModeSelect:()=>!t.homeScreen.isOpen()&&(t.currentMode===x.ENDLESS||t.currentMode===x.LEVEL)}),t.settlementGate=new i(3),t.blockProps=new y(t.fruitManager,{unlimited:t.debugMode,canUse:()=>!t.gameOver&&[x.LEVEL,x.ENDLESS].includes(t.currentMode)&&!t.homeScreen.isOpen()&&!t.settingsPanel.isOpen()&&!t.effectPanel.isOpen()&&!t.blockPropPanel.introId}),t.blockPropPanel=new Ct(t,t.blockProps),t.debugEffectUiEnabled=!!(t.debugMode&&T.DEBUG_SHOW_CLEAR_EFFECT_BUTTON),t.effectPanel=new ze(t.gameShell,{progress:t.progress,unlockManager:t.unlockManager,enabled:t.debugEffectUiEnabled}),t.homeDemo=new te({container:t.gameShell,fruitManager:t.fruitManager,grid:t.grid,simulation:t.simulation,onResetWorld:e=>t.resetHomeDemoWorld(e)}),t.homeScreen=new Ze(t.gameShell,{progress:t.progress,showEffectsButton:t.debugEffectUiEnabled,onStart:(e,n)=>{t.homeDemo.hide(),t.restartGame(e,n)},getUnlockedLevel:()=>t.modeProgress.unlockedLevel,getLevelStars:e=>t.modeProgress.levelRecords[e]?.stars??0,onGallery:()=>t.openArtworkGallery(),onEffects:()=>t.effectPanel.open()}),t.gameOverArtwork=new nt(t.gameShell,{onRestart:()=>t.restartGame(t.currentMode,t.currentLevel),onHome:()=>t.returnHome()}),t.modePanels=new _t(t.gameShell),t.artToolbar=new gt(t.gameShell,{onHome:()=>t.returnHome(),onTool:e=>{t.setArtTool(e)||t.artToolbar.setTool(t.art.tool)},onSize:e=>t.art.setRadius(e),onColor:e=>{t.art.setColor(e),t.fruitManager.current?.state===`CONTROL`&&(t.fruitManager.current.color=t.art.color)},onUndo:()=>{t.art.undo(),t.renderGameCanvas(!0)},onRedo:()=>{t.art.redo(),t.renderGameCanvas(!0)},onClear:()=>{t.art.clear(),t.renderGameCanvas(!0)},onFinish:()=>t.triggerArtComplete()}),t.levelStatus=document.createElement(`div`),t.levelStatus.className=`caisha-level-status`,t.levelStatus.style.cssText=`display:none;position:absolute;left:12px;top:max(12px,env(safe-area-inset-top));z-index:14;padding:8px 11px;white-space:pre-line;font:800 12px/1.45 system-ui,sans-serif;pointer-events:none;`,t.levelStatus.style.color=u(h(1)),t.gameShell.appendChild(t.levelStatus),t.lastLevelStatusRevision=-1,t.drawingArt=!1;for(let e of[`pointerdown`,`pointermove`,`pointerup`,`pointercancel`])t.sandRenderer.canvas.addEventListener(e,t.captureArtPointer,{capture:!0});return t.hud.setGameVisible(!1),new Ie(t.sandRenderer.canvas,t.fruitManager,t.grid,{canInteract:()=>!t.gameOver&&!t.artFinishing&&!t.homeScreen.isOpen()&&!t.settingsPanel.isOpen()&&!t.effectPanel.isOpen()&&!t.blockPropPanel.isBlocking()&&(t.currentMode!==x.ART||t.art.tool===`shape`),onRelease:()=>{t.hud.notifyDropReleased(),!t.homeDemo.isRunning()&&!t.homeScreen.isOpen()&&t.audio.playRelease()},onFastDrop:()=>{!t.homeDemo.isRunning()&&!t.homeScreen.isOpen()&&t.audio.playFastDrop()}}),t.clearSystem.onBeforeClear=()=>{t.renderGameCanvas(!0)},t.clearSystem.onClear=e=>{let{cleared:n,score:r,combo:i}=e;if(t.homeDemo.isRunning()){t.homeDemo.onClear(e),t.clearEffects.play(e);return}let a=p(n);t.currentMode===x.ENDLESS&&(t.progress.recordClear({cleared:n,score:r,combo:i}),t.unlockManager.checkAll()),t.currentMode===x.LEVEL&&E(t.grid)===0&&(t.levelVictoryPending=!0),t.hud.showCombo(i),t.clearEffects.play(e,{onStart:()=>t.audio.beginClearSweep(e),onComplete:()=>(t.audio.endClearSweep(),t.hud.setScore(r),t.audio.playReward(a,Math.min(4,n/1e3+i*.25)))})},t.lastSimulation=0,t.lastFrame=performance.now(),t.lastRenderedGridRevision=-1,t.lastRenderedFruit=null,t.lastRenderedFruitKey=``,t.lastFruitState=t.fruitManager.current?.state??null,t.gameOver=!1,t.homeDemo.show(),document.addEventListener(`visibilitychange`,()=>{if(document.hidden){t.currentMode===x.ART&&!t.gameOver&&E(t.grid)>0&&t.modeProgress.saveDraft(t.grid,t.art.fixed),t.audio.suspendForVisibility();return}t.audio.resumeFromVisibility();let e=performance.now();t.lastFrame=e,t.lastSimulation=e,t.renderGameCanvas(!0)}),t.renderGameCanvas(!0),t.loop(performance.now()),t}wt();
+`,St={1:`红`,2:`橙`,3:`黄`,4:`绿`,5:`青`,6:`蓝`,7:`紫`};function $(e,t,n){let r=document.createElement(`canvas`),i=Math.min(3,devicePixelRatio||1);r.width=e*i,r.height=t*i;let a=r.getContext(`2d`);return a.scale(i,i),n?.(a),r.setAttribute(`aria-hidden`,`true`),r}var Ct=class{constructor(e,t){this.game=e,this.props=t,this.epoch=0,this.introId=null,this.flying=!1,this.picking=!1;let n=document.createElement(`style`);n.textContent=xt,e.gameShell.appendChild(n),this.dock=document.createElement(`div`),this.dock.className=`caisha-props`,this.dock.hidden=!0,this.buttons={};for(let[e,n]of Object.entries(S)){let r=document.createElement(`button`);r.type=`button`,r.className=`caisha-prop-button`,r.dataset.prop=e;let i=$(44,44,t=>ue(t,e,0,0,44)),a=document.createElement(`span`);a.className=`caisha-prop-dots`,a.setAttribute(`aria-hidden`,`true`);for(let e=0;e<n.count;e++){let e=document.createElement(`i`);e.className=`caisha-prop-dot`,a.appendChild(e)}r.append(i,a),r.addEventListener(`click`,n=>{n.stopPropagation(),!this.isBlocking()&&(e===`regenerate`?t.regenerate()&&this.changed():this.openPicker())}),this.dock.appendChild(r),this.buttons[e]=r}this.intro=document.createElement(`div`),this.intro.className=`caisha-prop-overlay caisha-prop-intro`,this.intro.hidden=!0,this.intro.tabIndex=0,this.intro.setAttribute(`role`,`dialog`),this.intro.setAttribute(`aria-modal`,`true`),this.intro.addEventListener(`click`,e=>{e.stopPropagation(),this.flyIntro()}),this.intro.addEventListener(`keydown`,e=>{(e.key===`Enter`||e.key===` `)&&(e.preventDefault(),this.flyIntro())}),this.picker=document.createElement(`div`),this.picker.className=`caisha-prop-overlay`,this.picker.hidden=!0,this.picker.setAttribute(`role`,`dialog`),this.picker.setAttribute(`aria-modal`,`true`),this.picker.setAttribute(`aria-label`,`指定生成沙块`),this.picker.addEventListener(`keydown`,e=>{e.key===`Escape`&&this.closePicker()});for(let e of[this.dock,this.intro,this.picker])for(let t of[`pointerdown`,`pointermove`,`pointerup`,`pointercancel`])e.addEventListener(t,e=>e.stopPropagation());e.gameShell.append(this.dock,this.intro,this.picker)}isBlocking(){return!!(this.introId||this.picking)}start(){this.hide(),this.dock.hidden=!this.props.available().length;for(let[e,t]of Object.entries(this.buttons))t.hidden=!this.props.available().includes(e);this.top=null,this.layoutKey=``,this.update(performance.now(),!0),this.introQueue=this.props.pendingIntroductions(),this.showNextIntro()}hide(){this.epoch++,this.flight?.cancel(),this.flight=null,this.introId=null,this.flying=!1,this.picking=!1,this.intro.hidden=!0,this.picker.hidden=!0,this.dock.hidden=!0;for(let e of Object.values(this.buttons))e.style.visibility=``}showNextIntro(){let e=this.introQueue.shift();if(!e){this.game.lastFrame=this.game.lastSimulation=performance.now();return}this.introId=e,this.flying=!1,this.intro.classList.remove(`is-flying`);let t=S[e];this.intro.replaceChildren($(138,138,t=>ue(t,e,0,0,138)));for(let[e,n]of[[`h2`,t.name],[`p`,t.description],[`small`,`点击屏幕继续`]]){let t=document.createElement(e);t.textContent=n,this.intro.appendChild(t)}this.intro.setAttribute(`aria-label`,t.name+`：`+t.description),this.buttons[e].style.visibility=`hidden`,this.intro.hidden=!1,this.intro.focus(),this.update(performance.now())}async flyIntro(){if(!this.introId||this.flying)return;this.flying=!0;let e=this.introId,t=this.epoch;this.intro.classList.add(`is-flying`);let n=this.intro.querySelector(`canvas`),r=n.getBoundingClientRect(),i=this.buttons[e].querySelector(`canvas`).getBoundingClientRect();this.flight=n.animate([{transform:`translate(0,0) scale(1)`},{transform:`translate(`+(i.x+i.width/2-r.x-r.width/2)+`px,`+(i.y+i.height/2-r.y-r.height/2)+`px) scale(`+i.width/r.width+`)`}],{duration:520,easing:`cubic-bezier(.25,.7,.3,1)`,fill:`forwards`});try{await this.flight.finished}catch{return}t===this.epoch&&(this.props.markIntroduced(e),this.buttons[e].style.visibility=``,this.intro.hidden=!0,this.introId=null,this.flying=!1,this.showNextIntro())}changed(){this.game.renderGameCanvas(!0),this.update(performance.now())}openPicker(){if(!this.props.isReady(`specify`))return;this.picking=!0,this.choice={...this.props.selection()};let e=document.createElement(`section`);e.className=`caisha-prop-picker`;let t=document.createElement(`h2`);t.textContent=`指定生成沙块`,this.preview=$(128,82),this.preview.className=`caisha-prop-preview`,e.append(t,this.preview);let n=document.createElement(`div`);n.className=`caisha-prop-colors`,this.colorButtons=[];for(let e of this.props.palette){let t=document.createElement(`button`);t.type=`button`,t.className=`caisha-prop-color`,t.style.setProperty(`--sand-color`,u(h(e))),t.setAttribute(`aria-label`,St[e]+`色沙块`),t.dataset.color=e,t.onclick=()=>{this.choice.color=e,this.renderChoice()},n.appendChild(t),this.colorButtons.push(t)}let r=document.createElement(`div`);r.className=`caisha-prop-shapes`,this.shapeButtons=[];for(let e of this.props.manager.templates){let t=document.createElement(`button`);t.type=`button`,t.className=`caisha-prop-shape`,t.setAttribute(`aria-label`,e.name),t.dataset.shape=e.id,t.appendChild($(80,44,t=>w(t,e,this.choice.color,80,44))),t.onclick=()=>{this.choice.templateId=e.id,this.renderChoice()},r.appendChild(t),this.shapeButtons.push(t)}for(let[t,i]of[[`选择颜色`,n],[`选择形状`,r]]){let n=document.createElement(`p`);n.textContent=t,e.append(n,i)}let i=document.createElement(`div`);i.className=`caisha-prop-actions`;let a=document.createElement(`button`);a.textContent=`取消`,a.onclick=()=>this.closePicker(),this.confirm=document.createElement(`button`),this.confirm.textContent=`确认生成`,this.confirm.onclick=()=>{this.props.specify(this.choice.color,this.choice.templateId)&&(this.closePicker(),this.changed())},i.append(a,this.confirm),e.appendChild(i),this.picker.replaceChildren(e),this.renderChoice(),this.picker.hidden=!1,a.focus()}renderChoice(){let e=this.props.manager.templates.find(e=>e.id===this.choice.templateId),t=this.preview.getContext(`2d`);w(t,e,this.choice.color,128,82);for(let e of this.colorButtons)e.setAttribute(`aria-pressed`,Number(e.dataset.color)===this.choice.color);for(let e of this.shapeButtons){e.setAttribute(`aria-pressed`,e.dataset.shape===this.choice.templateId);let t=this.props.manager.templates.find(t=>t.id===e.dataset.shape);w(e.firstChild.getContext(`2d`),t,this.choice.color,80,44)}this.confirm.disabled=this.props.isUnchanged(this.choice.color,this.choice.templateId)}closePicker(){this.picking=!1,this.picker.hidden=!0,this.game.lastFrame=this.game.lastSimulation=performance.now(),this.buttons.specify.focus()}update(e,t=!1){if(this.dock.hidden)return;let n=Object.keys(this.buttons).map(e=>[e,this.props.counts[e],this.isBlocking()||!this.props.isReady(e)].join(`:`)).join(`|`);if(n!==this.stateKey){this.stateKey=n;for(let[e,t]of Object.entries(this.buttons))t.disabled=this.isBlocking()||!this.props.isReady(e),t.setAttribute(`aria-label`,S[e].name+(this.props.unlimited?`，无限次数`:`，剩余`+this.props.counts[e]+`次`)),t.querySelectorAll(`i`).forEach((t,n)=>t.classList.toggle(`is-empty`,n>=this.props.counts[e]))}let r=this.game.gameShell.getBoundingClientRect(),i=this.game.gameRoot.getBoundingClientRect(),a=[this.game.grid.revision,r.width,r.height,i.x,i.y,i.width,i.height].join(`:`);if(a!==this.layoutKey){this.layoutKey=a;let n=(this.dock.getBoundingClientRect().left-i.left-15)/i.width*this.game.grid.width,o=de(this.game.grid,n),s=i.top-r.top+o/this.game.grid.height*i.height,c=this.game.settingsPanel.gearButton.getBoundingClientRect(),l=Math.max(12,c.bottom-r.top+4),u=this.props.available().length,d=u*54+(u-1)*10,f=s-40-l<d;this.dock.classList.toggle(`is-compact`,f);let p=f&&s-l-u*48<12;this.dock.classList.toggle(`is-top-row`,p);let m=s;if(p){l=Math.max(8,c.top-r.top);let e=(this.dock.getBoundingClientRect().left-i.left-15)/i.width*this.game.grid.width;m=i.top-r.top+de(this.game.grid,e)/this.game.grid.height*i.height}let h=se({height:r.height,groupHeight:p?48:f?u*48:d,minTop:l,sandTop:m});this.top===null||h<this.top||t?(this.top=h,this.dock.style.top=h+`px`,this.returnAt=0):h>this.top+1&&(this.returnTarget=h,this.returnAt=e+600)}this.returnAt&&e>=this.returnAt&&(this.top=this.returnTarget,this.dock.style.top=this.top+`px`,this.returnAt=0)}};function wt(){let t={};if(t.debugMode=fe(),vt(t),yt(t),bt(t),t.gameShell=document.getElementById(`game-shell`),t.gameRoot=document.getElementById(`game-root`),!t.gameShell||!t.gameRoot)throw Error(`Missing mobile game container`);t.grid=new ne,t.simulation=new e(t.grid),t.art=new oe(t.grid,t.simulation),t.modeProgress=new v,t.currentMode=x.ENDLESS,t.currentLevel=1,t.levelData=null,t.levelVictoryPending=!1,t.lastDraftSaveTime=0,t.artFinishing=!1,t.artFinishElapsed=0,t.artFinishStableTicks=0,t.sandRenderer=new le(t.grid),t.sandRenderer.canvas.className=`game-canvas`,t.sandRenderer.canvas.setAttribute(`aria-label`,`七彩沙画消除游戏画布`),t.gameRoot.appendChild(t.sandRenderer.canvas),t.stats=new ve(t.simulation),t.progress=new me,t.unlockManager=new n(t.progress),t.unlockManager.checkAll(),t.clearSystem=new s(t.grid,t.simulation),t.fruitManager=new f(t.grid,t.simulation,{getScore:()=>t.clearSystem.score}),t.rules=new m(t.grid),t.hud=new ye(t.gameShell),t.clearEffects=new be(t.gameRoot,t.grid,t.sandRenderer.canvas,{getEffectId:()=>t.progress.getSelectedEffectId()}),t.audio=new Fe(t.gameShell),t.settingsPanel=new ct(t.gameShell,{audio:t.audio,onHome:()=>t.returnHome(),canGoHome:()=>!t.homeScreen.isOpen(),onModeSelect:()=>t.returnModeSelect(),canGoModeSelect:()=>!t.homeScreen.isOpen()&&(t.currentMode===x.ENDLESS||t.currentMode===x.LEVEL)}),t.settlementGate=new i(3),t.blockProps=new y(t.fruitManager,{unlimited:t.debugMode,canUse:()=>!t.gameOver&&[x.LEVEL,x.ENDLESS].includes(t.currentMode)&&!t.homeScreen.isOpen()&&!t.settingsPanel.isOpen()&&!t.effectPanel.isOpen()&&!t.blockPropPanel.introId}),t.blockPropPanel=new Ct(t,t.blockProps),t.debugEffectUiEnabled=!!(t.debugMode&&T.DEBUG_SHOW_CLEAR_EFFECT_BUTTON),t.effectPanel=new ze(t.gameShell,{progress:t.progress,unlockManager:t.unlockManager,enabled:t.debugEffectUiEnabled}),t.homeDemo=new te({container:t.gameShell,fruitManager:t.fruitManager,grid:t.grid,simulation:t.simulation,onResetWorld:e=>t.resetHomeDemoWorld(e)}),t.homeScreen=new Ze(t.gameShell,{progress:t.progress,showEffectsButton:t.debugEffectUiEnabled,onStart:(e,n)=>{t.homeDemo.hide(),t.restartGame(e,n)},getUnlockedLevel:()=>t.modeProgress.unlockedLevel,getLevelStars:e=>t.modeProgress.levelRecords[e]?.stars??0,onGallery:()=>t.openArtworkGallery(),onEffects:()=>t.effectPanel.open()}),t.gameOverArtwork=new nt(t.gameShell,{onRestart:()=>t.restartGame(t.currentMode,t.currentLevel),onHome:()=>t.returnHome()}),t.modePanels=new _t(t.gameShell),t.artToolbar=new gt(t.gameShell,{onHome:()=>t.returnModeSelect(),onTool:e=>{t.setArtTool(e)||t.artToolbar.setTool(t.art.tool)},onSize:e=>t.art.setRadius(e),onColor:e=>{t.art.setColor(e),t.fruitManager.current?.state===`CONTROL`&&(t.fruitManager.current.color=t.art.color)},onUndo:()=>{t.art.undo(),t.renderGameCanvas(!0)},onRedo:()=>{t.art.redo(),t.renderGameCanvas(!0)},onClear:()=>{t.art.clear(),t.renderGameCanvas(!0)},onFinish:()=>t.triggerArtComplete()}),t.levelStatus=document.createElement(`div`),t.levelStatus.className=`caisha-level-status`,t.levelStatus.style.cssText=`display:none;position:absolute;left:12px;top:max(12px,env(safe-area-inset-top));z-index:14;padding:8px 11px;white-space:pre-line;font:800 12px/1.45 system-ui,sans-serif;pointer-events:none;`,t.levelStatus.style.color=u(h(1)),t.gameShell.appendChild(t.levelStatus),t.lastLevelStatusRevision=-1,t.drawingArt=!1;for(let e of[`pointerdown`,`pointermove`,`pointerup`,`pointercancel`])t.sandRenderer.canvas.addEventListener(e,t.captureArtPointer,{capture:!0});return t.hud.setGameVisible(!1),new Ie(t.sandRenderer.canvas,t.fruitManager,t.grid,{canInteract:()=>!t.gameOver&&!t.artFinishing&&!t.homeScreen.isOpen()&&!t.settingsPanel.isOpen()&&!t.effectPanel.isOpen()&&!t.blockPropPanel.isBlocking()&&(t.currentMode!==x.ART||t.art.tool===`shape`),onRelease:()=>{t.hud.notifyDropReleased(),!t.homeDemo.isRunning()&&!t.homeScreen.isOpen()&&t.audio.playRelease()},onFastDrop:()=>{!t.homeDemo.isRunning()&&!t.homeScreen.isOpen()&&t.audio.playFastDrop()}}),t.clearSystem.onBeforeClear=()=>{t.renderGameCanvas(!0)},t.clearSystem.onClear=e=>{let{cleared:n,score:r,combo:i}=e;if(t.homeDemo.isRunning()){t.homeDemo.onClear(e),t.clearEffects.play(e);return}let a=p(n);t.currentMode===x.ENDLESS&&(t.progress.recordClear({cleared:n,score:r,combo:i}),t.unlockManager.checkAll()),t.currentMode===x.LEVEL&&E(t.grid)===0&&(t.levelVictoryPending=!0),t.hud.showCombo(i),t.clearEffects.play(e,{onStart:()=>t.audio.beginClearSweep(e),onComplete:()=>(t.audio.endClearSweep(),t.hud.setScore(r),t.audio.playReward(a,Math.min(4,n/1e3+i*.25)))})},t.lastSimulation=0,t.lastFrame=performance.now(),t.lastRenderedGridRevision=-1,t.lastRenderedFruit=null,t.lastRenderedFruitKey=``,t.lastFruitState=t.fruitManager.current?.state??null,t.gameOver=!1,t.homeDemo.show(),document.addEventListener(`visibilitychange`,()=>{if(document.hidden){t.currentMode===x.ART&&!t.gameOver&&E(t.grid)>0&&t.modeProgress.saveDraft(t.grid,t.art.fixed),t.audio.suspendForVisibility();return}t.audio.resumeFromVisibility();let e=performance.now();t.lastFrame=e,t.lastSimulation=e,t.renderGameCanvas(!0)}),t.renderGameCanvas(!0),t.loop(performance.now()),t}wt();

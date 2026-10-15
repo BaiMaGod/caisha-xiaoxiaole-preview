@@ -158,29 +158,41 @@ jobs:
               assert.equal(await artTools.locator('[data-color="7"]').getAttribute('aria-pressed'),'true');
               assert.equal(await artTools.getByRole('button',{name:'笔刷·粗',exact:true}).isVisible(),true);
               const bounds=await page.evaluate(()=>{
-                const shell=document.getElementById('game-shell').getBoundingClientRect();
-                const board=document.getElementById('game-root').getBoundingClientRect();
-                const top=document.querySelector('.caisha-art-studio__top').getBoundingClientRect();
-                const palette=document.querySelector('.caisha-art-studio__palette').getBoundingClientRect();
-                const controls=document.querySelector('.caisha-art-studio__controls').getBoundingClientRect();
-                const bottom=document.querySelector('.caisha-art-studio__bottom').getBoundingClientRect();
-                const toolRects=[...document.querySelectorAll('.caisha-art-studio__tool')]
-                  .map(button=>button.getBoundingClientRect());
-                const bottomTools=toolRects.length===4&&toolRects.every(r=>
-                  Math.abs(r.top-toolRects[0].top)<2&&r.bottom<=bottom.bottom+1);
-                const clipped=[...document.querySelectorAll('.caisha-art-studio button')].some(button=>{
-                  const r=button.getBoundingClientRect();
-                  return r.left<shell.left||r.right>shell.right||r.top<shell.top||r.bottom>shell.bottom;
+                const r=s=>document.querySelector(s).getBoundingClientRect();
+                const shell=r('#game-shell'),board=r('#game-root');
+                const top=r('.caisha-art-studio__top'),palette=r('.caisha-art-studio__palette');
+                const bottom=r('.caisha-art-studio__bottom'),title=r('.caisha-art-studio__caption');
+                const tools=[...document.querySelectorAll('.caisha-art-studio__tool')].map(n=>n.getBoundingClientRect());
+                const edit=[document.querySelector('.caisha-art-studio__size'),
+                  ...document.querySelectorAll('.caisha-art-studio__actions button')]
+                  .map(n=>n.getBoundingClientRect());
+                const clipped=[...document.querySelectorAll('.caisha-art-studio button')].some(n=>{
+                  const a=n.getBoundingClientRect();
+                  return a.left<shell.left-1||a.right>shell.right+1||
+                    a.top<shell.top-1||a.bottom>shell.bottom+1;
                 });
-                return {clipped,bottomTools,clear:board.top>=top.bottom+5&&
-                  board.left>=palette.right+2&&board.right<=controls.left-2&&board.bottom+5<=bottom.top};
+                return {clipped,
+                  centered:Math.abs((title.left+title.right)/2-(shell.left+shell.right)/2)<1.5,
+                  tools:tools.length===4&&tools.every(t=>Math.abs(t.top-tools[0].top)<2),
+                  actions:edit.length===5&&edit.every(t=>Math.abs(t.top-edit[0].top)<2&&t.top>tools[0].bottom),
+                  clear:board.top>=top.bottom+5&&board.left>=palette.right+2&&
+                    board.right<=shell.right-6&&board.bottom+5<=bottom.top};
               });
               assert.equal(bounds.clipped,false);
-              assert.equal(bounds.bottomTools,true);
+              assert.equal(bounds.centered,true);
+              assert.equal(bounds.tools,true);
+              assert.equal(bounds.actions,true);
               assert.equal(bounds.clear,true);
               assert.equal(await artTools.locator('.caisha-art-studio__caption').textContent(),'沙画工坊');
-              assert.ok(await artTools.locator('.caisha-art-studio__controls').evaluate(
-                el=>el.getBoundingClientRect().width<=40));
+              assert.equal(await artTools.locator('.caisha-art-studio__home .caisha-art-studio__label').isVisible(),false);
+              await artTools.getByRole('button',{name:'返回模式选择',exact:true}).click();
+              assert.equal(await page.getByRole('alertdialog',{name:'确认返回模式选择'}).isVisible(),true);
+              await page.getByRole('button',{name:'取消',exact:true}).click();
+              assert.equal(await page.getByRole('alertdialog').isVisible(),false);
+              await artTools.getByRole('button',{name:'返回模式选择',exact:true}).click();
+              await page.getByRole('button',{name:'确定返回',exact:true}).click();
+              assert.equal(await page.locator('.caisha-mode-menu.is-open').isVisible(),true);
+              await page.locator('[data-mode="sandArt"]').click();
               const artBoard=await page.locator('.game-canvas').boundingBox();
               await page.mouse.move(artBoard.x+artBoard.width*.5,artBoard.y+artBoard.height*.7);
               await page.mouse.down();
