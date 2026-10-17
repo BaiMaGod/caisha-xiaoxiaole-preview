@@ -87,7 +87,8 @@ jobs:
                 };
               });
               assert.ok(Math.abs(home.center-home.halfHeight)<0.05);
-              assert.ok(home.cards.every(c=>c.bottom < home.startTop));
+              // The fan's rotated square hitbox includes transparent area;
+              // visible-art spacing is verified from each fan's pose below.
               // Artwork sizes are checked below, independently of rotated hitboxes.
               // Arc geometry: active fan centered/highest, sides tilted outward.
               const pose=async()=>page.evaluate(()=>{
@@ -97,7 +98,11 @@ jobs:
                   return {mode,...b.homePose,bottom:b.y+b.h};
                 });
                 const start=g.buttons.find(b=>b.id==='start');
-                return {cards:list,startTop:start.y,startMiddle:start.y+start.h/2};
+                return {
+                  cards:list,startTop:start.y,startMiddle:start.y+start.h/2,
+                  startVisibleCenterX:start.x+start.w/2-start.w*.036,
+                  canvasCenterX:g.metrics.stageWidth/2
+                };
               });
               const initially=await pose();
               const center=initially.cards[0],right=initially.cards[1],left=initially.cards[2];
@@ -128,10 +133,18 @@ jobs:
                   'Fan cards should turn outward roughly 36-37 degrees');
               };
               assertParallel(initially);
-              assert.ok(initially.cards.every(c=>c.bottom<initially.startTop));
-              // Tilted side cards should sit noticeably closer to the fixed start button.
-              const sideGap=initially.startTop-Math.max(right.bottom,left.bottom);
-              assert.ok(sideGap>=0 && sideGap<25, 'Mode cards should be close to Start');
+              // The Start PNG's painted center must match the fan's centered pose.
+              // Its asymmetric transparent padding is compensated in the UI.
+              assert.ok(Math.abs(initially.startVisibleCenterX-initially.canvasCenterX)<0.05);
+              assert.ok(Math.abs(center.cx-initially.startVisibleCenterX)<0.05);
+              assert.ok(Math.abs((left.cx+right.cx)/2-center.cx)<0.05);
+              // Compare the visible alpha envelopes (not oversized square hitboxes).
+              // Approximate bottom extents from the original 600x600 fan artwork.
+              const visualBottom=c=>c.cy+c.size*(c.slot===0?.40:.48);
+              const sideGap=initially.startTop-Math.max(visualBottom(right),visualBottom(left));
+              const centerGap=initially.startTop-visualBottom(center);
+              assert.ok(sideGap>4 && sideGap<25,'Side fan art too far or overlapping Start');
+              assert.ok(centerGap>6 && centerGap<35,'Central fan art too far or overlapping Start');
               // Tap both sides and verify moving cards occupy the center in turn.
               await click(page,'home-mode-endless');await page.waitForTimeout(350);
               let switched=await pose();
@@ -139,6 +152,7 @@ jobs:
               assertParallel(switched);
               assert.ok(Math.abs(switched.cards[1].cx-center.cx)<1);
               assert.ok(Math.abs(switched.startMiddle-initially.startMiddle)<0.05);
+              assert.ok(Math.abs(switched.cards[1].cx-switched.startVisibleCenterX)<0.05);
               await click(page,'home-mode-sandArt');await page.waitForTimeout(350);
               switched=await pose();assert.equal(switched.cards[2].slot,0);
               assertParallel(switched);
