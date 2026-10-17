@@ -60,6 +60,15 @@ jobs:
               await page.goto(url,{waitUntil:'networkidle'});
               assert.equal(await page.evaluate(()=>typeof globalThis.__canvasGame),'undefined');
               await page.goto(url+'?debug=1',{waitUntil:'networkidle'});
+              // The visible Canvas2D context must be compositor-synchronized:
+              // every frame repaints the animated sand BEFORE overlaying the
+              // fan cards and Start button. A desynchronized front buffer can
+              // expose that intermediate cleared state as visible flashing.
+              const displayAttributes=await page.evaluate(() =>
+                globalThis.__canvasGame?.renderer?.displayCtx?.getContextAttributes?.()
+              );
+              assert.equal(displayAttributes?.desynchronized,false,
+                'Canvas must not present partially drawn home UI');
               await page.waitForFunction(() => ['homeChallenge','homeEndless','homeArt'].every(k => {
                 const image=globalThis.__canvasGame?.assets?.get(k);
                 return image && image.complete && image.naturalWidth > 0;
