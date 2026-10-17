@@ -96,8 +96,11 @@ jobs:
               assert.equal(center.slot,0);assert.equal(right.slot,1);assert.equal(left.slot,2);
               assert.ok(center.size>right.size && center.size>left.size);
               assert.ok(center.cy<right.cy && center.cy<left.cy);
-              assert.ok(right.angle>0.18 && left.angle< -0.18);
+              assert.ok(Math.abs(right.angle-Math.PI/10)<0.005 && Math.abs(left.angle+Math.PI/10)<0.005);
               assert.ok(initially.cards.every(c=>c.bottom<initially.startTop));
+              // Tilted side cards should sit noticeably closer to the fixed start button.
+              const sideGap=initially.startTop-Math.max(right.bottom,left.bottom);
+              assert.ok(sideGap>=0 && sideGap<25, 'Mode cards should be close to Start');
               // Tap both sides and verify moving cards occupy the center in turn.
               await click(page,'home-mode-endless');await page.waitForTimeout(350);
               let switched=await pose();
