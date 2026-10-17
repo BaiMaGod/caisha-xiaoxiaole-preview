@@ -80,7 +80,34 @@ jobs:
               assert.ok(Math.abs(home.center-home.halfHeight)<0.05);
               assert.ok(home.cards.every(c=>c.bottom < home.startTop));
               assert.ok(home.cards[0].h > home.cards[1].h && home.cards[0].h > home.cards[2].h);
-              await click(page,'home-mode-level');await click(page,'start');await click(page,'level-1');
+              // Arc geometry: active fan centered/highest, sides tilted outward.
+              const pose=async()=>page.evaluate(()=>{
+                const g=globalThis.__canvasGame;
+                const list=['level','endless','sandArt'].map(mode=>{
+                  const b=g.buttons.find(b=>b.id==='home-mode-'+mode);
+                  return {mode,...b.homePose,bottom:b.y+b.h};
+                });
+                const start=g.buttons.find(b=>b.id==='start');
+                return {cards:list,startTop:start.y,startMiddle:start.y+start.h/2};
+              });
+              const initially=await pose();
+              const center=initially.cards[0],right=initially.cards[1],left=initially.cards[2];
+              assert.ok(Math.abs(center.cx-width/(Math.min(1,width/405))*0.5)<1);
+              assert.equal(center.slot,0);assert.equal(right.slot,1);assert.equal(left.slot,2);
+              assert.ok(center.size>right.size && center.size>left.size);
+              assert.ok(center.cy<right.cy && center.cy<left.cy);
+              assert.ok(right.angle>0.18 && left.angle< -0.18);
+              assert.ok(initially.cards.every(c=>c.bottom<initially.startTop));
+              // Tap both sides and verify moving cards occupy the center in turn.
+              await click(page,'home-mode-endless');await page.waitForTimeout(350);
+              let switched=await pose();
+              assert.equal(switched.cards[1].slot,0);
+              assert.ok(Math.abs(switched.cards[1].cx-center.cx)<1);
+              assert.ok(Math.abs(switched.startMiddle-initially.startMiddle)<0.05);
+              await click(page,'home-mode-sandArt');await page.waitForTimeout(350);
+              switched=await pose();assert.equal(switched.cards[2].slot,0);
+              await click(page,'home-mode-level');await page.waitForTimeout(350);
+              await click(page,'start');await click(page,'level-1');
               await click(page,'settings');await click(page,'settings-home');
               await click(page,'confirm-cancel');await click(page,'settings-home');await click(page,'confirm-accept');
               await click(page,'home-mode-sandArt');await click(page,'start');await click(page,'art-tool-fixed');
