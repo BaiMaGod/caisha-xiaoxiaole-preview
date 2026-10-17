@@ -60,10 +60,10 @@ jobs:
               await page.goto(url,{waitUntil:'networkidle'});
               assert.equal(await page.evaluate(()=>typeof globalThis.__canvasGame),'undefined');
               await page.goto(url+'?debug=1',{waitUntil:'networkidle'});
-              await click(page,'start');await click(page,'mode-level');await click(page,'level-1');
-              await click(page,'settings');await click(page,'settings-modes');
-              await click(page,'confirm-cancel');await click(page,'settings-modes');await click(page,'confirm-accept');
-              await click(page,'mode-sandArt');await click(page,'art-tool-fixed');
+              await click(page,'home-mode-level');await click(page,'start');await click(page,'level-1');
+              await click(page,'settings');await click(page,'settings-home');
+              await click(page,'confirm-cancel');await click(page,'settings-home');await click(page,'confirm-accept');
+              await click(page,'home-mode-sandArt');await click(page,'start');await click(page,'art-tool-fixed');
               const p=await page.evaluate(()=>{const g=globalThis.__canvasGame,b=g.metrics.board,s=g.metrics.uiScale;return{x:(b.x+b.width*.5)*s,y:(b.y+b.height*.6)*s};});
               await page.mouse.move(p.x,p.y);await page.mouse.down();await page.mouse.move(p.x+3,p.y+3);await page.mouse.up();
               assert.ok(await page.evaluate(()=>globalThis.__canvasGame.session.grid.cells.some(v=>v>0)));
