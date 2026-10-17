@@ -105,7 +105,29 @@ jobs:
               assert.equal(center.slot,0);assert.equal(right.slot,1);assert.equal(left.slot,2);
               assert.ok(center.size>right.size && center.size>left.size);
               assert.ok(center.cy<right.cy && center.cy<left.cy);
-              assert.ok(Math.abs(right.angle-Math.PI/10)<0.005 && Math.abs(left.angle+Math.PI/10)<0.005);
+              // Measure edge angles in the original 600x600 transparent fan
+              // assets. A card rotates so its adjacent side line becomes
+              // parallel to the corresponding straight edge of the center.
+              const edges={
+                level:{left:18.3,right:-19.3},
+                endless:{left:17.7,right:-18.4},
+                sandArt:{left:17.4,right:-17.9}
+              };
+              const assertParallel=({cards})=>{
+                const center=cards.find(c=>c.slot===0);
+                const left=cards.find(c=>c.slot===2);
+                const right=cards.find(c=>c.slot===1);
+                assert.ok(Math.abs(center.angle)<1e-5);
+                const leftAdj=edges[left.mode].right-left.angle*180/Math.PI;
+                const rightAdj=edges[right.mode].left-right.angle*180/Math.PI;
+                assert.ok(Math.abs(leftAdj-edges[center.mode].left)<0.15,
+                  'Left card right edge must parallel center card left edge');
+                assert.ok(Math.abs(rightAdj-edges[center.mode].right)<0.15,
+                  'Right card left edge must parallel center card right edge');
+                assert.ok(left.angle<-0.60 && right.angle>0.60,
+                  'Fan cards should turn outward roughly 36-37 degrees');
+              };
+              assertParallel(initially);
               assert.ok(initially.cards.every(c=>c.bottom<initially.startTop));
               // Tilted side cards should sit noticeably closer to the fixed start button.
               const sideGap=initially.startTop-Math.max(right.bottom,left.bottom);
@@ -114,10 +136,12 @@ jobs:
               await click(page,'home-mode-endless');await page.waitForTimeout(350);
               let switched=await pose();
               assert.equal(switched.cards[1].slot,0);
+              assertParallel(switched);
               assert.ok(Math.abs(switched.cards[1].cx-center.cx)<1);
               assert.ok(Math.abs(switched.startMiddle-initially.startMiddle)<0.05);
               await click(page,'home-mode-sandArt');await page.waitForTimeout(350);
               switched=await pose();assert.equal(switched.cards[2].slot,0);
+              assertParallel(switched);
               await click(page,'home-mode-level');await page.waitForTimeout(350);
               await click(page,'start');await click(page,'level-1');
               await click(page,'settings');await click(page,'settings-home');
