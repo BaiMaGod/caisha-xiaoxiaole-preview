@@ -88,7 +88,7 @@ jobs:
               });
               assert.ok(Math.abs(home.center-home.halfHeight)<0.05);
               assert.ok(home.cards.every(c=>c.bottom < home.startTop));
-              assert.ok(home.cards[0].h > home.cards[1].h && home.cards[0].h > home.cards[2].h);
+              // Artwork sizes are checked below, independently of rotated hitboxes.
               // Arc geometry: active fan centered/highest, sides tilted outward.
               const pose=async()=>page.evaluate(()=>{
                 const g=globalThis.__canvasGame;
