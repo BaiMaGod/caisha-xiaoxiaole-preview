@@ -1,7 +1,7 @@
 {
   "version": 1,
   "files": {
-    "assets/web-entry-hints-74a2a693.js": "bee9175abd3e0d39df1fad1b481c74f4e378fec59ed11ee4789d7a80bf28fd20",
+    "assets/web-entry-hints-b10952c5.js": "9bea93334581d1dfc410ef4826b40f166ffe2074d615c277b4f1a44ae8bdf08f",
     "audio/clear-roulette-fast-v2.mp3": "38dbe56733d0f6dd7956b6a7cef4ad23fcb801d7c4bff87554d083b8b9b67bf4",
     "audio/clear-roulette-fast.mp3": "36765ef1ffeddfeb0cf78859fca2ac126c67626122db07dcc0b176f83735be48",
     "audio/reward-amazing.mp3": "bcf544d91e25a004ee95dccb97d0d0ec933b5f492a6565907ecf2af85516a37c",
@@ -9,8 +9,8 @@
     "audio/reward-great.mp3": "e7cf41d3147c7514db4f74d32328472eed08d1506e77813ab92df7cd2b6102fd",
     "audio/reward-perfect.mp3": "50ec47bb56019dcb0420df73a884271d27d48e4ed3f53fb97cd3847cfce6079a",
     "audio/reward-unbelievable.mp3": "b74a6e87eeb0ab3a5f5f90e66f82fa9d2da6b9182bc95d6bec7860280ae943e6",
-    "build-info.json": "635fca6eb17c445e3e7f3dcf8aad4a164fd2cb223d8fd4b86cd890fc97191637",
-    "canvas-preview.html": "c8e4eb3571c3a5f9ba3d5920f164590cc4a785fbf7e58c0af30ffdea330765f8",
+    "build-info.json": "f6c89bd3a400c77a9f826d9bd9569c69f4c9101cd7e78f055313224e11ca62ca",
+    "canvas-preview.html": "c223fb52b6eed4824f93b02d792e899c25d3613a9d76834e0ca416c3e1dc62b4",
     "images/approved-ui/back-arrow-pastel-sand.webp": "073894bc497fd0902e76cc2fd44ee39d58a4a0917bb5c8346284583dbd7ad1ff",
     "images/approved-ui/back-arrow-rainbow-sand.webp": "4333b690608bac5266fa6d0f0a604cd3b4ae5790b1d86b8950c7288acfa22e68",
     "images/approved-ui/background-level.webp": "43b704135a58194d4cf69efb15b994a835e3db7d06bed463c76ea2dc715aceb3",
@@ -73,6 +73,6 @@
     "images/ui-theme/mode-rainbow.svg": "6c79fcc915eae40d889d18c544713d0e1d38fde1112e229b74a8de73f45d75d6",
     "images/ui-theme/sand-dream-bg.svg": "723344115105b4edb374ad980f2ded6cf76938a3c95fdee32a5dc8b11ed16399",
     "images/ui-theme/sand-wave.svg": "8d93c5fbe0ad9537fd2937771ad842683c49a31f6ac9faab23fa437ce6e29048",
-    "index.html": "c8e4eb3571c3a5f9ba3d5920f164590cc4a785fbf7e58c0af30ffdea330765f8"
+    "index.html": "c223fb52b6eed4824f93b02d792e899c25d3613a9d76834e0ca416c3e1dc62b4"
   }
 }

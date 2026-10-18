@@ -5,7 +5,7 @@
   "sourceHash": "6a2d849d03d5f1075fdecd30100c1bc2db8c0677843ca9b9e36efbee38bf75df",
   "commit": "8d5ab890dc9e4735c3b8bf18ae8539466b7882da",
   "previewPatch": {
-    "description": "Compiled-only Web preview: first-level rules confirmation, second-level remaining-color randomization, two-line controls/clearing hints, and clearer fast-drop gesture text",
-    "sourceCommit": "74a2a693be5ded00d8c2470f87e6aa396d23000b"
+    "description": "Compiled-only Web preview: level-one rules confirmation, level-two remaining-color randomization, two-line common controls/rules hints and level-only full-clear victory hint",
+    "sourceCommit": "b10952c5f475b2f8cd3ac4636466b8a4d5b6ebbd"
   }
 }
