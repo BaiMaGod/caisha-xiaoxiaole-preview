@@ -1,7 +1,7 @@
 {
   "version": 1,
   "files": {
-    "assets/web-entry-i5r4B5BV.js": "1e20d75112b86c7da263bcf1b82b456d3cf54baa4c2f36adb671cde82b269b38",
+    "assets/web-entry-hints-58452383.js": "27158c0e0b982b81075901112b0efabdb5090b79f6b508eedcf5ee7f983481fb",
     "audio/clear-roulette-fast-v2.mp3": "38dbe56733d0f6dd7956b6a7cef4ad23fcb801d7c4bff87554d083b8b9b67bf4",
     "audio/clear-roulette-fast.mp3": "36765ef1ffeddfeb0cf78859fca2ac126c67626122db07dcc0b176f83735be48",
     "audio/reward-amazing.mp3": "bcf544d91e25a004ee95dccb97d0d0ec933b5f492a6565907ecf2af85516a37c",
@@ -9,8 +9,8 @@
     "audio/reward-great.mp3": "e7cf41d3147c7514db4f74d32328472eed08d1506e77813ab92df7cd2b6102fd",
     "audio/reward-perfect.mp3": "50ec47bb56019dcb0420df73a884271d27d48e4ed3f53fb97cd3847cfce6079a",
     "audio/reward-unbelievable.mp3": "b74a6e87eeb0ab3a5f5f90e66f82fa9d2da6b9182bc95d6bec7860280ae943e6",
-    "build-info.json": "83c6be03dc0f14f39044d3d9d084d54b5be6ad601862d3cb6da16544ec841343",
-    "canvas-preview.html": "b8e7ce3f03d8b452736e9874791858f324c4f0037bc71d238ee5aee97e4c68df",
+    "build-info.json": "7e3a4117425548c34022d0f6cd6e4013a6d45eddb4beb36cb18ee538ceaf3d0c",
+    "canvas-preview.html": "346257280944603e21497d8a204c29a7147b914d596bcf6c21df1d3253b92a85",
     "images/approved-ui/back-arrow-pastel-sand.webp": "073894bc497fd0902e76cc2fd44ee39d58a4a0917bb5c8346284583dbd7ad1ff",
     "images/approved-ui/back-arrow-rainbow-sand.webp": "4333b690608bac5266fa6d0f0a604cd3b4ae5790b1d86b8950c7288acfa22e68",
     "images/approved-ui/background-level.webp": "43b704135a58194d4cf69efb15b994a835e3db7d06bed463c76ea2dc715aceb3",
@@ -73,6 +73,6 @@
     "images/ui-theme/mode-rainbow.svg": "6c79fcc915eae40d889d18c544713d0e1d38fde1112e229b74a8de73f45d75d6",
     "images/ui-theme/sand-dream-bg.svg": "723344115105b4edb374ad980f2ded6cf76938a3c95fdee32a5dc8b11ed16399",
     "images/ui-theme/sand-wave.svg": "8d93c5fbe0ad9537fd2937771ad842683c49a31f6ac9faab23fa437ce6e29048",
-    "index.html": "bde186b4bf5ccada1cfc3a9f0d2cb1aa648b8e478d8e5293ae27ad65f8fa99eb"
+    "index.html": "346257280944603e21497d8a204c29a7147b914d596bcf6c21df1d3253b92a85"
   }
 }
