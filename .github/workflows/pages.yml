@@ -22,6 +22,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Verify exact artifact hashes
+        run: node .github/scripts/verify-artifact.mjs
       - name: Install browser verifier
         run: |
           npm install --prefix "$RUNNER_TEMP/preview-qa" --no-package-lock playwright@1.56.1
@@ -185,6 +187,16 @@ jobs:
           } finally {await browser.close();}
           console.log('Verified shared compiled preview',info);
           NODE
+      - name: Verify 24-level response and exact sand pixels
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/preview-qa/node_modules/playwright/index.mjs
+        run: node .github/scripts/performance.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-acceptance
+          path: .qa/
+          include-hidden-files: true
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -200,3 +212,4 @@ jobs:
       - name: Deploy verified preview
         id: deployment
         uses: actions/deploy-pages@v4
+

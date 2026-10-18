@@ -2,8 +2,6 @@
   "game": "七彩沙画消除",
   "version": "0.1.0",
   "channel": "web",
-  "sourceHash": "77e01421db8c955164e9e05edbb372029d05abbf3d38dcbf90bcfbdd6ab42d1e",
-  "commit": "d6d19bfed63c2676cbf52b9e81f67b0801675e91",
-  "previewPatchSourceCommit": "64d8d3038e6b6dc4640d589172df6d986260afe7",
-  "previewPatchNote": "Settings > level selection hotfix applied to precompiled Web bundle; sourceHash refers to original build"
+  "sourceHash": "6a2d849d03d5f1075fdecd30100c1bc2db8c0677843ca9b9e36efbee38bf75df",
+  "commit": "8d5ab890dc9e4735c3b8bf18ae8539466b7882da"
 }
