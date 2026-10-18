@@ -3,5 +3,9 @@
   "version": "0.1.0",
   "channel": "web",
   "sourceHash": "6a2d849d03d5f1075fdecd30100c1bc2db8c0677843ca9b9e36efbee38bf75df",
-  "commit": "8d5ab890dc9e4735c3b8bf18ae8539466b7882da"
+  "commit": "8d5ab890dc9e4735c3b8bf18ae8539466b7882da",
+  "previewPatch": {
+    "description": "Compiled-only Web preview: level-one rules confirmation and level-two remaining-color randomization",
+    "sourceCommit": "e263abc4ab4e99dd6d4214c399317339f35818ac"
+  }
 }

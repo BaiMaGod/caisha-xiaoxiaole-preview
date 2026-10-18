@@ -47,6 +47,18 @@ try{
  for(let id=1;id<=24;id++){
   await findLevel(page,id);
   await click(page,'level-'+id);await screen(page,'playing');
+  if(id===1){assert.equal(await page.evaluate(()=>globalThis.__canvasGame.ruleIntro),true);await click(page,'rules-intro-confirm');}
+  if(id===2){
+   const colorProbe=await page.evaluate(()=>{
+    const g=globalThis.__canvasGame,p=g.session.fruitManager.spawnProvider;
+    const old=g.session.fruitManager.random;
+    g.session.fruitManager.random=()=>0;const a=p().color;
+    g.session.fruitManager.random=()=>.999;const b=p().color;
+    g.session.fruitManager.random=old;return{a,b,palette:g.session.levelData.palette};
+   });
+   assert.notEqual(colorProbe.a,colorProbe.b,'level 2 should randomly spawn both remaining colors');
+   assert.ok(colorProbe.palette.includes(colorProbe.a)&&colorProbe.palette.includes(colorProbe.b));
+  }
   const first=await page.evaluate(()=>globalThis.__canvasGame.performance.levelStarts.at(-1));
   assert.equal(first.level,id);assert.ok(first.ms<100);
   starts.push(first);

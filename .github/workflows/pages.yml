@@ -160,6 +160,10 @@ jobs:
               assertParallel(switched);
               await click(page,'home-mode-level');await page.waitForTimeout(350);
               await click(page,'start');await click(page,'level-1');
+              assert.equal(await page.evaluate(()=>globalThis.__canvasGame.ruleIntro),true);
+              assert.deepEqual(await page.evaluate(()=>globalThis.__canvasGame.buttons.map(b=>b.id)),['rules-intro-confirm']);
+              await click(page,'rules-intro-confirm');
+              assert.equal(await page.evaluate(()=>globalThis.__canvasGame.session.modeProgress.rulesIntroSeen),true);
               await click(page,'settings');
               assert.deepEqual(await page.evaluate(()=>
                 globalThis.__canvasGame.buttons.filter(b=>['settings-home','settings-levels'].includes(b.id)).map(b=>b.id)
