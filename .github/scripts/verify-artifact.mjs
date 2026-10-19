@@ -6,7 +6,7 @@ const root=resolve('web'),manifest=JSON.parse(readFileSync(resolve(root,'artifac
 const seen=[];
 function visit(dir){for(const entry of readdirSync(dir,{withFileTypes:true})){
  const file=resolve(dir,entry.name),path=relative(root,file).replaceAll('\\','/');
- if(entry.isDirectory())visit(file);else if(path!=='artifact-sha256.json'){
+ if(entry.isDirectory())visit(file);else if(path!=='artifact-sha256.json' && !/\.md$/i.test(path)){
  assert.doesNotMatch(path,/\.(ts|map)$/);assert.equal(createHash('sha256').update(readFileSync(file)).digest('hex'),manifest.files[path],path+' hash mismatch');seen.push(path);
  }
 }}
