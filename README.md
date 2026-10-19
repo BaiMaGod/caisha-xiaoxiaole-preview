@@ -1,8 +1,5 @@
 # 七彩沙画消除预览
 
-[打开游戏](https://baimagod.github.io/caisha-xiaoxiaole-preview/)
+源码版本：22cb488485d00cae34612ad7ec808a93ee8e5172
 
-[下载 TapTap H5 修复包](./taptap-h5.zip)
-
-源码版本：fe14f2c9316576a4eead67700b1f483ae07b0e04。ZIP、Web 的源码摘要由发布校验自动核对。
-普通浏览器可验证共享玩法；真实广告、云同步、排行榜及分享请在 TapTap H5 容器验收。
+仅发布编译产物。源码维护于私有正式库；构建和 Pages 部署仅在预览流程进行。自动验收包含固定物理节拍、首页离页停止、沙画闲置绘制和消除帧预算。

@@ -195,6 +195,10 @@ jobs:
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/preview-qa/node_modules/playwright/index.mjs
         run: node .github/scripts/performance.mjs
+      - name: Verify compiled timing, idle redraw and clear budgets
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/preview-qa/node_modules/playwright/index.mjs
+        run: node .github/scripts/runtime-acceptance.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -225,7 +229,7 @@ jobs:
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: taptap-h5-fe14f2c
+          name: taptap-h5-${{ github.sha }}
           path: taptap-h5.zip
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

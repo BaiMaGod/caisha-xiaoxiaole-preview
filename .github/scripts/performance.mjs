@@ -2,21 +2,21 @@ import assert from 'node:assert/strict';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 import { createServer } from 'node:http';
 import { readFileSync, statSync } from 'node:fs';
-import { resolve, extname } from 'node:path';
+import { resolve, extname, sep } from 'node:path';
 import { mkdir, writeFile } from 'node:fs/promises';
 const root=resolve('web');
 const server=createServer((req,res)=>{
  try {
   let path=decodeURIComponent(req.url.split('?')[0]).replace(/^\/caisha-xiaoxiaole-preview/,'');
   path=resolve(root,'.'+path);
-  if(path!==root&&!path.startsWith(root+'/'))throw new Error('Invalid path');
+  if(path!==root&&!path.startsWith(root+sep))throw new Error('Invalid path');
   if(statSync(path).isDirectory())path=resolve(path,'index.html');
   res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.json':'application/json','.png':'image/png','.webp':'image/webp','.mp3':'audio/mpeg'})[extname(path)]||'application/octet-stream');
   res.end(readFileSync(path));
  }catch{res.statusCode=404;res.end('not found');}
 });await new Promise(r=>server.listen(5175,'127.0.0.1',r));
 await mkdir('.qa',{recursive:true});
-const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+const browser=await chromium.launch({headless:true,executablePath:process.env.QA_CHROMIUM||undefined,args:['--no-sandbox']});
 const results=[];
 async function click(page,id) {
  await page.waitForFunction(id=>globalThis.__canvasGame?.buttons.some(b=>b.id===id&&!b.disabled),id);
@@ -93,8 +93,12 @@ try{
  // Renderer pixel equality against original pipeline, including changes and bulk restores.
  const visual=await page.evaluate(async()=>{
   const g=globalThis.__canvasGame,grid=g.session.grid,current=g.renderer;
-  const canvas=document.createElement('canvas');canvas.width=180;canvas.height=320;
-  const ctx=canvas.getContext('2d',{alpha:true}),comparisons=[];
+  // Force one raster backend for pixel readback; Chrome can otherwise switch
+  // the reference to CPU while the retained terrain remains on the GPU.
+  const factory=()=>{const c=document.createElement('canvas');c.width=180;c.height=320;c.getContext('2d',{alpha:true,willReadFrequently:true});return c;};
+  current.logicalCanvas=factory();current.logicalCtx=current.logicalCanvas.getContext('2d');current.ctx=current.logicalCtx;
+  current.terrainCanvas=factory();current.terrainCtx=current.terrainCanvas.getContext('2d');current.terrainCells.fill(0);current.terrainRevision=-1;
+  const canvas=factory(),ctx=canvas.getContext('2d'),comparisons=[];
   const palette={1:[255,90,95],2:[255,159,67],3:[255,217,61],4:[107,203,119],5:[78,205,196],6:[77,150,255],7:[155,93,229]};
   const srgb=c=>{const l=Math.max(0,Math.min(255,c))/255;return Math.round(255*(l<=.0031308?l*12.92:1.055*l**(1/2.4)-.055));};
   const old={update(){ctx.clearRect(0,0,180,320);for(let y=0;y<320;y++)for(let x=0;x<180;x++){
