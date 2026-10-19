@@ -3,6 +3,10 @@ name: deploy-pages
 on:
   push:
     branches: [main]
+    paths:
+      - 'web/**'
+      - 'taptap-h5.zip'
+      - '.github/scripts/**'
   workflow_dispatch:
 
 permissions:

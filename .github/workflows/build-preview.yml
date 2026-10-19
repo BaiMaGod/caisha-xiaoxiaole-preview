@@ -1,0 +1,143 @@
+name: build-preview
+
+# Source repo contains code only. All executable CI and packaging live here.
+on:
+  push:
+    branches: [main]
+    paths: ['release-request.json']
+  workflow_dispatch:
+    inputs:
+      source_commit:
+        description: 'Full 40-character SHA from BaiMaGod/caisha-xiaoxiaole (blank = release-request.json)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: build-preview
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out preview repo (no source committed here)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Resolve pinned source revision and check access
+        id: revision
+        env:
+          MANUAL_REVISION: ${{ inputs.source_commit }}
+          SOURCE_READ_TOKEN: ${{ secrets.PREVIEW_SOURCE_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$SOURCE_READ_TOKEN" ]; then
+            echo "::error::Configure PREVIEW_SOURCE_TOKEN in caisha-xiaoxiaole-preview Actions secrets (fine-grained token, Content: read on private source repo)."
+            exit 1
+          fi
+          REVISION="${MANUAL_REVISION:-$(node -p "require('./release-request.json').source_commit")}"
+          [[ "$REVISION" =~ ^[a-f0-9]{40}$ ]] || { echo "::error::Expected a full source commit SHA"; exit 1; }
+          echo "sha=$REVISION" >> "$GITHUB_OUTPUT"
+          echo "Building private source revision: $REVISION"
+
+      - name: Check out pinned private source into temporary workspace
+        uses: actions/checkout@v4
+        with:
+          repository: BaiMaGod/caisha-xiaoxiaole
+          ref: ${{ steps.revision.outputs.sha }}
+          token: ${{ secrets.PREVIEW_SOURCE_TOKEN }}
+          persist-credentials: false
+          path: _private-source
+          fetch-depth: 1
+
+      - name: Verify the source revision
+        shell: bash
+        run: |
+          ACTUAL="$(git -C _private-source rev-parse HEAD)"
+          test "$ACTUAL" = "${{ steps.revision.outputs.sha }}"
+          test ! -d _private-source/prototype/sand-engine-demo/node_modules
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: _private-source/prototype/sand-engine-demo/package-lock.json
+
+      - name: Install dependencies
+        working-directory: _private-source/prototype/sand-engine-demo
+        run: npm ci
+
+      - name: Run shared source regression tests on PREVIEW runner
+        working-directory: _private-source/prototype/sand-engine-demo
+        run: npm test
+
+      - name: Install Chromium for browser regression tests
+        working-directory: _private-source/prototype/sand-engine-demo
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser runtime tests on PREVIEW runner
+        working-directory: _private-source/prototype/sand-engine-demo
+        run: npm run test:runtime
+
+      - name: Build Web and version-matched TapTap H5 on PREVIEW runner
+        working-directory: _private-source/prototype/sand-engine-demo
+        env:
+          SOURCE_COMMIT: ${{ steps.revision.outputs.sha }}
+        run: |
+          npm run build
+          npm run release:manifest
+          npm run pack:taptap-h5
+
+      - name: Confirm both outputs refer to the same private source
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,zipfile
+          from pathlib import Path
+          build=Path('_private-source/prototype/sand-engine-demo/dist')
+          web=json.loads((build/'web/build-info.json').read_text())
+          with zipfile.ZipFile(build/'taptap-h5.zip') as z:
+              h5=json.loads(z.read('caisha-xiaoxiaole/build-info.json'))
+          assert web['channel']=='web'
+          assert h5['channel']=='taptap-h5'
+          assert web['commit']==h5['commit']=='${{ steps.revision.outputs.sha }}'
+          assert web['sourceHash']==h5['sourceHash']
+          print('Web and TapTap H5 release metadata match',web['commit'])
+          PY
+
+      - name: Commit ONLY compiled artifacts to PREVIEW repo
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf web
+          cp -a _private-source/prototype/sand-engine-demo/dist/web web
+          cp _private-source/prototype/sand-engine-demo/dist/taptap-h5.zip taptap-h5.zip
+          cat > README.md <<'EOF'
+          # 七彩沙画消除 · 预览构建产物
+
+          源码版本：${{ steps.revision.outputs.sha }}
+
+          此公开仓库只保存 Web/TapTap H5 编译产物；源码仅在预览库 Actions 运行器内临时检出。
+          构建、源代码自动化测试、浏览器测试以及 GitHub Pages 部署全部由预览库完成。
+          EOF
+          git add -A web taptap-h5.zip README.md
+          if git diff --cached --quiet; then
+            echo "No artifact changes; deploying previously matching outputs"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "build(preview): publish ${{ steps.revision.outputs.sha }}"
+            git push origin HEAD:main
+          fi
+
+      - name: Trigger preview-only artifact verification and Pages deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main
