@@ -1,5 +1,6 @@
 {
   "source_repository": "BaiMaGod/caisha-xiaoxiaole",
   "source_commit": "454672d569553c439ff5179855abd88f91ab0b16",
-  "build_repository": "BaiMaGod/caisha-xiaoxiaole-preview"
+  "build_repository": "BaiMaGod/caisha-xiaoxiaole-preview",
+  "build_attempt": 2
 }
