@@ -201,6 +201,32 @@ jobs:
           name: performance-acceptance
           path: .qa/
           include-hidden-files: true
+      - name: Verify TapTap H5 package
+        run: |
+          python3 - <<'PY'
+          import json, hashlib, zipfile
+          from pathlib import Path
+          web = json.loads(Path('web/build-info.json').read_text())
+          with zipfile.ZipFile('taptap-h5.zip') as z:
+              prefix = 'caisha-xiaoxiaole/'
+              names = z.namelist()
+              assert all(n.startswith(prefix) for n in names)
+              info = json.loads(z.read(prefix + 'build-info.json'))
+              assert info['channel'] == 'taptap-h5'
+              assert info['commit'] == web['commit']
+              assert info['sourceHash'] == web['sourceHash']
+              manifest = json.loads(z.read(prefix + 'artifact-sha256.json'))['files']
+              assert set(names) == {prefix + p for p in manifest} | {prefix + 'artifact-sha256.json'}
+              for p, h in manifest.items():
+                  assert not p.endswith(('.ts', '.map', '.md'))
+                  assert hashlib.sha256(z.read(prefix + p)).hexdigest() == h, p
+              assert prefix + 'index.html' in names
+          print('Verified H5 package', info)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: taptap-h5-fe14f2c
+          path: taptap-h5.zip
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

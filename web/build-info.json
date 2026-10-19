@@ -2,10 +2,6 @@
   "game": "七彩沙画消除",
   "version": "0.1.0",
   "channel": "web",
-  "sourceHash": "6a2d849d03d5f1075fdecd30100c1bc2db8c0677843ca9b9e36efbee38bf75df",
-  "commit": "8d5ab890dc9e4735c3b8bf18ae8539466b7882da",
-  "previewPatch": {
-    "description": "Compiled-only Web preview: level-one rules confirmation, level-two remaining-color randomization, two-line common controls/rules hints and level-only full-clear victory hint",
-    "sourceCommit": "b10952c5f475b2f8cd3ac4636466b8a4d5b6ebbd"
-  }
+  "sourceHash": "b9f14525d69bf0dc80a7a5511d78d7561a8894f271b9720ce5c71f9d2c45be5f",
+  "commit": "fe14f2c9316576a4eead67700b1f483ae07b0e04"
 }

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "files": {
-    "assets/web-entry-hints-b10952c5.js": "9bea93334581d1dfc410ef4826b40f166ffe2074d615c277b4f1a44ae8bdf08f",
+    "assets/web-entry-BRQksqrY.js": "d0248f77613e80e8d764b82e7e14b9c2a8cdd8ac49c245a16192cebc76fb84e4",
     "audio/clear-roulette-fast-v2.mp3": "38dbe56733d0f6dd7956b6a7cef4ad23fcb801d7c4bff87554d083b8b9b67bf4",
     "audio/clear-roulette-fast.mp3": "36765ef1ffeddfeb0cf78859fca2ac126c67626122db07dcc0b176f83735be48",
     "audio/reward-amazing.mp3": "bcf544d91e25a004ee95dccb97d0d0ec933b5f492a6565907ecf2af85516a37c",
@@ -9,8 +9,8 @@
     "audio/reward-great.mp3": "e7cf41d3147c7514db4f74d32328472eed08d1506e77813ab92df7cd2b6102fd",
     "audio/reward-perfect.mp3": "50ec47bb56019dcb0420df73a884271d27d48e4ed3f53fb97cd3847cfce6079a",
     "audio/reward-unbelievable.mp3": "b74a6e87eeb0ab3a5f5f90e66f82fa9d2da6b9182bc95d6bec7860280ae943e6",
-    "build-info.json": "f6c89bd3a400c77a9f826d9bd9569c69f4c9101cd7e78f055313224e11ca62ca",
-    "canvas-preview.html": "c223fb52b6eed4824f93b02d792e899c25d3613a9d76834e0ca416c3e1dc62b4",
+    "build-info.json": "ba20fe6b7199d310e51ea6664ec922fdb70467939f42f6c99678bcd1c8af1ae5",
+    "canvas-preview.html": "8b29c8f1e6ed105b806fe8163599fcec9f98a2470581085fb90c8afde9c79bec",
     "images/approved-ui/back-arrow-pastel-sand.webp": "073894bc497fd0902e76cc2fd44ee39d58a4a0917bb5c8346284583dbd7ad1ff",
     "images/approved-ui/back-arrow-rainbow-sand.webp": "4333b690608bac5266fa6d0f0a604cd3b4ae5790b1d86b8950c7288acfa22e68",
     "images/approved-ui/background-level.webp": "43b704135a58194d4cf69efb15b994a835e3db7d06bed463c76ea2dc715aceb3",
@@ -40,6 +40,7 @@
     "images/approved-ui/mode-title.webp": "fa4a0db004ba05293588c28c5215b98a6081b58df9bc004db1428529b154a747",
     "images/approved-ui/star-empty.png": "65e85ff16279bb0a4779a0b12a9581fd579fe5ed3afd3e881e3cfcec9493c69d",
     "images/approved-ui/star-filled.png": "e70b8d8b90aab88c326d45c7f7b66791c7f847846dde558ad3b00ba02c77f08e",
+    "images/leaderboard-pastel-sand.webp": "fdb86e089193b93d759e42dd4305e2e4a6de02ac3fcdc99ae4507b55cc9ea949",
     "images/mode-redesign/level-card.svg": "9fbaf1f615435fc19f507b8874f9b1e4af297709f7620a5ef0d0ede6ab09ecb3",
     "images/mode-redesign/level-map.svg": "a14d4eac07528976767ed6f8ffaa0da54ac61350385b0ebfd8aa7f838fc95256",
     "images/mode-redesign/sand-card.svg": "bb019ffdf160c97def21170c108ab19fe50ab2ce7cd1671d669ca595345eb91a",
@@ -49,7 +50,6 @@
     "images/settings-ui/music_icon.png": "beb2839ddf8ca7bb43458a8a8b18a91cd0c81b4cd85366fc50b8fd141b5a6961",
     "images/settings-ui/panel_background.png": "900786ca4fed927176592722d1dbf064d3a4efcee8fbb590cb76bed8622de01e",
     "images/settings-ui/percent_badge_bg.png": "6bee6d791bec31021c28cad769a3a64f35664ce966e7824826d90da2ea9c25b3",
-    "images/settings-ui/README.md": "693dea72a03ab3e6db268d626a5f971315f87da070233dc5905f0c33bd2b315d",
     "images/settings-ui/setting_gear_pastel_sand_v2.png": "0006fef0373d7de0a27092bda9607a0b9af4e02bc0772493b65ffc75ac295f6c",
     "images/settings-ui/setting_gear_pastel_sand.png": "00984a77d3235b2d97234a1b7fcf71ad83d37ef41a02871336e055c50738271e",
     "images/settings-ui/setting_gear_rainbow.png": "91e6cf40a44ef9c5dedc22d8b5dc69415ff2ed371fd4f82a18cebdefb2a7109b",
@@ -73,6 +73,6 @@
     "images/ui-theme/mode-rainbow.svg": "6c79fcc915eae40d889d18c544713d0e1d38fde1112e229b74a8de73f45d75d6",
     "images/ui-theme/sand-dream-bg.svg": "723344115105b4edb374ad980f2ded6cf76938a3c95fdee32a5dc8b11ed16399",
     "images/ui-theme/sand-wave.svg": "8d93c5fbe0ad9537fd2937771ad842683c49a31f6ac9faab23fa437ce6e29048",
-    "index.html": "c223fb52b6eed4824f93b02d792e899c25d3613a9d76834e0ca416c3e1dc62b4"
+    "index.html": "8b29c8f1e6ed105b806fe8163599fcec9f98a2470581085fb90c8afde9c79bec"
   }
 }
