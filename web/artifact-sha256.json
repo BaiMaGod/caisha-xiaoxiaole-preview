@@ -1,7 +1,7 @@
 {
   "version": 1,
   "files": {
-    "assets/web-entry-qqL7BJ_P.js": "69e072d95c2823229bddc1766a16409003a23c3df621f40de6a496b61fbdc305",
+    "assets/web-entry-CS7oP4uF.js": "e2cfc84185cb23cdf9237f4d84391be012595ea475812dc5158d25369e4883ca",
     "audio/clear-roulette-fast-v2.mp3": "38dbe56733d0f6dd7956b6a7cef4ad23fcb801d7c4bff87554d083b8b9b67bf4",
     "audio/clear-roulette-fast.mp3": "36765ef1ffeddfeb0cf78859fca2ac126c67626122db07dcc0b176f83735be48",
     "audio/reward-amazing.mp3": "bcf544d91e25a004ee95dccb97d0d0ec933b5f492a6565907ecf2af85516a37c",
@@ -9,8 +9,8 @@
     "audio/reward-great.mp3": "e7cf41d3147c7514db4f74d32328472eed08d1506e77813ab92df7cd2b6102fd",
     "audio/reward-perfect.mp3": "50ec47bb56019dcb0420df73a884271d27d48e4ed3f53fb97cd3847cfce6079a",
     "audio/reward-unbelievable.mp3": "b74a6e87eeb0ab3a5f5f90e66f82fa9d2da6b9182bc95d6bec7860280ae943e6",
-    "build-info.json": "1221936859654ff92c4d1a113098c0672d6fdc8c9466a6a9c915403b2e912fb1",
-    "canvas-preview.html": "a3befc3240830ee80c5ff1aab1fdc763e88dc6d9c9da02d7ac9007f625650ff3",
+    "build-info.json": "ab8ba12bf21c742d8b6dfeaec9d1faf85eef19ee9f5e79514d2dcf9239afedcb",
+    "canvas-preview.html": "d7d39d6accd8c71081b07e23e3e40433431ff3c85d91f86056e44c0a110165fc",
     "images/approved-ui/back-arrow-pastel-sand.webp": "073894bc497fd0902e76cc2fd44ee39d58a4a0917bb5c8346284583dbd7ad1ff",
     "images/approved-ui/back-arrow-rainbow-sand.webp": "4333b690608bac5266fa6d0f0a604cd3b4ae5790b1d86b8950c7288acfa22e68",
     "images/approved-ui/background-level.webp": "43b704135a58194d4cf69efb15b994a835e3db7d06bed463c76ea2dc715aceb3",
@@ -73,6 +73,6 @@
     "images/ui-theme/mode-rainbow.svg": "6c79fcc915eae40d889d18c544713d0e1d38fde1112e229b74a8de73f45d75d6",
     "images/ui-theme/sand-dream-bg.svg": "723344115105b4edb374ad980f2ded6cf76938a3c95fdee32a5dc8b11ed16399",
     "images/ui-theme/sand-wave.svg": "8d93c5fbe0ad9537fd2937771ad842683c49a31f6ac9faab23fa437ce6e29048",
-    "index.html": "a3befc3240830ee80c5ff1aab1fdc763e88dc6d9c9da02d7ac9007f625650ff3"
+    "index.html": "d7d39d6accd8c71081b07e23e3e40433431ff3c85d91f86056e44c0a110165fc"
   }
 }
