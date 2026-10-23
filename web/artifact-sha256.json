@@ -1,7 +1,7 @@
 {
   "version": 1,
   "files": {
-    "assets/web-entry-CS7oP4uF.js": "e2cfc84185cb23cdf9237f4d84391be012595ea475812dc5158d25369e4883ca",
+    "assets/web-entry-Bx69VjaK.js": "b8aceb4942126cac59d8774dee1db2c9e3bdb596c5a77f292540b3ac8b85a465",
     "audio/clear-roulette-fast-v2.mp3": "38dbe56733d0f6dd7956b6a7cef4ad23fcb801d7c4bff87554d083b8b9b67bf4",
     "audio/clear-roulette-fast.mp3": "36765ef1ffeddfeb0cf78859fca2ac126c67626122db07dcc0b176f83735be48",
     "audio/reward-amazing.mp3": "bcf544d91e25a004ee95dccb97d0d0ec933b5f492a6565907ecf2af85516a37c",
@@ -9,8 +9,8 @@
     "audio/reward-great.mp3": "e7cf41d3147c7514db4f74d32328472eed08d1506e77813ab92df7cd2b6102fd",
     "audio/reward-perfect.mp3": "50ec47bb56019dcb0420df73a884271d27d48e4ed3f53fb97cd3847cfce6079a",
     "audio/reward-unbelievable.mp3": "b74a6e87eeb0ab3a5f5f90e66f82fa9d2da6b9182bc95d6bec7860280ae943e6",
-    "build-info.json": "ab8ba12bf21c742d8b6dfeaec9d1faf85eef19ee9f5e79514d2dcf9239afedcb",
-    "canvas-preview.html": "d7d39d6accd8c71081b07e23e3e40433431ff3c85d91f86056e44c0a110165fc",
+    "build-info.json": "777bd16376e7b30d954d1c5ad64181ce2235226f706df7b2a93dbd37f6b90f74",
+    "canvas-preview.html": "ae495d953f6b6635cfffb0b4596f4f57997ff3fc9560c550c88f832cf3c1ea80",
     "images/approved-ui/back-arrow-pastel-sand.webp": "073894bc497fd0902e76cc2fd44ee39d58a4a0917bb5c8346284583dbd7ad1ff",
     "images/approved-ui/back-arrow-rainbow-sand.webp": "4333b690608bac5266fa6d0f0a604cd3b4ae5790b1d86b8950c7288acfa22e68",
     "images/approved-ui/background-level.webp": "43b704135a58194d4cf69efb15b994a835e3db7d06bed463c76ea2dc715aceb3",
@@ -38,6 +38,7 @@
     "images/approved-ui/mode-endless.webp": "2101842dc95a89a54c1674bf35fc59b57a5e8245b854a1d1d130311df68ec318",
     "images/approved-ui/mode-title-20261014.webp": "4424a20b268159f117b460a1dd2b700bd3cc0f11c14b0d5135f5de9269c148b2",
     "images/approved-ui/mode-title.webp": "fa4a0db004ba05293588c28c5215b98a6081b58df9bc004db1428529b154a747",
+    "images/approved-ui/reward-home-tiles.webp": "2b44039540a88778a6064a63ea73d18359a70eb60034b0b0e2685b3b09776ea1",
     "images/approved-ui/star-empty.png": "65e85ff16279bb0a4779a0b12a9581fd579fe5ed3afd3e881e3cfcec9493c69d",
     "images/approved-ui/star-filled.png": "e70b8d8b90aab88c326d45c7f7b66791c7f847846dde558ad3b00ba02c77f08e",
     "images/leaderboard-pastel-sand.webp": "fdb86e089193b93d759e42dd4305e2e4a6de02ac3fcdc99ae4507b55cc9ea949",
@@ -73,6 +74,6 @@
     "images/ui-theme/mode-rainbow.svg": "6c79fcc915eae40d889d18c544713d0e1d38fde1112e229b74a8de73f45d75d6",
     "images/ui-theme/sand-dream-bg.svg": "723344115105b4edb374ad980f2ded6cf76938a3c95fdee32a5dc8b11ed16399",
     "images/ui-theme/sand-wave.svg": "8d93c5fbe0ad9537fd2937771ad842683c49a31f6ac9faab23fa437ce6e29048",
-    "index.html": "d7d39d6accd8c71081b07e23e3e40433431ff3c85d91f86056e44c0a110165fc"
+    "index.html": "ae495d953f6b6635cfffb0b4596f4f57997ff3fc9560c550c88f832cf3c1ea80"
   }
 }
