@@ -42,7 +42,7 @@ try{
  await page.goto('http://127.0.0.1:5175/caisha-xiaoxiaole-preview/?debug=1',{waitUntil:'networkidle'});
  await page.screenshot({path:`.qa/perf-home-${width}.png`});
  const imageRequests=await page.evaluate(()=>performance.getEntriesByType('resource').filter(e=>e.initiatorType==='img').map(e=>e.name));
- assert.equal(imageRequests.filter(p=>p.includes('/images/')).length,6);
+ assert.equal(imageRequests.filter(p=>p.includes('/images/')).length,7);
  await click(page,'start');await screen(page,'levels');
  const starts=[];
  for(let id=1;id<=24;id++){
