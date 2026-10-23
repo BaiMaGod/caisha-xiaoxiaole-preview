@@ -37,6 +37,7 @@ try{
  for(const [width,height] of [[390,844],[320,568],[1440,900]]){
  const errors=[];const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:2});
  await page.addInitScript(()=>localStorage.setItem('qicai-modes-progress-v1',JSON.stringify({unlockedLevel:24,levelRecords:{},artworks:[],draft:null})));
+ await page.addInitScript(()=>localStorage.setItem('caisha-signin-prompt-v1',new Date(Date.now()+8*3600000).toISOString().slice(0,10)));
  page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.status()>=400)errors.push(r.status()+' '+r.url());});
  await page.goto('http://127.0.0.1:5175/caisha-xiaoxiaole-preview/?debug=1',{waitUntil:'networkidle'});
  await page.screenshot({path:`.qa/perf-home-${width}.png`});
@@ -82,6 +83,7 @@ try{
  }
  // New player: locked feedback, drag originating on a card, visible clipped targets.
  const page=await browser.newPage({viewport:{width:320,height:568}});
+ await page.addInitScript(()=>localStorage.setItem('caisha-signin-prompt-v1',new Date(Date.now()+8*3600000).toISOString().slice(0,10)));
  await page.goto('http://127.0.0.1:5175/caisha-xiaoxiaole-preview/?debug=1',{waitUntil:'networkidle'});await click(page,'start');await screen(page,'levels');
  await click(page,'level-2');assert.equal(await page.evaluate(()=>globalThis.__canvasGame.toastText),'请先完成上一关');
  assert.equal(await page.evaluate(()=>globalThis.__canvasGame.screen),'levels');
