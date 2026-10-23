@@ -79,6 +79,10 @@ jobs:
                 const image=globalThis.__canvasGame?.assets?.get(k);
                 return image && image.complete && image.naturalWidth > 0;
               }));
+              // V1.0 automatically opens the first-visit sign-in dialog.
+              // Explicitly close it before verifying the fan carousel geometry.
+              if (await page.evaluate(() => Boolean(globalThis.__canvasGame?.rewardPanel)))
+                await click(page,'signin-close');
               const home=await page.evaluate(() => {
                 const g=globalThis.__canvasGame;
                 const b=id=>g.buttons.find(v=>v.id===id);
