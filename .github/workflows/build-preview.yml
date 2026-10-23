@@ -84,7 +84,9 @@ jobs:
 
       - name: Verify browser runtime and gameplay (required)
         working-directory: _private-source/prototype/sand-engine-demo
-        run: node tests/runtime-browser.mjs
+        run: |
+          node tests/runtime-browser.mjs
+          npm run test:rewards:browser
 
       - name: Run throttled browser performance benchmark (report-only)
         id: perf
