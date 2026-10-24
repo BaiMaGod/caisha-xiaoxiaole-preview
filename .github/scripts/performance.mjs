@@ -42,7 +42,15 @@ try{
  await page.goto('http://127.0.0.1:5175/caisha-xiaoxiaole-preview/?debug=1',{waitUntil:'networkidle'});
  await page.screenshot({path:`.qa/perf-home-${width}.png`});
  const imageRequests=await page.evaluate(()=>performance.getEntriesByType('resource').filter(e=>e.initiatorType==='img').map(e=>e.name));
- assert.equal(imageRequests.filter(p=>p.includes('/images/')).length,7);
+ // Home now deliberately preloads two small sign-in/backpack tiles.
+ // Preserve the eight-image budget: full dialog artwork remains lazy.
+ const startupImages=imageRequests.filter(p=>p.includes('/images/'));
+ assert.equal(startupImages.length,8,'Home must preload only its 8 approved images');
+ assert.equal(new Set(startupImages).size,startupImages.length,'Duplicate startup image requests');
+ const rewards=startupImages.filter(p=>p.includes('/images/rewards/'));
+ assert.equal(rewards.length,2,'Only the two home reward tiles may load before opening dialogs');
+ for(const icon of ['home-signin.webp','home-backpack.webp'])
+   assert.ok(rewards.some(p=>p.endsWith('/images/rewards/'+icon)),'Missing home reward icon '+icon);
  await click(page,'start');await screen(page,'levels');
  const starts=[];
  for(let id=1;id<=24;id++){
