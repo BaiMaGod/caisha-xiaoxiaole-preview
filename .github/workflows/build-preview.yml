@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
       - name: Check out preview repo (no source committed here)
@@ -78,15 +78,41 @@ jobs:
         working-directory: _private-source/prototype/sand-engine-demo
         run: npm test
 
-      - name: Install Chromium for browser regression tests
+      - name: Cache Playwright browser binaries
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-1.56.1
+
+      - name: Install and smoke-test Chromium (install system packages only if missing)
         working-directory: _private-source/prototype/sand-engine-demo
-        run: npx playwright install --with-deps chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx playwright install chromium
+          if ! node --input-type=module -e 'import {chromium} from "playwright";const b=await chromium.launch({args:["--no-sandbox"]});await b.close()'; then
+            echo "::warning::Runner is missing Chromium libraries; installing runtime prerequisites."
+            npx playwright install-deps chromium
+            node --input-type=module -e 'import {chromium} from "playwright";const b=await chromium.launch({args:["--no-sandbox"]});await b.close()'
+          fi
 
       - name: Verify browser runtime and gameplay (required)
         working-directory: _private-source/prototype/sand-engine-demo
-        run: |
-          node tests/runtime-browser.mjs
-          npm run test:rewards:browser
+        run: node tests/runtime-browser.mjs
+
+      - name: Verify sign-in and backpack artwork (required)
+        working-directory: _private-source/prototype/sand-engine-demo
+        run: npm run test:rewards:browser
+
+      - name: Upload source browser QA evidence (including failures)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-browser-qa-${{ github.run_id }}-${{ github.run_attempt }}
+          path: _private-source/prototype/sand-engine-demo/.qa/
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 7
 
       - name: Run throttled browser performance benchmark (report-only)
         id: perf
