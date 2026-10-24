@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,10 +28,22 @@ jobs:
           node-version: 22
       - name: Verify exact artifact hashes
         run: node .github/scripts/verify-artifact.mjs
+      - name: Cache Playwright browser binaries
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-1.56.1
       - name: Install browser verifier
         run: |
+          set -euo pipefail
           npm install --prefix "$RUNNER_TEMP/preview-qa" --no-package-lock playwright@1.56.1
-          "$RUNNER_TEMP/preview-qa/node_modules/.bin/playwright" install --with-deps chromium
+          "$RUNNER_TEMP/preview-qa/node_modules/.bin/playwright" install chromium
+          export PLAYWRIGHT_MODULE="$RUNNER_TEMP/preview-qa/node_modules/playwright/index.mjs"
+          if ! node --input-type=module -e 'const {chromium}=await import(process.env.PLAYWRIGHT_MODULE);const b=await chromium.launch({args:["--no-sandbox"]});await b.close()'; then
+            echo "::warning::Runner is missing Chromium libraries; installing runtime prerequisites."
+            "$RUNNER_TEMP/preview-qa/node_modules/.bin/playwright" install-deps chromium
+            node --input-type=module -e 'const {chromium}=await import(process.env.PLAYWRIGHT_MODULE);const b=await chromium.launch({args:["--no-sandbox"]});await b.close()'
+          fi
       - name: Verify shared compiled game
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/preview-qa/node_modules/playwright/index.mjs
