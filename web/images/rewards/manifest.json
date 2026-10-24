@@ -1,0 +1,92 @@
+{
+  "home-signin": {
+    "width": 192,
+    "height": 181,
+    "bytes": 12568
+  },
+  "home-backpack": {
+    "width": 192,
+    "height": 181,
+    "bytes": 13352
+  },
+  "signin-panel": {
+    "width": 720,
+    "height": 865,
+    "bytes": 65354
+  },
+  "backpack-panel": {
+    "width": 720,
+    "height": 921,
+    "bytes": 71004
+  },
+  "signin-day-1": {
+    "width": 239,
+    "height": 277,
+    "bytes": 9872
+  },
+  "signin-day-2": {
+    "width": 231,
+    "height": 277,
+    "bytes": 9328
+  },
+  "signin-day-3": {
+    "width": 238,
+    "height": 277,
+    "bytes": 11420
+  },
+  "signin-day-4": {
+    "width": 227,
+    "height": 277,
+    "bytes": 9726
+  },
+  "signin-day-5": {
+    "width": 288,
+    "height": 273,
+    "bytes": 12396
+  },
+  "signin-day-6": {
+    "width": 239,
+    "height": 275,
+    "bytes": 9860
+  },
+  "signin-day-7": {
+    "width": 288,
+    "height": 254,
+    "bytes": 12232
+  },
+  "prop-random": {
+    "width": 240,
+    "height": 245,
+    "bytes": 11160
+  },
+  "prop-specify": {
+    "width": 243,
+    "height": 245,
+    "bytes": 11484
+  },
+  "backpack-random": {
+    "width": 400,
+    "height": 586,
+    "bytes": 39458
+  },
+  "backpack-specify": {
+    "width": 400,
+    "height": 586,
+    "bytes": 37206
+  },
+  "return-home": {
+    "width": 640,
+    "height": 174,
+    "bytes": 40720
+  },
+  "claim-button": {
+    "width": 640,
+    "height": 174,
+    "bytes": 32802
+  },
+  "claimed-button": {
+    "width": 600,
+    "height": 135,
+    "bytes": 12936
+  }
+}
