@@ -181,6 +181,7 @@ jobs:
               assertParallel(switched);
               await click(page,'home-mode-level');await page.waitForTimeout(350);
               await click(page,'start');await click(page,'level-1');
+              {
               await page.waitForFunction(() => globalThis.__canvasGame?.tutorial?.step === 'drag');
               const p = await page.evaluate(() => {
               const g = __canvasGame, b = g.metrics.board, s = g.metrics.uiScale;
@@ -202,6 +203,7 @@ jobs:
               // Leave a fresh first-level run for the existing pause/exit assertions.
               await page.evaluate(() => __canvasGame.startGame('level', 1));
               await page.waitForFunction(() => __canvasGame.tutorial?.step === 'drag');
+              }
               await click(page,'settings');
               assert.deepEqual(await page.evaluate(()=>
                 globalThis.__canvasGame.buttons.filter(b=>['settings-home','settings-levels'].includes(b.id)).map(b=>b.id)

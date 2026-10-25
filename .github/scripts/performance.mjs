@@ -1,3 +1,4 @@
+// Verify the released tutorial alongside the existing gameplay budgets.
 import assert from 'node:assert/strict';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 import { createServer } from 'node:http';
