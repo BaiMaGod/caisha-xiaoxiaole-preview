@@ -79,8 +79,12 @@ try{
   }
   if(id===1){
    const p=await page.evaluate(()=>{const g=globalThis.__canvasGame,b=g.metrics.board,s=g.metrics.uiScale;return{x:(b.x+b.width*.5)*s,y:(b.y+b.height*.15)*s};});
-   await page.mouse.click(p.x,p.y);
-   await page.waitForFunction(()=>globalThis.__canvasGame.session.dropCount>0);
+   await page.mouse.move(p.x,p.y);await page.mouse.down();
+   await page.mouse.move(p.x+45,p.y,{steps:6});
+   await page.waitForFunction(()=>__canvasGame.tutorial?.step==='release');
+   await page.mouse.up();
+   await page.waitForFunction(()=>__canvasGame.tutorial?.step==='accelerate');
+   assert.equal(await page.evaluate(()=>__canvasGame.session.dropCount),1);
   }
   await exit(page);await findLevel(page,id);await click(page,'level-'+id);await screen(page,'playing');
   starts.push(await page.evaluate(()=>globalThis.__canvasGame.performance.levelStarts.at(-1)));
@@ -92,6 +96,7 @@ try{
  }
  // New player: locked feedback, drag originating on a card, visible clipped targets.
  const page=await browser.newPage({viewport:{width:320,height:568}});
+ await page.addInitScript(()=>localStorage.setItem('caisha-first-play-guide-v1','1'));
  await page.addInitScript(()=>localStorage.setItem('caisha-signin-prompt-v1',new Date(Date.now()+8*3600000).toISOString().slice(0,10)));
  await page.goto('http://127.0.0.1:5175/caisha-xiaoxiaole-preview/?debug=1',{waitUntil:'networkidle'});await click(page,'start');await screen(page,'levels');
  await click(page,'level-2');assert.equal(await page.evaluate(()=>globalThis.__canvasGame.toastText),'请先完成上一关');
