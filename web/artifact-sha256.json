@@ -1,7 +1,8 @@
 {
   "version": 1,
   "files": {
-    "assets/web-entry-k1VPdzHC.js": "4198812f51337957f78d1eaf7cceda7cb28ba64e753ab03e0676382d783adbbc",
+    "assets/web-entry-DkZKsUEy.js": "87781da4cf901a2caf9c54e5994c693c14b6f66106d6c01e0800ede253f03cf8",
+    "audio/casino-bling-achievement.wav": "4d967bf38d5f141068b2883b10ba3bfe34df2e78809b78b347f1430c00ceaaa9",
     "audio/clear-roulette-fast-v2.mp3": "38dbe56733d0f6dd7956b6a7cef4ad23fcb801d7c4bff87554d083b8b9b67bf4",
     "audio/clear-roulette-fast.mp3": "36765ef1ffeddfeb0cf78859fca2ac126c67626122db07dcc0b176f83735be48",
     "audio/reward-amazing.mp3": "bcf544d91e25a004ee95dccb97d0d0ec933b5f492a6565907ecf2af85516a37c",
@@ -9,8 +10,8 @@
     "audio/reward-great.mp3": "e7cf41d3147c7514db4f74d32328472eed08d1506e77813ab92df7cd2b6102fd",
     "audio/reward-perfect.mp3": "50ec47bb56019dcb0420df73a884271d27d48e4ed3f53fb97cd3847cfce6079a",
     "audio/reward-unbelievable.mp3": "b74a6e87eeb0ab3a5f5f90e66f82fa9d2da6b9182bc95d6bec7860280ae943e6",
-    "build-info.json": "045e19975f6068caf09eaf3ced95dce2210c1012d219dfcb8bf638c40df6a7a8",
-    "canvas-preview.html": "34161697cc7486e970a649ce4bb42fad36b7334ac86b54c4437abb611e510ec0",
+    "build-info.json": "cd0065950e042445a509a801885cb46590e9a998d7968ac5a0f2635d23650acd",
+    "canvas-preview.html": "c3094122d40e3ad523b8cab6ac97deec2c835600154c59653593c6ba87238cd1",
     "images/approved-ui/back-arrow-pastel-sand.webp": "073894bc497fd0902e76cc2fd44ee39d58a4a0917bb5c8346284583dbd7ad1ff",
     "images/approved-ui/back-arrow-rainbow-sand.webp": "4333b690608bac5266fa6d0f0a604cd3b4ae5790b1d86b8950c7288acfa22e68",
     "images/approved-ui/background-level.webp": "43b704135a58194d4cf69efb15b994a835e3db7d06bed463c76ea2dc715aceb3",
@@ -54,7 +55,7 @@
     "images/rewards/claimed-button.webp": "b2de997cb47d549c4827a50b6c60a63ebb56bb33ce85348270dfbe893a2e48cf",
     "images/rewards/home-backpack.webp": "ff5592d6ea022fced7a9c895a70b22fe069a37e38950f446c3bc0efc8c965a7a",
     "images/rewards/home-signin.webp": "4378cf99935e125d107cd2ecff1e8b7051bfd4dd3ac15750a3c149422f4bfab0",
-    "images/rewards/manifest.json": "623cc9edb8a59b373343873b2d4ccb6363e04447d70b3c8aabb0ed2eb38a5cc1",
+    "images/rewards/manifest.json": "7ee7860717fd2f502177c414acea47f00d3804bd40416b362a2aec8c2c290f5b",
     "images/rewards/prop-random.webp": "09caa016dfb9c7ce48fb983b76c1c1dfb18dd4e99feda84abf4c5aefb8d186d9",
     "images/rewards/prop-specify.webp": "5a1a7aca5c86808ff50c12519ec297bc2229d4313fe53f36b2b127e0e37c8617",
     "images/rewards/return-home.webp": "9704dbf8dd62f8454001026ddff98bd4ae7cfadcb29306ec9a5ee7a3e17cd4cf",
@@ -93,6 +94,6 @@
     "images/ui-theme/mode-rainbow.svg": "6c79fcc915eae40d889d18c544713d0e1d38fde1112e229b74a8de73f45d75d6",
     "images/ui-theme/sand-dream-bg.svg": "723344115105b4edb374ad980f2ded6cf76938a3c95fdee32a5dc8b11ed16399",
     "images/ui-theme/sand-wave.svg": "8d93c5fbe0ad9537fd2937771ad842683c49a31f6ac9faab23fa437ce6e29048",
-    "index.html": "34161697cc7486e970a649ce4bb42fad36b7334ac86b54c4437abb611e510ec0"
+    "index.html": "c3094122d40e3ad523b8cab6ac97deec2c835600154c59653593c6ba87238cd1"
   }
 }
