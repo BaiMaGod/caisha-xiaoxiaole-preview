@@ -56,7 +56,7 @@ try{
  for(let id=1;id<=24;id++){
   await findLevel(page,id);
   await click(page,'level-'+id);await screen(page,'playing');
-  if(id===1){assert.equal(await page.evaluate(()=>globalThis.__canvasGame.ruleIntro),true);await click(page,'rules-intro-confirm');}
+  if(id===1){assert.equal(await page.evaluate(()=>globalThis.__canvasGame.tutorial?.step),'drag');}
   if(id===2){
    const colorProbe=await page.evaluate(()=>{
     const g=globalThis.__canvasGame,p=g.session.fruitManager.spawnProvider;

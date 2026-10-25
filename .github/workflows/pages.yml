@@ -74,6 +74,7 @@ jobs:
               const page=await browser.newPage({viewport:{width,height}}),errors=[];
               page.on('pageerror',e=>errors.push(e.message));
               page.on('response',r=>{if(r.status()>=400)errors.push(r.status()+' '+r.url());});
+              await page.addInitScript(()=>localStorage.setItem('caisha-first-play-guide-v1','1'));
               const url='http://127.0.0.1:4173/caisha-xiaoxiaole-preview/';
               await page.goto(url,{waitUntil:'networkidle'});
               assert.equal(await page.evaluate(()=>typeof globalThis.__canvasGame),'undefined');
@@ -180,10 +181,27 @@ jobs:
               assertParallel(switched);
               await click(page,'home-mode-level');await page.waitForTimeout(350);
               await click(page,'start');await click(page,'level-1');
-              assert.equal(await page.evaluate(()=>globalThis.__canvasGame.ruleIntro),true);
-              assert.deepEqual(await page.evaluate(()=>globalThis.__canvasGame.buttons.map(b=>b.id)),['rules-intro-confirm']);
-              await click(page,'rules-intro-confirm');
-              assert.equal(await page.evaluate(()=>globalThis.__canvasGame.session.modeProgress.rulesIntroSeen),true);
+              await page.waitForFunction(() => globalThis.__canvasGame?.tutorial?.step === 'drag');
+              const p = await page.evaluate(() => {
+              const g = __canvasGame, b = g.metrics.board, s = g.metrics.uiScale;
+              return { x: (b.x + b.width / 2) * s, y: (b.y + b.height / 2) * s, s };
+              });
+              await page.mouse.move(p.x, p.y); await page.mouse.down();
+              await page.mouse.move(p.x + 45 * p.s, p.y, {steps: 8});
+              await page.waitForFunction(() => __canvasGame.tutorial?.step === 'release');
+              await page.mouse.up();
+              await page.waitForFunction(() => __canvasGame.tutorial?.step === 'accelerate');
+              await page.waitForTimeout(700);
+              assert.equal(await page.evaluate(() => __canvasGame.session.fruitManager.current.state), 'FALLING');
+              await page.mouse.move(p.x, p.y); await page.mouse.down();
+              await page.mouse.move(p.x, p.y + 70 * p.s, {steps: 8}); await page.mouse.up();
+              await page.waitForFunction(() => __canvasGame.tutorial?.step === 'connect', null, {timeout: 20000});
+              assert.ok(await page.evaluate(() => __canvasGame.tutorial.path.length > 0));
+              await page.waitForFunction(() => __canvasGame.screen === 'win', null, {timeout: 15000});
+              assert.equal(await page.evaluate(() => __canvasGame.session.dropCount), 1);
+              // Leave a fresh first-level run for the existing pause/exit assertions.
+              await page.evaluate(() => __canvasGame.startGame('level', 1));
+              await page.waitForFunction(() => __canvasGame.tutorial?.step === 'drag');
               await click(page,'settings');
               assert.deepEqual(await page.evaluate(()=>
                 globalThis.__canvasGame.buttons.filter(b=>['settings-home','settings-levels'].includes(b.id)).map(b=>b.id)
