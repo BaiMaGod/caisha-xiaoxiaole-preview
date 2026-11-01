@@ -2,7 +2,6 @@
   "game": "七彩沙画消除",
   "version": "0.1.0",
   "channel": "web",
-  "sourceHash": "7cf02351601e72b1d420bb888ea2d5621475821009d02232e59fd64eba17d138",
-  "commit": "eca199904864cae061c47ec520f461eb8b44a1ac",
-  "change": "level-complete-casino-bling-achievement"
+  "sourceHash": "bff28783a6053612fbbeb27b17df11760ed0f33476b584d924a2edb8bff121c4",
+  "commit": "af6aedd769a228dc031bb87ab87d6efd290b8d87"
 }
